@@ -1,0 +1,71 @@
+[
+  {
+    "model": "sbert",
+    "hf_name": "sentence-transformers/all-mpnet-base-v2",
+    "model_size_mb": 417.7,
+    "load_seconds": 28.17,
+    "total_embed_seconds": 14.878,
+    "section_embed_seconds": {
+      "skills": 5.708,
+      "experience": 2.955,
+      "education": 1.269,
+      "projects": 2.616,
+      "certifications": 2.329
+    },
+    "single_item_latency_ms": 1611.2,
+    "memory_delta_load_mb": 422.9,
+    "memory_delta_embed_mb": 234.1,
+    "overall_score_mean": 0.1686,
+    "overall_score_std": 0.0592,
+    "overall_score_max": 0.4618,
+    "recall_at_k": null,
+    "students_sampled": 30,
+    "jobs_sampled": 500
+  },
+  {
+    "model": "e5",
+    "hf_name": "intfloat/e5-base-v2",
+    "model_size_mb": 417.6,
+    "load_seconds": 21.33,
+    "total_embed_seconds": 11.356,
+    "section_embed_seconds": {
+      "skills": 3.242,
+      "experience": 2.761,
+      "education": 0.854,
+      "projects": 2.346,
+      "certifications": 2.153
+    },
+    "single_item_latency_ms": 152.3,
+    "memory_delta_load_mb": 35.2,
+    "memory_delta_embed_mb": 206.3,
+    "overall_score_mean": 0.7351,
+    "overall_score_std": 0.0129,
+    "overall_score_max": 0.7963,
+    "recall_at_k": null,
+    "students_sampled": 30,
+    "jobs_sampled": 500
+  },
+  {
+    "model": "bge",
+    "hf_name": "BAAI/bge-base-en-v1.5",
+    "model_size_mb": 417.6,
+    "load_seconds": 18.98,
+    "total_embed_seconds": 10.232,
+    "section_embed_seconds": {
+      "skills": 2.402,
+      "experience": 2.609,
+      "education": 0.749,
+      "projects": 2.4,
+      "certifications": 2.072
+    },
+    "single_item_latency_ms": 12.8,
+    "memory_delta_load_mb": 77.5,
+    "memory_delta_embed_mb": -148.2,
+    "overall_score_mean": 0.4177,
+    "overall_score_std": 0.0286,
+    "overall_score_max": 0.5384,
+    "recall_at_k": null,
+    "students_sampled": 30,
+    "jobs_sampled": 500
+  }
+]
