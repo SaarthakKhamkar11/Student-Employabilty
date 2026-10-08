@@ -4,7 +4,19 @@ Audit date: 2026-10-08 · Commit audited: `a5f758c` ("PHASE 1", identical to `or
 
 Everything below was either read directly or executed in this session. Nothing was changed except creating this file.
 
-> **Snapshot note:** this audit describes the repo as of `a5f758c`. Several issues have since been fixed: Python 3.11 venv plus `requirements.txt`, repo-root-relative paths, and the NaN missing-count bug (I-6). For current status, see [`PROGRESS.md`](PROGRESS.md).
+> **Snapshot note:** this audit describes the repo as of `a5f758c`. Since then:
+> - Several issues have been fixed: Python 3.11 venv plus `requirements.txt`, repo-root-relative paths, and the NaN missing-count bug (I-6).
+> - In Phase 2, `preprocess.py` was split into `config/` + `src/`, and the benchmark moved to `src/embeddings/`.
+> - The master spec arrived after this audit and is now at [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Its §43 phase plan supersedes the proposed plan in §N below.
+>
+> For current status, see [`PROGRESS.md`](PROGRESS.md).
+>
+> **Spec §42 summary (Working / Broken / Missing / Needs Refactoring / Needs Research Validation):**
+> - **Working:** data pipeline (byte-reproducible); SBERT / E5 / BGE cost benchmark.
+> - **Broken (at audit time):** quality-report missing counts (I-6, since fixed); CWD-relative paths (since fixed).
+> - **Missing:** TF-IDF baseline, ADR.md, relevance labels, backend, database, frontend, agents, tests (backend, agents and tests were added in Phase 2).
+> - **Needs refactoring:** monolithic `preprocess.py` (split in Phase 2); benchmark methodology (I-3, I-4, I-5).
+> - **Needs research validation:** every model-quality claim (no labels yet); job-data provenance (I-7); skill extraction miss rate (I-8).
 
 ---
 

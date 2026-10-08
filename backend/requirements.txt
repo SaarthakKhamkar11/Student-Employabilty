@@ -1,0 +1,10 @@
+# Backend runtime (Python 3.11). Pinned to versions verified in Phases 2-3 (numpy/pandas match
+# the root requirements.txt, which produced the byte-identical processed data).
+fastapi==0.143.0
+uvicorn==0.54.0
+pydantic==2.14.0
+pydantic-settings==2.15.0
+google-genai==2.29.0
+psycopg[binary]==3.3.6
+numpy==2.0.2
+pandas==2.3.3

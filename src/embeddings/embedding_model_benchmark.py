@@ -227,7 +227,8 @@ def run(students_path, jobs_path, out_dir, eval_labels_path=None,
 
 
 if __name__ == "__main__":
-    root = os.path.dirname(os.path.abspath(__file__))  # defaults work from any CWD
+    # repo root (this file is src/embeddings/), so defaults work from any CWD
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ap = argparse.ArgumentParser()
     ap.add_argument("--students", default=os.path.join(root, "data", "processed", "students_unified.csv"))
     ap.add_argument("--jobs", default=os.path.join(root, "data", "processed", "jobs.csv"))
