@@ -1,19 +1,22 @@
 #PHASE1
 
-import csv
 import os
 import re
+import sys
 
 import pandas as pd
 
 # ---------------------------------------------------------------------------
-# Paths (edit these)
+# Paths: resolved from the repo root, so the script runs from any directory.
+# Raw files go in data/raw/ (gitignored), or point RAW_DATA_DIR elsewhere.
 # ---------------------------------------------------------------------------
-STUDENT_XLSX = "Student Data.xlsx"
-RESUME_CSV = "UpdatedResumeDataSet.csv"
-JOBS_CSV = "job_descriptions.csv"
-OUT_DIR = "data/processed"
-RESULTS_DIR = "results"
+ROOT = os.path.dirname(os.path.abspath(__file__))
+RAW_DIR = os.environ.get("RAW_DATA_DIR", os.path.join(ROOT, "data", "raw"))
+STUDENT_XLSX = os.path.join(RAW_DIR, "Student Data.xlsx")
+RESUME_CSV = os.path.join(RAW_DIR, "UpdatedResumeDataSet.csv")
+JOBS_CSV = os.path.join(RAW_DIR, "job_descriptions.csv")
+OUT_DIR = os.path.join(ROOT, "data", "processed")
+RESULTS_DIR = os.path.join(ROOT, "results")
 JOB_SAMPLE_N = 5000
 SEED = 42
 
@@ -214,7 +217,8 @@ def ingest_jobs(path, sample_n=JOB_SAMPLE_N, seed=SEED):
 # ---------------------------------------------------------------------------
 def write_quality_report(jobs_df, students_df, out_path):
     def missing(df, cols):
-        return {c: int(df[c].astype(str).str.strip().eq("").sum()) for c in cols}
+        # NaN (e.g. empty Excel cells) must count as missing, not as the string "nan"
+        return {c: int((df[c].isna() | df[c].astype(str).str.strip().eq("")).sum()) for c in cols}
 
     report = f"""# Data Quality Report
 ## Jobs (sampled from real job_descriptions.csv)
@@ -240,6 +244,11 @@ def write_quality_report(jobs_df, students_df, out_path):
 # Run everything
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    missing_inputs = [p for p in (STUDENT_XLSX, RESUME_CSV, JOBS_CSV) if not os.path.exists(p)]
+    if missing_inputs:
+        sys.exit("Raw input file(s) not found:\n  " + "\n  ".join(missing_inputs)
+                 + "\nPut them in data/raw/ or set RAW_DATA_DIR (see PROGRESS.md).")
+
     placement = ingest_placement_cell(STUDENT_XLSX)                       # 120 real rows
     kaggle = ingest_kaggle_resumes(RESUME_CSV)                            # 166 real rows
     students = pd.concat([placement, kaggle], ignore_index=True)

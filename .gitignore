@@ -1,0 +1,11 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Raw source data: too large for git (job_descriptions.csv is 695 MB) and
+# contains real student records. See PROGRESS.md for where to get it.
+data/raw/
+
+# OS / editor
+.DS_Store

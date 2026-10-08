@@ -10,4 +10,4 @@
 - Duplicate student_id: 0
 - Rows by source_dataset: {'kaggle_resume_dataset': 166, 'placement_cell': 120}
 - Rows by branch: {'Computer Science and Engineering (Data Science)': 130, 'Information Technology': 90, 'Non-Engineering / Management': 50, 'Civil Engineering': 6, 'Mechanical Engineering': 5, 'Electrical Engineering': 5}
-- Missing fields (blank, never fabricated): {'student_id': 0, 'degree': 65, 'branch': 0, 'graduation_year': 166, 'gender': 166, 'avg_cgpa_sem5': 166, 'achievements': 166, 'career_interests': 0, 'domain': 0, 'internship_raw': 0, 'technical_projects': 166, 'skills_raw': 33, 'certifications': 166, 'country': 166, 'source_dataset': 0, 'is_synthetic': 0, 'synthetic_fields': 286}
+- Missing fields (blank, never fabricated): {'student_id': 0, 'degree': 65, 'branch': 0, 'graduation_year': 166, 'gender': 166, 'avg_cgpa_sem5': 166, 'achievements': 216, 'career_interests': 0, 'domain': 0, 'internship_raw': 57, 'technical_projects': 167, 'skills_raw': 35, 'certifications': 173, 'country': 166, 'source_dataset': 0, 'is_synthetic': 0, 'synthetic_fields': 286}

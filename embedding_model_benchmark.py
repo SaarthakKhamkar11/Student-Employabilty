@@ -227,10 +227,11 @@ def run(students_path, jobs_path, out_dir, eval_labels_path=None,
 
 
 if __name__ == "__main__":
+    root = os.path.dirname(os.path.abspath(__file__))  # defaults work from any CWD
     ap = argparse.ArgumentParser()
-    ap.add_argument("--students", default="data/processed/students_unified.csv")
-    ap.add_argument("--jobs", default="data/processed/jobs.csv")
-    ap.add_argument("--out_dir", default="results")
+    ap.add_argument("--students", default=os.path.join(root, "data", "processed", "students_unified.csv"))
+    ap.add_argument("--jobs", default=os.path.join(root, "data", "processed", "jobs.csv"))
+    ap.add_argument("--out_dir", default=os.path.join(root, "results"))
     ap.add_argument("--eval_labels", default=None,
                      help="CSV: student_id,job_id,relevant -- optional, for real precision/recall/F1")
     ap.add_argument("--sample_students", type=int, default=30)

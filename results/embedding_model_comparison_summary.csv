@@ -1,4 +1,4 @@
 model,model_size_mb,total_embed_seconds,single_item_latency_ms,overall_score_mean,recall_at_k
-sbert,417.7,14.878,1611.2,0.1686,
-e5,417.6,11.356,152.3,0.7351,
-bge,417.6,10.232,12.8,0.4177,
+sbert,417.7,15.642,1660.1,0.1686,
+e5,417.6,11.773,166.9,0.7351,
+bge,417.6,10.601,14.2,0.4177,

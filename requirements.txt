@@ -1,0 +1,14 @@
+# Python 3.11. Pinned to the versions verified in Phase 1 (see PROJECT_AUDIT.md).
+# Setup: python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
+
+# Data pipeline (preprocess.py)
+numpy==2.0.2
+pandas==2.3.3
+openpyxl==3.1.5
+scikit-learn==1.6.1
+
+# Embedding benchmark (embedding_model_benchmark.py)
+sentence-transformers==5.1.2
+transformers==4.57.6
+torch==2.8.0
+psutil==7.2.2
