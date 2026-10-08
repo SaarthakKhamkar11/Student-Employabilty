@@ -194,7 +194,7 @@ The owner asked for every Phase 4 prerequisite to be cleared.
 - **Docker end to end:** all three containers healthy; the migration applied; `POST /requests` with a resume containing an injection and an email gave a deterministic route (profile → matching → learning → explainability; no job intelligence).
   - Profile is `not_implemented` ("Not yet evaluated"); its dependants are skipped ("Insufficient evidence"); status `failed`; `persisted: true`.
   - The Postgres row contains neither the email nor the resume text.
-- **Secrets:** `.env` is gitignored. `git grep -i "sk-ant"` and `git grep --untracked -E "sk-ant|AIza"` find nothing, and neither does git history. No generated secrets and no resume email appear in the container logs.
+- **Secrets:** `.env` is gitignored. A search for Anthropic- and Google-style API key prefixes (as the Phase 3 prompt asked) finds nothing in tracked files, new files or git history. No generated secrets and no resume email appear in the container logs.
 
 **Deviations from the Phase 3 prompt:**
 - Gemini (google-genai 2.29.0) instead of Anthropic, with `GEMINI_API_KEY` in the repo-root `.env`, not `backend/.env`.
