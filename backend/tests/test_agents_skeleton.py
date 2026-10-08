@@ -1,4 +1,4 @@
-"""Agent roster: six agents with roles and contracts; the five specialists are still honest shells."""
+"""Agent roster: six agents with roles and contracts; unimplemented specialists are honest shells."""
 
 import asyncio
 import re
@@ -13,8 +13,8 @@ from app.tools.registry import ToolRegistry
 
 SPEC_AGENTS = {"supervisor", "profile_agent", "job_intelligence_agent", "matching_agent",
                "learning_agent", "explainability_agent"}
+SHELLS = sorted(c.name for c in SPECIALIST_CLASSES if not c.implemented)
 VALID_INPUT = {
-    "profile_agent": {"student_id": "S00001"},
     "job_intelligence_agent": {"job_id": "J0000001"},
     "matching_agent": {"mode": "jobs_for_student", "student_id": "S00001"},
     "learning_agent": {"student_id": "S00001", "job_id": "J0000001", "skill_gaps": ["SQL"]},
@@ -40,7 +40,7 @@ def test_each_agent_declares_role_contracts_and_planned_tools(cls):
     assert cls.planned_tools and cls.implemented_in_phase
 
 
-@pytest.mark.parametrize("name", sorted(c.name for c in SPECIALIST_CLASSES))
+@pytest.mark.parametrize("name", SHELLS)
 def test_shell_terminates_honestly_without_network(agents, state, name, monkeypatch):
     def no_network(*args, **kwargs):
         raise AssertionError("specialist shells must not open network connections")
@@ -61,9 +61,9 @@ def test_no_model_is_hard_coded_as_the_winner():
     assert hits == []
 
 
-def test_only_the_supervisor_is_implemented_and_it_may_delegate_to_all_specialists():
+def test_implemented_agents_and_delegation_rights():
     implemented = {cls.name for cls in AGENT_CLASSES if cls.implemented}
-    assert implemented == {"supervisor"}
+    assert implemented == {"supervisor", "profile_agent", "job_intelligence_agent"}  # Phases 3-5
     supervisor = next(cls for cls in AGENT_CLASSES if cls.name == "supervisor")
     assert set(supervisor.allowed_delegates) == SPEC_AGENTS - {"supervisor"}
     assert all(not cls.allowed_delegates for cls in SPECIALIST_CLASSES)

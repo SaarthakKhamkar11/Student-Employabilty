@@ -1,0 +1,307 @@
+{
+  "1_placement_S00001": {
+    "student_id": "S00001",
+    "source": "stored_record",
+    "degree": "B.E/ B.Tech",
+    "branch": "Computer Science and Engineering (Data Science)",
+    "graduation_year": 2027,
+    "avg_cgpa_sem5": 8.3,
+    "education": "B.E/ B.Tech Computer Science and Engineering (Data Science)",
+    "skills": [
+      {
+        "raw": "C",
+        "canonical": "C",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "C++",
+        "canonical": "C++",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Python",
+        "canonical": "Python",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Java",
+        "canonical": "Java",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Data Analytics",
+        "canonical": "Data Analysis",
+        "category": "technical",
+        "method": "alias",
+        "evidence": null
+      },
+      {
+        "raw": "Time Series Analysis",
+        "canonical": "Time Series Analysis",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Computer Vision",
+        "canonical": "Computer Vision",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Scikit-learn",
+        "canonical": "Scikit-learn",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "TensorFlow",
+        "canonical": "TensorFlow",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Keras",
+        "canonical": "Keras",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "OpenCV",
+        "canonical": "OpenCV",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Folium",
+        "canonical": "Folium",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null
+      },
+      {
+        "raw": "ARIMA",
+        "canonical": "ARIMA",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null
+      },
+      {
+        "raw": "Prophet",
+        "canonical": "Prophet",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null
+      },
+      {
+        "raw": "Flask",
+        "canonical": "Flask",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "FastAPI",
+        "canonical": "FastAPI",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Tableau",
+        "canonical": "Tableau",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "PowerBI",
+        "canonical": "Power BI",
+        "category": "technical",
+        "method": "alias",
+        "evidence": null
+      },
+      {
+        "raw": "SQL",
+        "canonical": "SQL",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Git",
+        "canonical": "Git",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "HuggingFace",
+        "canonical": "Hugging Face",
+        "category": "technical",
+        "method": "alias",
+        "evidence": null
+      },
+      {
+        "raw": "Roboflow",
+        "canonical": "Roboflow",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null
+      },
+      {
+        "raw": "Figma",
+        "canonical": "Figma",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "AutoCAD",
+        "canonical": "AutoCAD",
+        "category": "technical",
+        "method": "exact",
+        "evidence": null
+      },
+      {
+        "raw": "Canva",
+        "canonical": "Canva",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null
+      }
+    ],
+    "projects": [
+      "Crop Disease Detection and Prediction, Crime Forecasting using Spatio-Temporal Techniques, Fraud Detection System for Small Business, Cultural Artifact Detector and Counterfeit Detector, Cyber Security Compliance Chatbot, Similar Clothing Recommender."
+    ],
+    "experience": [
+      "Utkarsh Minds - Applied Python Developer - 2 months - Remote"
+    ],
+    "certifications": [
+      "Completion of Internship - Utkarsh Minds, Certificate of Conference Paper Presentation - IJCACI, SIH 2024 Grand Finalist - SIH"
+    ],
+    "achievements": "SIH 2024 Grand Finale - 15/12/2024, IJCACI Conference Presentation - 05/09/2025",
+    "career_interests": "Placements",
+    "domain": "Data Analyst and Machine Learning",
+    "pii": {
+      "detector_version": "pii-regex-v1",
+      "detected": false,
+      "counts": {}
+    },
+    "missing_fields": [],
+    "extractor_version": "profile-v1"
+  },
+  "2_civil_S00256": {
+    "student_id": "S00256",
+    "source": "stored_record+resume",
+    "degree": "B.E",
+    "branch": "Civil Engineering",
+    "graduation_year": "Not yet evaluated",
+    "avg_cgpa_sem5": "Not yet evaluated",
+    "education": "B.E in Civil Engineering Civil Engineering Chennai, Tamil Nadu Anna University QA/QC Civil Engineer QA/QC Civil Engineer",
+    "skills": "Skill not detected",
+    "projects": "Not detected",
+    "experience": [
+      "company - Ray Engineering Limited description - Mumbai, India. Consultancy: Jacobs Engineering India Limits. (United States Company) Client: Glaxo Smith Kline (GSK), Nashik, India. Position: QA/QC Civil Engineer. Project Summary: Glaxo Smith Kline (GSK) is British multinational pharmaceutical Company in India. USD 150 million Building project of GSK. The Project involving in Medicine Manufacturing plant, Effluent Treatment plant (ETP), Effluent Drain line and storm water line. Duties & Responsib"
+    ],
+    "certifications": "Not detected",
+    "achievements": "Not yet evaluated",
+    "career_interests": "Civil Engineer",
+    "domain": "Core Civil",
+    "pii": {
+      "detector_version": "pii-regex-v1",
+      "detected": false,
+      "counts": {}
+    },
+    "missing_fields": [
+      "graduation_year",
+      "avg_cgpa_sem5",
+      "skills",
+      "projects",
+      "certifications",
+      "achievements"
+    ],
+    "extractor_version": "profile-v1"
+  },
+  "3_datascience_S00200": {
+    "student_id": "S00200",
+    "source": "stored_record+resume",
+    "degree": "Not detected",
+    "branch": "Computer Science and Engineering (Data Science)",
+    "graduation_year": "Not yet evaluated",
+    "avg_cgpa_sem5": "Not yet evaluated",
+    "education": "Data Science Assurance Associate Data Science Assurance Associate - Ernst & Young LLP",
+    "skills": [
+      {
+        "raw": "JAVASCRIPT- Exprience - 24 months",
+        "canonical": "JavaScript",
+        "category": "technical",
+        "method": "exact",
+        "evidence": "24 months"
+      },
+      {
+        "raw": "jQuery- Exprience - 24 months",
+        "canonical": "jQuery",
+        "category": "technical",
+        "method": "exact",
+        "evidence": "24 months"
+      },
+      {
+        "raw": "Python- Exprience - 24 months",
+        "canonical": "Python",
+        "category": "technical",
+        "method": "exact",
+        "evidence": "24 months"
+      }
+    ],
+    "projects": [
+      "(USA CLIENTS)",
+      "TEXT ANALYTICS - MOTOR VEHICLE CUSTOMER REVIEW DATA",
+      "Received customer feedback survey data for past one year. Performed sentiment (Positive, Negative & Neutral) and time series analysis on customer comments across all 4 categories.",
+      "Created heat map of terms by survey category based on frequency of words",
+      "Extracted Positive and Negative words across all the Survey categories and plotted Word cloud.",
+      "Created customized tableau dashboards for effective reporting and visualizations.",
+      "CHATBOT",
+      "Developed a user friendly chatbot for one of our Products which handle simple questions about hours of operation, reservation options and so on.",
+      "This chat bot serves entire product related questions. Giving overview of tool via QA platform and also give recommendation responses so that user question to build chain of relevant answer.",
+      "This too has intelligence to build the pipeline of questions as per user requirement and asks the relevant /recommended questions.",
+      "Tools & Technologies: Python, Natural language processing, NLTK, spacy, topic modelling, Sentiment analysis, Word Embedding, scikit-learn, JavaScript/JQuery, SqlServer",
+      "INFORMATION GOVERNANCE",
+      "Organizations to make informed decisions about all of the information they store. The integrated Information Governance portfolio synthesizes intelligence across unstructured data sources and facilitates action to ensure organizations are best positioned to counter information risk.",
+      "Scan data from multiple sources of for"
+    ],
+    "experience": [
+      "company - Ernst & Young LLP description - Fraud Investigations and Dispute Services Assurance TECHNOLOGY ASSISTED REVIEW TAR (Technology Assisted Review) assists in accelerating the review process and run analytics and generate reports. * Core member of a team helped in developing automated review platform tool from scratch for assisting E discovery domain, this tool implements predictive coding and topic modelling by automating reviews, resulting in reduced labor costs and time spent during the"
+    ],
+    "certifications": "Not detected",
+    "achievements": "Not yet evaluated",
+    "career_interests": "Data Science",
+    "domain": "Data Science",
+    "pii": {
+      "detector_version": "pii-regex-v1",
+      "detected": false,
+      "counts": {}
+    },
+    "missing_fields": [
+      "degree",
+      "graduation_year",
+      "avg_cgpa_sem5",
+      "certifications",
+      "achievements"
+    ],
+    "extractor_version": "profile-v1"
+  }
+}

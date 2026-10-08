@@ -44,6 +44,16 @@ def sup_settings() -> Settings:
     )
 
 
+@pytest.fixture(scope="session")
+def embedder():
+    """One fitted interim TF-IDF provider for the whole test session (fitting takes about 1 s)."""
+    from app.embeddings.provider import TfidfBaselineProvider
+
+    provider = TfidfBaselineProvider(Settings(_env_file=None).processed_data_dir)
+    provider.describe()
+    return provider
+
+
 @pytest.fixture
 def state() -> AgentState:
     return AgentState(request_id=f"req-{uuid.uuid4().hex[:8]}", task_type="test")

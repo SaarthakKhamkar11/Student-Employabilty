@@ -183,16 +183,19 @@ def _leaves(value):
         yield value
 
 
-def test_real_shells_yield_sentinels_never_invented_results(sup_settings):
-    store = InMemoryAgentRunStore()
-    supervisor = build_agents(settings=sup_settings, store=store)["supervisor"]
+def test_real_agents_yield_evidence_or_sentinels_never_invented_results(sup_settings, embedder):
+    from app.db.profile_repository import InMemoryProfileRepository
+
+    supervisor = build_agents(settings=sup_settings, store=InMemoryAgentRunStore(),
+                              profile_repo=InMemoryProfileRepository(), embedder=embedder)["supervisor"]
     resp = handle(supervisor, RESUME_REQUEST)
+    assert resp.results["profile_agent"].status == "success"  # Phase 4: real
+    assert resp.results["matching_agent"].termination_reason == "not_implemented"  # still a shell
     assert resp.status == "failed"
-    assert resp.results["profile_agent"].termination_reason == "not_implemented"
-    assert resp.results["matching_agent"].skip_reason == "upstream profile_agent failed"
-    for outcome in resp.results.values():
-        assert outcome.data in (NOT_YET_EVALUATED, INSUFFICIENT_EVIDENCE)
-    assert set(resp.model_versions.values()) == {NOT_YET_EVALUATED}
+    for name in ("matching_agent", "learning_agent", "explainability_agent"):
+        assert resp.results[name].data in (NOT_YET_EVALUATED, INSUFFICIENT_EVIDENCE)
+    assert resp.model_versions["embedding_model"] == "tfidf_baseline"  # recorded, interim (ADR 0004)
+    assert resp.model_versions["matching_model"] == NOT_YET_EVALUATED
 
 
 def test_unroutable_question_runs_no_agent_and_says_so(sup_settings):

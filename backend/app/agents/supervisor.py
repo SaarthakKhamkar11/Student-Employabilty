@@ -212,16 +212,18 @@ class SupervisorAgent(BaseAgent):
                 return None, f"upstream {upstream} {done.status if done else 'did not run'}"
         try:
             if name == "profile_agent":
-                if not (req.student_id or req.resume_text):
+                if not (req.student_id or req.resume_provided):
                     return None, "no student_id or resume provided"
-                return ProfileAgentInput(student_id=req.student_id, resume_text=req.resume_text), None
+                return ProfileAgentInput(student_id=req.student_id, resume_text=req.resume_text,
+                                         resume_file_b64=req.resume_file_b64,
+                                         resume_filename=req.resume_filename), None
             if name == "job_intelligence_agent":
                 if not (req.job_id or req.jd_text):
                     return None, "no job_id or job description provided"
                 return JobIntelligenceInput(job_id=req.job_id, jd_text=req.jd_text), None
             if name == "matching_agent":
-                student_id = req.student_id or _data_field(outcomes, "profile_agent", "student", "student_id")
-                job_id = req.job_id or _data_field(outcomes, "job_intelligence_agent", "job", "job_id")
+                student_id = req.student_id or _data_field(outcomes, "profile_agent", "profile", "student_id")
+                job_id = req.job_id or _data_field(outcomes, "job_intelligence_agent", "posting", "job_id")
                 if req.actor == "company" or routing.task_type in ("rank_candidates_for_job", "ingest_job"):
                     if not job_id:
                         return None, "no job_id available for candidate matching"

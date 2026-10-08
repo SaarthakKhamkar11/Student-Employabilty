@@ -126,7 +126,7 @@ def validate_decision(decision: LLMRoutingDecision, req: SupervisorInput) -> str
         return "a resume upload must go through profile_agent"
     if req.request_kind == "jd_upload" and "job_intelligence_agent" not in agents:
         return "a job description upload must go through job_intelligence_agent"
-    if "profile_agent" in agents and not (req.student_id or req.resume_text):
+    if "profile_agent" in agents and not (req.student_id or req.resume_provided):
         return "profile_agent chosen without a student_id or resume"
     if "job_intelligence_agent" in agents and not (req.job_id or req.jd_text):
         return "job_intelligence_agent chosen without a job_id or job description"
@@ -146,7 +146,7 @@ def build_router_prompt(req: SupervisorInput) -> str:
         "explicit_task_type": req.task_type,
         "has_student_id": bool(req.student_id),
         "has_job_id": bool(req.job_id),
-        "resume_provided": bool(req.resume_text),
+        "resume_provided": req.resume_provided,
         "job_description_provided": bool(req.jd_text),
     }
     parts = ["Request metadata (trusted, produced by the application):", json.dumps(metadata, indent=2)]

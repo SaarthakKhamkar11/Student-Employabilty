@@ -1,6 +1,6 @@
 # ADR 0002: No embedding model is used before Phase 6 selects one from evidence
 
-**Status:** Accepted, 2026-10-08
+**Status:** Superseded by [ADR 0004](0004-interim-tfidf-embeddings.md) on 2026-10-08 (the owner's Phase 4 instruction)
 
 **Context.** The spec's Profile and Job Intelligence agents (Phases 4 and 5) "generate embeddings using the currently selected embedding model". But no model is selected until Phase 6's Model Selection Engine compares SBERT, E5, BGE, a small model and the baselines on one labelled benchmark (spec §6–§9). The rules forbid choosing a model without evidence (rules 2, 8, 20). The only existing measurements (`results/embedding_model_comparison.json`) are cost-only, and their score means cannot be compared across models (`PROJECT_AUDIT.md` I-3).
 

@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     llm_max_retries: int = Field(1, ge=0, le=1)  # Phase 3 rule: at most one retry
     supervisor_timeout_seconds: float = Field(300.0, gt=0)
 
+    # Embeddings: the interim TF-IDF baseline until Phase 6 selects a model from evidence (docs/adr/0004).
+    embedding_model: Literal["tfidf_baseline"] = "tfidf_baseline"
+    processed_data_dir: Path = REPO_ROOT / "data" / "processed"
+
+    # Owner decision (docs/adr/0009): hide postings whose stated gender preference excludes the student.
+    # Unknown student gender is never hidden. Set JOB_GENDER_VISIBILITY_FILTER=false to show every posting.
+    job_gender_visibility_filter: bool = True
+
     # Agent runtime limits (BaseAgent). Every agent run terminates within these.
     agent_max_retries: int = Field(2, ge=0, le=10)
     agent_max_steps: int = Field(10, ge=1, le=100)

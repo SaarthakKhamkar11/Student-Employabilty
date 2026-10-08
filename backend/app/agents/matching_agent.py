@@ -10,6 +10,7 @@ from typing import Any, ClassVar
 from pydantic import BaseModel
 
 from app.agents.base import GUARDRAILS, AgentContext, BaseAgent
+from app.matching.features import FEATURE_NAMES
 from app.schemas.agent_io import CallTool, Finish, MatchingAgentInput, MatchingAgentOutput
 
 
@@ -35,6 +36,10 @@ class MatchingAgent(BaseAgent):
         "identify_skill_gaps",
         "evaluate_model",
     )
+    # The features Phase 7 may build, validated against protected attributes (app/matching/features.py).
+    # The employer's stated gender preference is checked BEFORE scoring by the check_job_visibility tool;
+    # it is never a feature (tests/test_fairness_guards.py scans this file for it).
+    planned_features: ClassVar[tuple[str, ...]] = FEATURE_NAMES
     input_schema = MatchingAgentInput
     output_schema = MatchingAgentOutput
     implemented = False

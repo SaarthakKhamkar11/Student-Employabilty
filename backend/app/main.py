@@ -1,30 +1,51 @@
 """FastAPI entrypoint.
 
-Phase 3: the Supervisor is live behind POST /requests. The specialist agents
-are still shells, so every result reads "Not yet evaluated" or "Insufficient
-evidence" until their phases. There is no authentication yet (Phase 16):
-ports bind to 127.0.0.1 only.
+Phase 3: the Supervisor is live behind POST /requests. Phase 4: the Profile
+Agent is live, including POST /requests/resume-file for .pdf/.docx/.txt
+uploads. The other specialists are still shells, so their results read "Not
+yet evaluated" or "Insufficient evidence" until their phases. There is no
+authentication yet (Phase 16): ports bind to 127.0.0.1 only.
 """
 
 import asyncio
+import base64
+import logging
+from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 
 from app.agents import SupervisorAgent, build_agents
 from app.core.config import get_settings
-from app.core.logging import configure_logging
+from app.core.logging import configure_logging, get_logger, log_event
 from app.db.store import build_store
+from app.embeddings.provider import build_embedding_provider
 from app.llm import build_llm_client
+from app.profile.text_extraction import MAX_FILE_BYTES
 from app.schemas.agent_io import SupervisorInput, SupervisorResponse
 
 settings = get_settings()
 configure_logging(settings.log_level)
 
-app = FastAPI(title="Student Employability Intelligence API", version="0.3.0")
+embedder = build_embedding_provider(settings)
 # Fails at startup if an agent declares an unregistered tool.
-agents = build_agents(llm=build_llm_client(settings), store=build_store(settings))
+agents = build_agents(llm=build_llm_client(settings), store=build_store(settings), embedder=embedder)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Fit the embedding model once at startup, so the first request doesn't pay for it.
+    try:
+        version, dimension = await asyncio.to_thread(embedder.describe)
+        log_event(get_logger("main"), "embedding_model_ready", model_name=embedder.model_name,
+                  model_version=version, dimension=dimension, interim=embedder.interim)
+    except Exception as exc:  # the API still serves; profiles are then saved without embeddings
+        log_event(get_logger("main"), "embedding_model_unavailable", logging.ERROR, error=type(exc).__name__)
+    yield
+
+
+app = FastAPI(title="Student Employability Intelligence API", version="0.4.0", lifespan=lifespan)
 
 
 def get_supervisor() -> SupervisorAgent:
@@ -82,6 +103,18 @@ async def list_agents() -> list[dict]:
 @app.post("/requests", response_model=SupervisorResponse)
 async def create_request(body: SupervisorInput, supervisor: SupervisorAgent = Depends(get_supervisor)):
     return await supervisor.handle(body)
+
+
+@app.post("/requests/resume-file", response_model=SupervisorResponse)
+async def upload_resume_file(file: UploadFile = File(...), student_id: str | None = Form(None),
+                             supervisor: SupervisorAgent = Depends(get_supervisor)):
+    """Upload a .pdf, .docx or .txt resume. The Profile Agent's extract_text tool reads it."""
+    data = await file.read(MAX_FILE_BYTES + 1)
+    if len(data) > MAX_FILE_BYTES:
+        raise HTTPException(413, f"file larger than {MAX_FILE_BYTES // (1024 * 1024)} MB")
+    request = SupervisorInput(actor="student", request_kind="resume_upload", student_id=student_id or None,
+                              resume_file_b64=base64.b64encode(data).decode(), resume_filename=file.filename)
+    return await supervisor.handle(request)
 
 
 @app.get("/requests/{request_id}")

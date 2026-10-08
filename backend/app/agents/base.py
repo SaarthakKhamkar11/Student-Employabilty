@@ -41,7 +41,7 @@ from app.schemas.agent_io import (
     TerminationReason, ToolCallRecord,
 )
 from app.schemas.agent_state import INSUFFICIENT_EVIDENCE, NOT_YET_EVALUATED, AgentState, Unavailable
-from app.tools.registry import ToolError, ToolRegistry, default_registry
+from app.tools.registry import ToolError, ToolInputRejected, ToolRegistry, default_registry
 
 # Appended to every agent's system instructions.
 GUARDRAILS = (
@@ -139,6 +139,26 @@ class BaseAgent(ABC):
         """Upper bound for one run(). Orchestrators that run other agents override this."""
         return self.settings.agent_timeout_seconds
 
+    def max_steps(self) -> int:
+        """Upper bound on decisions in one run. A pipeline agent sets it from its pipeline length."""
+        return self.settings.agent_max_steps
+
+    def max_tool_retries(self) -> int:
+        """Retries per tool call after the first attempt (ToolInputRejected is never retried)."""
+        return self.settings.agent_max_retries
+
+    def continue_after_failure(self, ctx: AgentContext, action: CallTool, error: AgentError) -> bool:
+        """Whether the run may carry on after a tool failed all retries (graceful degradation).
+
+        Default False: stop and call fallback(). If True, the error stays in ctx.errors and the
+        run, if it finishes, ends "partial" instead of "success".
+        """
+        return False
+
+    def record_error(self, ctx: AgentContext, code: str, message: str, tool_name: str | None = None) -> AgentError:
+        """Record a problem that makes the run partial without stopping it (e.g. a failed validation)."""
+        return self._error(ctx, code, message, tool_name)
+
     # -- the only entrypoint ---------------------------------------------------
     async def run(self, state: AgentState, input_payload: BaseModel | dict[str, Any]) -> AgentOutput:
         started_at = _utcnow()
@@ -175,7 +195,7 @@ class BaseAgent(ABC):
             return self._fail(ctx, "invalid_input",
                               f"input failed {self.input_schema.__name__} validation ({exc.error_count()} error(s))")
 
-        for _ in range(self.settings.agent_max_steps):
+        for _ in range(self.max_steps()):
             ctx.step += 1
             try:
                 action = _action_adapter.validate_python(await self.decide_next_action(ctx))
@@ -195,22 +215,26 @@ class BaseAgent(ABC):
                                   tool_name=action.tool_name)
             try:
                 output = await self._call_tool_with_retry(ctx, action)
+            except ToolInputRejected as exc:  # deterministic: the input itself is unusable
+                return self._fail(ctx, "invalid_input", str(exc), tool_name=action.tool_name)
             except ToolError as exc:
                 error = self._error(ctx, "tool_failure", str(exc), tool_name=action.tool_name)
+                if self.continue_after_failure(ctx, action, error):
+                    continue
                 return await self._run_fallback(ctx, error)
             ctx.observations.append(ToolObservation(action.tool_name, action.arguments, output))
 
-        return self._fail(ctx, "max_steps", f"no finish after {self.settings.agent_max_steps} steps")
+        return self._fail(ctx, "max_steps", f"no finish after {self.max_steps()} steps")
 
     async def _call_tool_with_retry(self, ctx: AgentContext, action: CallTool) -> BaseModel:
-        max_attempts = 1 + self.settings.agent_max_retries
+        max_attempts = 1 + self.max_tool_retries()
         start = time.perf_counter()
         for attempt in range(1, max_attempts + 1):
             try:
                 output = await self.registry.call(action.tool_name, action.arguments,
                                                   timeout=self.settings.tool_timeout_seconds)
             except ToolError as exc:
-                if attempt == max_attempts:
+                if attempt == max_attempts or isinstance(exc, ToolInputRejected):
                     ctx.tool_calls.append(ToolCallRecord(tool_name=action.tool_name, attempts=attempt, success=False,
                                                          duration_ms=_ms(start), error_type=type(exc).__name__))
                     raise
@@ -241,7 +265,8 @@ class BaseAgent(ABC):
         except ValidationError as exc:
             return self._fail(ctx, "invalid_output",
                               f"output failed {self.output_schema.__name__} validation ({exc.error_count()} error(s))")
-        return _Outcome("success", validated.model_dump(mode="json"), "finished",
+        # Errors recorded without stopping (degraded stages, failed checks) make the result partial.
+        return _Outcome("partial" if ctx.errors else "success", validated.model_dump(mode="json"), "finished",
                         handoff=self.next_handoff(ctx, validated))
 
     def _coerce_input(self, payload: BaseModel | dict[str, Any]) -> BaseModel:

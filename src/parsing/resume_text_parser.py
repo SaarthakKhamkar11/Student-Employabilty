@@ -21,7 +21,10 @@ def extract_skills(text):
         return []
     out = []
     for p in re.split(r"[,\n]", chunk):
-        p = re.sub(r"^[A-Za-z /]+:\s*", "", p).strip(" .-*")
+        # Bug fix (Phase 4, docs/adr/0006): strip(" .-*") turned ".NET" into "NET". A leading
+        # dot is now kept when a letter follows it; trailing dots are still removed.
+        p = re.sub(r"^[A-Za-z /]+:\s*", "", p).strip(" -*").rstrip(".")
+        p = p if re.match(r"\.[A-Za-z]", p) else p.lstrip(". -*")
         if p and len(p) < 60 and not p.lower().startswith("company"):
             out.append(p)
     return out[:40]
@@ -37,5 +40,10 @@ def parse_resume(raw_text):
 
 
 def guess_degree(education_raw):
-    m = DEGREE_RE.search(education_raw or "")
-    return m.group(1).upper().replace(" ", "") if m else ""
+    for m in DEGREE_RE.finditer(education_raw or ""):
+        # Bug fix (Phase 5, docs/adr/0006): IGNORECASE also matched the ordinary word "be"
+        # ("should be proficient" -> "BE"). Bare "be"/"Be" is skipped; "BE", "B.E", "b.e" still match.
+        if m.group(1).replace(" ", "").lower() == "be" and not m.group(1).isupper():
+            continue
+        return m.group(1).upper().replace(" ", "")
+    return ""

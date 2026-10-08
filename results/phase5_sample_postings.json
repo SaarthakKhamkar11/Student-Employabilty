@@ -1,0 +1,543 @@
+{
+  "J0655990": {
+    "job_id": "J0655990",
+    "source": "stored_record",
+    "job_title": "Executive Assistant",
+    "role": "Office Manager",
+    "company_name": "Molina Healthcare",
+    "location": "San Salvador",
+    "country": "El Salvador",
+    "work_type": "Contract",
+    "salary_range": "$57K-$101K",
+    "job_portal": "LinkedIn",
+    "job_description": "Office Managers oversee daily office operations, including supervising staff, managing facilities, and ensuring efficient workflow. They may also handle budgeting, resource allocation, and office policies.",
+    "qualification_required": "BBA",
+    "experience_required": "4 to 13 Years",
+    "responsibilities": [
+      "Oversee office operations, including facilities management and vendor relations.",
+      "Manage office budgets and expenses.",
+      "Coordinate office events and logistics."
+    ],
+    "min_degree": "BBA",
+    "min_degree_level": 2,
+    "min_experience_years": 4.0,
+    "max_experience_years": 13.0,
+    "skills": [
+      {
+        "raw": "Office administration and management",
+        "canonical": "Office administration and management",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Budgeting and expense tracking",
+        "canonical": "Budgeting and expense tracking",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Team coordination and supervision",
+        "canonical": "Team coordination and supervision",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Facility management",
+        "canonical": "Facility management",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Vendor and supplier relations",
+        "canonical": "Vendor and supplier relations",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      }
+    ],
+    "required_skills": [
+      "Office administration and management",
+      "Budgeting and expense tracking",
+      "Team coordination and supervision",
+      "Facility management",
+      "Vendor and supplier relations"
+    ],
+    "preferred_skills": "Skill not detected",
+    "skill_split": {
+      "inferred": true,
+      "method": "required-preferred-heuristic-v2",
+      "note": "Required/preferred split is INFERRED by heuristic (docs/adr/0008), not ground truth. The source data does not state which skills are required."
+    },
+    "visibility": {
+      "gender_preference": "both"
+    },
+    "duplicate_check": {
+      "detector_version": "job-dedup-v1",
+      "near_duplicate_of": null,
+      "similarity": null
+    },
+    "pii": {
+      "detector_version": "pii-regex-v2",
+      "detected": false,
+      "counts": {}
+    },
+    "missing_fields": [
+      "preferred_skills"
+    ],
+    "extractor_version": "job-v1"
+  },
+  "J0334731": {
+    "job_id": "J0334731",
+    "source": "stored_record",
+    "job_title": "Urban Planner",
+    "role": "Transportation Planner",
+    "company_name": "International Flavors & Fragrances",
+    "location": "Quito",
+    "country": "Ecuador",
+    "work_type": "Full-Time",
+    "salary_range": "$64K-$109K",
+    "job_portal": "Glassdoor",
+    "job_description": "Transportation Planners design and manage transportation systems. They optimize traffic flow, plan public transit routes, and enhance overall transportation efficiency.",
+    "qualification_required": "BBA",
+    "experience_required": "4 to 14 Years",
+    "responsibilities": [
+      "Specialize in transportation infrastructure and traffic management.",
+      "Design efficient transportation networks.",
+      "Address traffic congestion and improve public transit systems."
+    ],
+    "min_degree": "BBA",
+    "min_degree_level": 2,
+    "min_experience_years": 4.0,
+    "max_experience_years": 14.0,
+    "skills": [
+      {
+        "raw": "Transportation planning",
+        "canonical": "Transportation planning",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Traffic engineering",
+        "canonical": "Traffic engineering",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "GIS proficiency",
+        "canonical": "GIS proficiency",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Public transportation",
+        "canonical": "Public transportation",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Project management",
+        "canonical": "Project Management",
+        "category": "soft",
+        "method": "exact",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      }
+    ],
+    "required_skills": [
+      "Transportation planning",
+      "Public transportation"
+    ],
+    "preferred_skills": [
+      "Traffic engineering",
+      "GIS proficiency",
+      "Project Management"
+    ],
+    "skill_split": {
+      "inferred": true,
+      "method": "required-preferred-heuristic-v2",
+      "note": "Required/preferred split is INFERRED by heuristic (docs/adr/0008), not ground truth. The source data does not state which skills are required."
+    },
+    "visibility": {
+      "gender_preference": "female"
+    },
+    "duplicate_check": {
+      "detector_version": "job-dedup-v1",
+      "near_duplicate_of": null,
+      "similarity": null
+    },
+    "pii": {
+      "detector_version": "pii-regex-v2",
+      "detected": false,
+      "counts": {}
+    },
+    "missing_fields": [],
+    "extractor_version": "job-v1"
+  },
+  "J0558153": {
+    "job_id": "J0558153",
+    "source": "stored_record",
+    "job_title": "Social Worker",
+    "role": "Child Welfare Worker",
+    "company_name": "Tenet Healthcare",
+    "location": "Bridgetown",
+    "country": "Barbados",
+    "work_type": "Intern",
+    "salary_range": "$62K-$104K",
+    "job_portal": "ZipRecruiter",
+    "job_description": "Work with at-risk children and families, assess needs, provide support, and ensure child safety and well-being.",
+    "qualification_required": "BA",
+    "experience_required": "0 to 10 Years",
+    "responsibilities": [
+      "Provide support and counseling to children and families in need.",
+      "Assess child safety and risk factors.",
+      "Develop and implement care plans and interventions."
+    ],
+    "min_degree": "BA",
+    "min_degree_level": 2,
+    "min_experience_years": 0.0,
+    "max_experience_years": 10.0,
+    "skills": [
+      {
+        "raw": "Child welfare policies and regulations",
+        "canonical": "Child welfare policies and regulations",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Child protective services",
+        "canonical": "Child protective services",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Child development",
+        "canonical": "Child development",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Crisis intervention",
+        "canonical": "Crisis intervention",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Case management",
+        "canonical": "Case management",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Cultural competence",
+        "canonical": "Cultural competence",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Interviewing and assessment skills",
+        "canonical": "Interviewing and assessment skills",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Court procedures",
+        "canonical": "Court procedures",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Documentation Empathy Communication skills",
+        "canonical": "Documentation Empathy Communication skills",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      }
+    ],
+    "required_skills": [
+      "Child development"
+    ],
+    "preferred_skills": [
+      "Child welfare policies and regulations",
+      "Child protective services",
+      "Crisis intervention",
+      "Case management",
+      "Cultural competence",
+      "Interviewing and assessment skills",
+      "Court procedures",
+      "Documentation Empathy Communication skills"
+    ],
+    "skill_split": {
+      "inferred": true,
+      "method": "required-preferred-heuristic-v2",
+      "note": "Required/preferred split is INFERRED by heuristic (docs/adr/0008), not ground truth. The source data does not state which skills are required."
+    },
+    "visibility": {
+      "gender_preference": "both"
+    },
+    "duplicate_check": {
+      "detector_version": "job-dedup-v1",
+      "near_duplicate_of": null,
+      "similarity": null
+    },
+    "pii": {
+      "detector_version": "pii-regex-v2",
+      "detected": false,
+      "counts": {}
+    },
+    "missing_fields": [],
+    "extractor_version": "job-v1"
+  },
+  "J0133288": {
+    "job_id": "J0133288",
+    "source": "stored_record",
+    "job_title": "UX/UI Designer",
+    "role": "User Interface Designer",
+    "company_name": "Bharat Electronics Limited",
+    "location": "Kinshasa",
+    "country": "Democratic Republic Of Congo",
+    "work_type": "Part-Time",
+    "salary_range": "$60K-$81K",
+    "job_portal": "USAJOBS",
+    "job_description": "User Interface Designers focus on the visual and interactive aspects of digital interfaces. They design layouts, buttons, and other elements to ensure a cohesive and visually appealing user interface.",
+    "qualification_required": "MBA",
+    "experience_required": "3 to 15 Years",
+    "responsibilities": [
+      "Create visually appealing user interfaces (UI) that align with brand aesthetics and enhance user engagement.",
+      "Design interface elements and interactive components.",
+      "Ensure UI consistency across digital platforms."
+    ],
+    "min_degree": "MBA",
+    "min_degree_level": 3,
+    "min_experience_years": 3.0,
+    "max_experience_years": 15.0,
+    "skills": [
+      {
+        "raw": "UI design principles and best practices",
+        "canonical": "UI design principles and best practices",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Graphic design tools (e.g., Adobe Photoshop, Illustrator)",
+        "canonical": "Graphic design tools",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Typography and color theory",
+        "canonical": "Typography and color theory",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Visual design and layout",
+        "canonical": "Visual design and layout",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Responsive design",
+        "canonical": "Responsive design",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      }
+    ],
+    "required_skills": [
+      "Visual design and layout"
+    ],
+    "preferred_skills": [
+      "UI design principles and best practices",
+      "Graphic design tools",
+      "Typography and color theory",
+      "Responsive design"
+    ],
+    "skill_split": {
+      "inferred": true,
+      "method": "required-preferred-heuristic-v2",
+      "note": "Required/preferred split is INFERRED by heuristic (docs/adr/0008), not ground truth. The source data does not state which skills are required."
+    },
+    "visibility": {
+      "gender_preference": "both"
+    },
+    "duplicate_check": {
+      "detector_version": "job-dedup-v1",
+      "near_duplicate_of": null,
+      "similarity": null
+    },
+    "pii": {
+      "detector_version": "pii-regex-v2",
+      "detected": false,
+      "counts": {}
+    },
+    "missing_fields": [],
+    "extractor_version": "job-v1"
+  },
+  "J0660625": {
+    "job_id": "J0660625",
+    "source": "stored_record",
+    "job_title": "Event Planner",
+    "role": "Event Coordinator",
+    "company_name": "Cardinal Health",
+    "location": "Ouagadougou",
+    "country": "Burkina Faso",
+    "work_type": "Temporary",
+    "salary_range": "$64K-$118K",
+    "job_portal": "FlexJobs",
+    "job_description": "Event Coordinators plan and execute various events, including conferences, parties, and meetings, managing logistics, budgets, and vendor relationships.",
+    "qualification_required": "B.Com",
+    "experience_required": "0 to 12 Years",
+    "responsibilities": [
+      "Plan and coordinate events, including logistics, vendor management, and timelines.",
+      "Communicate with clients to understand event goals and preferences.",
+      "Ensure smooth event execution."
+    ],
+    "min_degree": "B.COM",
+    "min_degree_level": 2,
+    "min_experience_years": 0.0,
+    "max_experience_years": 12.0,
+    "skills": [
+      {
+        "raw": "Event planning",
+        "canonical": "Event planning",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Vendor coordination",
+        "canonical": "Vendor coordination",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Budget management",
+        "canonical": "Budget management",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      },
+      {
+        "raw": "Marketing and promotion",
+        "canonical": "Marketing and promotion",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "preferred",
+        "requirement_basis": "not_named_in_role_text"
+      },
+      {
+        "raw": "Logistics",
+        "canonical": "Logistics",
+        "category": "unclassified",
+        "method": "unmapped",
+        "evidence": null,
+        "requirement": "required",
+        "requirement_basis": "named_in_role_text"
+      }
+    ],
+    "required_skills": [
+      "Event planning",
+      "Vendor coordination",
+      "Budget management",
+      "Logistics"
+    ],
+    "preferred_skills": [
+      "Marketing and promotion"
+    ],
+    "skill_split": {
+      "inferred": true,
+      "method": "required-preferred-heuristic-v2",
+      "note": "Required/preferred split is INFERRED by heuristic (docs/adr/0008), not ground truth. The source data does not state which skills are required."
+    },
+    "visibility": {
+      "gender_preference": "male"
+    },
+    "duplicate_check": {
+      "detector_version": "job-dedup-v1",
+      "near_duplicate_of": null,
+      "similarity": null
+    },
+    "pii": {
+      "detector_version": "pii-regex-v2",
+      "detected": false,
+      "counts": {}
+    },
+    "missing_fields": [],
+    "extractor_version": "job-v1"
+  }
+}

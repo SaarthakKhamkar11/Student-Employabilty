@@ -9,6 +9,11 @@ NOT_YET_EVALUATED = "Not yet evaluated"
 INSUFFICIENT_EVIDENCE = "Insufficient evidence"
 Unavailable = Literal["Not yet evaluated", "Insufficient evidence"]
 
+# Extraction outcomes (spec §5.2): absence of evidence is not evidence of absence.
+SKILL_NOT_DETECTED = "Skill not detected"  # the skills were looked for and none were found
+NOT_DETECTED = "Not detected"  # a field was looked for and not found
+# NOT_YET_EVALUATED also covers a field no extractor looks for yet, or a stage that failed.
+
 WorkflowStatus = Literal["pending", "running", "success", "partial", "failed"]
 
 

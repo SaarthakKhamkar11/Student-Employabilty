@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel
 
 from app.core.config import Settings
-from app.core.logging import redact
+from app.core.logging import PII_KEYS, redact
 
 
 class AgentRunRecord(BaseModel):
@@ -36,7 +36,7 @@ class AgentRunRecord(BaseModel):
     def scrubbed(self) -> "AgentRunRecord":
         data = self.model_dump()
         for key in ("agent_results", "errors"):
-            data[key] = redact(data[key], max_text=None)
+            data[key] = redact(data[key], max_text=None, keys=PII_KEYS)
         return AgentRunRecord.model_validate(data)
 
 

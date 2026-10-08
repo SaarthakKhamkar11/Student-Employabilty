@@ -23,8 +23,8 @@ from app.schemas.agent_io import (
     MatchingAgentOutput, MatchResult, ProfileAgentOutput, SkillGap,
 )
 from app.schemas.agent_state import ModelVersionInfo
-from app.schemas.job import JobRecord
-from app.schemas.student import StudentRecord
+from app.schemas.job import JobPosting, JobVisibility
+from app.schemas.student import NormalizedSkill, StudentProfile
 from app.tools.registry import ToolRegistry
 
 STUDENT = dict(student_id="S00001", branch="Computer Science and Engineering (Data Science)",
@@ -37,9 +37,22 @@ JOB = dict(job_id="J0000001", source_job_id="1", experience_required="0 to 2 Yea
            company_name="Example Co", gender_preference="both")
 
 STUB_OUTPUTS: dict[str, BaseModel] = {
-    "profile_agent": ProfileAgentOutput(student=StudentRecord(**STUDENT), normalized_skills=["python", "sql"]),
-    "job_intelligence_agent": JobIntelligenceOutput(job=JobRecord(**JOB), required_skills=["python", "sql"],
-                                                    preferred_skills=["power bi"]),
+    "profile_agent": ProfileAgentOutput(profile=StudentProfile(
+        student_id="S00001", source="stored_record", degree="B.E/ B.Tech", branch=STUDENT["branch"],
+        graduation_year=2027, avg_cgpa_sem5=8.5, education="B.E/ B.Tech", projects="Not detected",
+        skills=[NormalizedSkill(raw="Python", canonical="Python", category="technical", method="exact")],
+        experience="Not detected", certifications="Not detected", achievements="Not detected",
+        career_interests="Data analysis", domain=STUDENT["domain"], pii="Not yet evaluated",
+        missing_fields=[], extractor_version="test")),
+    "job_intelligence_agent": JobIntelligenceOutput(posting=JobPosting(
+        job_id="J0000001", source="stored_record", job_title="Data Analyst", role="Data Analyst",
+        company_name="Example Co", location="Mumbai", country="India", work_type="Intern", salary_range="$50K-$70K",
+        job_portal="Test", job_description="Analyse data.", qualification_required="B.Tech",
+        experience_required="0 to 2 Years", responsibilities=["Reports."], min_degree="B.TECH", min_degree_level=2,
+        min_experience_years=0.0, max_experience_years=2.0, skills="Not yet evaluated",
+        required_skills="Not yet evaluated", preferred_skills="Not yet evaluated", skill_split="Not yet evaluated",
+        visibility=JobVisibility(gender_preference="both"), duplicate_check="Not yet evaluated",
+        pii="Not yet evaluated", missing_fields=[], extractor_version="test")),
     "matching_agent": MatchingAgentOutput(matches=[MatchResult(
         student_id="S00001", job_id="J0000001", rank=1, model_versions=ModelVersionInfo(),
         skill_gap=SkillGap(matched_skills=["python", "sql"], partially_related_skills=[], missing_skills=["power bi"],

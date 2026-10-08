@@ -21,10 +21,11 @@ def test_health_reports_no_llm_calls_and_leaks_no_secrets():
             assert secret.get_secret_value() not in resp.text
 
 
-def test_agents_endpoint_lists_the_supervisor_and_five_shells():
+def test_agents_endpoint_reports_implementation_status():
     agents = {a["name"]: a for a in client.get("/agents").json()}
-    assert len(agents) == 6 and agents["supervisor"]["implemented"] is True
-    assert all(not a["implemented"] for name, a in agents.items() if name != "supervisor")
+    assert len(agents) == 6
+    assert {n for n, a in agents.items() if a["implemented"]} == {"supervisor", "profile_agent", "job_intelligence_agent"}
+    assert len(agents["profile_agent"]["allowed_tools"]) == 11
 
 
 def test_post_request_runs_the_supervisor_and_the_run_can_be_read_back():

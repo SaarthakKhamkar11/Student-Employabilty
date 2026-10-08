@@ -2,7 +2,7 @@
 
 The call wrapper guarantees three things to the agent loop (spec §3, §20, §21):
 1. outputs are validated against the tool's declared Pydantic schema;
-2. every call is logged (name, redacted arguments, duration, success);
+2. every call is logged (name, argument shapes but never their text, duration, success);
 3. failures surface only as ToolValidationError or ToolExecutionError,
    never as bare exceptions.
 
@@ -19,7 +19,7 @@ from typing import Any, Callable
 
 from pydantic import BaseModel, ValidationError
 
-from app.core.logging import get_logger, log_event, redact_text
+from app.core.logging import get_logger, log_event, redact_text, summarize_arguments
 
 logger = get_logger("tools")
 
@@ -36,6 +36,10 @@ class ToolValidationError(ToolError):
 
 class ToolExecutionError(ToolError):
     """The tool raised, timed out, or is not registered."""
+
+
+class ToolInputRejected(ToolError):
+    """The tool refused its input for a deterministic reason (e.g. an empty resume). Never retried."""
 
 
 @dataclass(frozen=True)
@@ -88,10 +92,11 @@ class ToolRegistry:
             raw = await self._execute(spec, kwargs, timeout)
             output = self._validate_output(spec, raw)
         except ToolError as exc:
-            log_event(logger, "tool_call", logging.WARNING, tool_name=name, arguments=arguments,
+            log_event(logger, "tool_call", logging.WARNING, tool_name=name, arguments=summarize_arguments(arguments),
                       duration_ms=_ms(start), success=False, error_type=type(exc).__name__)
             raise
-        log_event(logger, "tool_call", tool_name=name, arguments=arguments, duration_ms=_ms(start), success=True)
+        log_event(logger, "tool_call", tool_name=name, arguments=summarize_arguments(arguments),
+                  duration_ms=_ms(start), success=True)
         return output
 
     @staticmethod

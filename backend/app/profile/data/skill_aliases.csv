@@ -1,0 +1,352 @@
+alias,canonical,category,evidence
+Python,Python,technical,students_unified.csv:106; jobs.csv:196
+python3,Python,technical,common abbreviation (not in data)
+python 3,Python,technical,common abbreviation (not in data)
+Java,Java,technical,students_unified.csv:52; jobs.csv:149
+core java,Java,technical,students_unified.csv:8
+java se,Java,technical,common abbreviation (not in data)
+C,C,technical,students_unified.csv:27
+c language,C,technical,common abbreviation (not in data)
+c programming,C,technical,students_unified.csv:1
+C++,C++,technical,students_unified.csv:28
+cpp,C++,technical,students_unified.csv:1
+c plus plus,C++,technical,common abbreviation (not in data)
+C#,C#,technical,students_unified.csv:6
+c sharp,C#,technical,common abbreviation (not in data)
+csharp,C#,technical,common abbreviation (not in data)
+JavaScript,JavaScript,technical,students_unified.csv:32; jobs.csv:85
+js,JavaScript,technical,students_unified.csv:7
+java script,JavaScript,technical,common abbreviation (not in data)
+es6,JavaScript,technical,common abbreviation (not in data)
+es6+,JavaScript,technical,students_unified.csv:2
+TypeScript,TypeScript,technical,students_unified.csv:3
+ts,TypeScript,technical,common abbreviation (not in data)
+SQL,SQL,technical,students_unified.csv:81; jobs.csv:182
+structured query language,SQL,technical,jobs.csv:12
+R,R,technical,students_unified.csv:3; jobs.csv:35
+r programming,R,technical,common abbreviation (not in data)
+r language,R,technical,common abbreviation (not in data)
+PHP,PHP,technical,students_unified.csv:6
+Go,Go,technical,students_unified.csv:1
+golang,Go,technical,common abbreviation (not in data)
+Bash,Bash,technical,jobs.csv:22
+shell scripting,Bash,technical,students_unified.csv:1
+shell script,Bash,technical,common abbreviation (not in data)
+unix shell,Bash,technical,common abbreviation (not in data)
+MATLAB,MATLAB,technical,students_unified.csv:4
+HTML,HTML,technical,students_unified.csv:45; jobs.csv:128
+html5,HTML,technical,students_unified.csv:8
+CSS,CSS,technical,students_unified.csv:45; jobs.csv:128
+css3,CSS,technical,students_unified.csv:5
+React,React,technical,students_unified.csv:15; jobs.csv:64
+react.js,React,technical,students_unified.csv:7
+reactjs,React,technical,common abbreviation (not in data)
+react js,React,technical,students_unified.csv:1
+Node.js,Node.js,technical,students_unified.csv:13; jobs.csv:40
+node,Node.js,technical,students_unified.csv:1; jobs.csv:40
+nodejs,Node.js,technical,common abbreviation (not in data)
+node js,Node.js,technical,students_unified.csv:1
+Express.js,Express.js,technical,students_unified.csv:7
+express,Express.js,technical,students_unified.csv:2; jobs.csv:29
+expressjs,Express.js,technical,students_unified.csv:1
+express js,Express.js,technical,common abbreviation (not in data)
+Next.js,Next.js,technical,students_unified.csv:8
+nextjs,Next.js,technical,students_unified.csv:1
+next js,Next.js,technical,students_unified.csv:2
+Angular,Angular,technical,students_unified.csv:1; jobs.csv:52
+angularjs,Angular,technical,students_unified.csv:2
+angular.js,Angular,technical,common abbreviation (not in data)
+angular js,Angular,technical,students_unified.csv:1
+Vue.js,Vue.js,technical,jobs.csv:26
+vue,Vue.js,technical,jobs.csv:26
+vuejs,Vue.js,technical,common abbreviation (not in data)
+vue js,Vue.js,technical,common abbreviation (not in data)
+Django,Django,technical,students_unified.csv:8; jobs.csv:29
+Flask,Flask,technical,students_unified.csv:16
+FastAPI,FastAPI,technical,students_unified.csv:13
+fast api,FastAPI,technical,students_unified.csv:1
+Spring Boot,Spring Boot,technical,students_unified.csv:6
+springboot,Spring Boot,technical,students_unified.csv:2
+spring-boot,Spring Boot,technical,common abbreviation (not in data)
+Spring,Spring,technical,students_unified.csv:4; jobs.csv:11
+spring framework,Spring,technical,students_unified.csv:1
+spring mvc,Spring,technical,students_unified.csv:1
+Hibernate,Hibernate,technical,students_unified.csv:4
+jQuery,jQuery,technical,students_unified.csv:13
+Bootstrap,Bootstrap,technical,students_unified.csv:11
+Tailwind CSS,Tailwind CSS,technical,students_unified.csv:7
+tailwind,Tailwind CSS,technical,students_unified.csv:2
+tailwindcss,Tailwind CSS,technical,common abbreviation (not in data)
+ASP.NET,ASP.NET,technical,students_unified.csv:5
+asp .net,ASP.NET,technical,common abbreviation (not in data)
+asp.net mvc,ASP.NET,technical,students_unified.csv:3
+.NET,.NET,technical,students_unified.csv:4
+dot net,.NET,technical,common abbreviation (not in data)
+dotnet,.NET,technical,common abbreviation (not in data)
+.net framework,.NET,technical,students_unified.csv:1
+Java EE,Java EE,technical,jobs.csv:14
+j2ee,Java EE,technical,students_unified.csv:3
+jee,Java EE,technical,common abbreviation (not in data)
+Servlets,Servlets,technical,jobs.csv:14
+servlet,Servlets,technical,students_unified.csv:3
+JSP,JSP,technical,students_unified.csv:4; jobs.csv:14
+AJAX,AJAX,technical,students_unified.csv:8; jobs.csv:13
+REST APIs,REST APIs,technical,students_unified.csv:13
+rest api,REST APIs,technical,students_unified.csv:4
+rest,REST APIs,technical,students_unified.csv:4
+restful api,REST APIs,technical,jobs.csv:10
+restful apis,REST APIs,technical,students_unified.csv:2; jobs.csv:14
+restful services,REST APIs,technical,common abbreviation (not in data)
+MERN Stack,MERN Stack,technical,students_unified.csv:12
+mern,MERN Stack,technical,students_unified.csv:2
+Web Development,Web Development,technical,students_unified.csv:5; jobs.csv:56
+web designing,Web Development,technical,common abbreviation (not in data)
+web design,Web Development,technical,students_unified.csv:1; jobs.csv:67
+Pandas,Pandas,technical,students_unified.csv:28
+NumPy,NumPy,technical,students_unified.csv:27
+SciPy,SciPy,technical,students_unified.csv:1
+Matplotlib,Matplotlib,technical,students_unified.csv:19
+Seaborn,Seaborn,technical,students_unified.csv:13
+Scikit-learn,Scikit-learn,technical,students_unified.csv:16; jobs.csv:17
+sklearn,Scikit-learn,technical,students_unified.csv:2
+scikit learn,Scikit-learn,technical,common abbreviation (not in data)
+scikitlearn,Scikit-learn,technical,common abbreviation (not in data)
+TensorFlow,TensorFlow,technical,students_unified.csv:11; jobs.csv:17
+Keras,Keras,technical,students_unified.csv:4
+PyTorch,PyTorch,technical,students_unified.csv:7; jobs.csv:17
+torch,PyTorch,technical,common abbreviation (not in data)
+OpenCV,OpenCV,technical,students_unified.csv:6
+open cv,OpenCV,technical,common abbreviation (not in data)
+LangChain,LangChain,technical,students_unified.csv:9
+LangGraph,LangGraph,technical,students_unified.csv:6
+Hugging Face,Hugging Face,technical,common abbreviation (not in data)
+huggingface,Hugging Face,technical,students_unified.csv:2
+Transformers,Transformers,technical,students_unified.csv:3
+Statsmodels,Statsmodels,technical,students_unified.csv:1
+Machine Learning,Machine Learning,technical,students_unified.csv:53; jobs.csv:30
+ml,Machine Learning,technical,students_unified.csv:4
+Deep Learning,Deep Learning,technical,students_unified.csv:30; jobs.csv:13
+dl,Deep Learning,technical,students_unified.csv:1
+Natural Language Processing,Natural Language Processing,technical,students_unified.csv:4
+nlp,Natural Language Processing,technical,students_unified.csv:16
+Computer Vision,Computer Vision,technical,students_unified.csv:13
+Data Analysis,Data Analysis,technical,students_unified.csv:17; jobs.csv:514
+data analytics,Data Analysis,technical,students_unified.csv:2; jobs.csv:14
+Data Visualization,Data Visualization,technical,students_unified.csv:10; jobs.csv:101
+data visualisation,Data Visualization,technical,common abbreviation (not in data)
+Data Cleaning & Preprocessing,Data Cleaning & Preprocessing,technical,students_unified.csv:14
+data cleaning,Data Cleaning & Preprocessing,technical,students_unified.csv:3
+data preprocessing,Data Cleaning & Preprocessing,technical,students_unified.csv:5; jobs.csv:30
+data cleaning and preprocessing,Data Cleaning & Preprocessing,technical,students_unified.csv:4
+Feature Engineering,Feature Engineering,technical,students_unified.csv:11
+Statistics,Statistics,technical,students_unified.csv:2
+statistics & probability basics,Statistics,technical,students_unified.csv:7
+statistics and probability,Statistics,technical,students_unified.csv:3
+statistics & probability,Statistics,technical,students_unified.csv:3
+statistical analysis,Statistics,technical,students_unified.csv:3; jobs.csv:99
+Generative AI,Generative AI,technical,students_unified.csv:8
+genai,Generative AI,technical,common abbreviation (not in data)
+gen ai,Generative AI,technical,common abbreviation (not in data)
+Large Language Models,Large Language Models,technical,common abbreviation (not in data)
+llm,Large Language Models,technical,students_unified.csv:1
+llms,Large Language Models,technical,students_unified.csv:7
+Retrieval-Augmented Generation,Retrieval-Augmented Generation,technical,students_unified.csv:2
+rag,Retrieval-Augmented Generation,technical,students_unified.csv:7
+rag pipelines,Retrieval-Augmented Generation,technical,students_unified.csv:1
+Agentic AI,Agentic AI,technical,students_unified.csv:4
+Exploratory Data Analysis,Exploratory Data Analysis,technical,students_unified.csv:4
+eda,Exploratory Data Analysis,technical,students_unified.csv:6
+Artificial Intelligence,Artificial Intelligence,technical,students_unified.csv:2
+ai,Artificial Intelligence,technical,students_unified.csv:1
+Convolutional Neural Networks,Convolutional Neural Networks,technical,common abbreviation (not in data)
+cnn,Convolutional Neural Networks,technical,common abbreviation (not in data)
+cnns,Convolutional Neural Networks,technical,students_unified.csv:2
+Multi-Agent Systems,Multi-Agent Systems,technical,students_unified.csv:2
+Model Context Protocol,Model Context Protocol,technical,common abbreviation (not in data)
+mcp,Model Context Protocol,technical,students_unified.csv:3
+Data Engineering,Data Engineering,technical,students_unified.csv:2
+Data Modeling,Data Modeling,technical,students_unified.csv:2; jobs.csv:105
+data modelling,Data Modeling,technical,common abbreviation (not in data)
+Time Series Analysis,Time Series Analysis,technical,students_unified.csv:2
+time series,Time Series Analysis,technical,common abbreviation (not in data)
+time series forecasting,Time Series Analysis,technical,students_unified.csv:1
+Model Evaluation,Model Evaluation,technical,students_unified.csv:3; jobs.csv:13
+Predictive Modeling,Predictive Modeling,technical,common abbreviation (not in data)
+predictive modelling,Predictive Modeling,technical,common abbreviation (not in data)
+Big Data,Big Data,technical,jobs.csv:46
+Data Structures & Algorithms,Data Structures & Algorithms,technical,students_unified.csv:8
+dsa,Data Structures & Algorithms,technical,students_unified.csv:24
+data structures and algorithms,Data Structures & Algorithms,technical,students_unified.csv:2
+data structures,Data Structures & Algorithms,technical,students_unified.csv:3
+data structure,Data Structures & Algorithms,technical,students_unified.csv:1
+Object-Oriented Programming,Object-Oriented Programming,technical,students_unified.csv:4
+oop,Object-Oriented Programming,technical,students_unified.csv:8
+oops,Object-Oriented Programming,technical,students_unified.csv:3
+object oriented programming,Object-Oriented Programming,technical,students_unified.csv:1
+Database Management Systems,Database Management Systems,technical,jobs.csv:43
+dbms,Database Management Systems,technical,students_unified.csv:6
+database management system,Database Management Systems,technical,students_unified.csv:3
+database management,Database Management Systems,technical,students_unified.csv:3; jobs.csv:109
+Databases,Databases,technical,students_unified.csv:5; jobs.csv:31
+database,Databases,technical,students_unified.csv:12; jobs.csv:291
+Operating Systems,Operating Systems,technical,students_unified.csv:1
+Computer Networks,Computer Networks,technical,common abbreviation (not in data)
+computer networking,Computer Networks,technical,common abbreviation (not in data)
+networking,Computer Networks,technical,students_unified.csv:3; jobs.csv:20
+Git,Git,technical,students_unified.csv:24; jobs.csv:40
+GitHub,GitHub,technical,students_unified.csv:10
+Docker,Docker,technical,students_unified.csv:16; jobs.csv:33
+Kubernetes,Kubernetes,technical,students_unified.csv:2; jobs.csv:33
+k8s,Kubernetes,technical,common abbreviation (not in data)
+AWS,AWS,technical,students_unified.csv:11; jobs.csv:78
+amazon web services,AWS,technical,common abbreviation (not in data)
+Microsoft Azure,Microsoft Azure,technical,students_unified.csv:1
+azure,Microsoft Azure,technical,students_unified.csv:2; jobs.csv:78
+Google Cloud Platform,Google Cloud Platform,technical,common abbreviation (not in data)
+gcp,Google Cloud Platform,technical,students_unified.csv:1; jobs.csv:22
+google cloud,Google Cloud Platform,technical,common abbreviation (not in data)
+Linux,Linux,technical,students_unified.csv:5
+Power BI,Power BI,technical,students_unified.csv:20; jobs.csv:60
+powerbi,Power BI,technical,students_unified.csv:11
+power-bi,Power BI,technical,common abbreviation (not in data)
+ms power bi,Power BI,technical,common abbreviation (not in data)
+Tableau,Tableau,technical,students_unified.csv:11; jobs.csv:70
+Excel,Excel,technical,students_unified.csv:29; jobs.csv:51
+ms excel,Excel,technical,students_unified.csv:1
+microsoft excel,Excel,technical,students_unified.csv:1
+advanced excel,Excel,technical,students_unified.csv:1
+vlookup,Excel,technical,students_unified.csv:2
+MS Office,MS Office,technical,students_unified.csv:8; jobs.csv:37
+microsoft office,MS Office,technical,students_unified.csv:2; jobs.csv:20
+ms-office,MS Office,technical,common abbreviation (not in data)
+Jira,Jira,technical,students_unified.csv:2; jobs.csv:10
+Figma,Figma,technical,students_unified.csv:3; jobs.csv:42
+AutoCAD,AutoCAD,technical,students_unified.csv:7; jobs.csv:145
+auto cad,AutoCAD,technical,students_unified.csv:2
+CATIA,CATIA,technical,students_unified.csv:3
+STAAD Pro,STAAD Pro,technical,common abbreviation (not in data)
+staad.pro,STAAD Pro,technical,common abbreviation (not in data)
+staad,STAAD Pro,technical,common abbreviation (not in data)
+Revit,Revit,technical,jobs.csv:19
+Photoshop,Photoshop,technical,students_unified.csv:3; jobs.csv:45
+adobe photoshop,Photoshop,technical,students_unified.csv:1; jobs.csv:45
+SAP,SAP,technical,jobs.csv:14
+SAP BusinessObjects,SAP BusinessObjects,technical,common abbreviation (not in data)
+sap bo,SAP BusinessObjects,technical,students_unified.csv:3
+Salesforce,Salesforce,technical,students_unified.csv:1; jobs.csv:27
+Hadoop,Hadoop,technical,students_unified.csv:7; jobs.csv:46
+Apache Spark,Apache Spark,technical,students_unified.csv:3
+spark,Apache Spark,technical,students_unified.csv:3; jobs.csv:46
+PySpark,PySpark,technical,students_unified.csv:5
+Kafka,Kafka,technical,students_unified.csv:5
+apache kafka,Kafka,technical,students_unified.csv:1
+Airflow,Airflow,technical,students_unified.csv:1
+apache airflow,Airflow,technical,students_unified.csv:2
+Selenium,Selenium,technical,students_unified.csv:3; jobs.csv:51
+MySQL,MySQL,technical,students_unified.csv:24; jobs.csv:32
+my sql,MySQL,technical,students_unified.csv:2
+PostgreSQL,PostgreSQL,technical,students_unified.csv:9
+postgres,PostgreSQL,technical,students_unified.csv:1
+postgre sql,PostgreSQL,technical,common abbreviation (not in data)
+MongoDB,MongoDB,technical,students_unified.csv:18; jobs.csv:19
+mongo,MongoDB,technical,common abbreviation (not in data)
+mongo db,MongoDB,technical,common abbreviation (not in data)
+Oracle,Oracle,technical,students_unified.csv:8; jobs.csv:46
+oracle database,Oracle,technical,common abbreviation (not in data)
+oracle db,Oracle,technical,common abbreviation (not in data)
+Microsoft SQL Server,Microsoft SQL Server,technical,common abbreviation (not in data)
+ms sql server,Microsoft SQL Server,technical,students_unified.csv:7
+sql server,Microsoft SQL Server,technical,students_unified.csv:2; jobs.csv:32
+mssql,Microsoft SQL Server,technical,common abbreviation (not in data)
+Firebase,Firebase,technical,students_unified.csv:3
+Redis,Redis,technical,students_unified.csv:1
+Vercel,Vercel,technical,students_unified.csv:5
+CI/CD,CI/CD,technical,students_unified.csv:3; jobs.csv:22
+ci-cd,CI/CD,technical,common abbreviation (not in data)
+ci cd,CI/CD,technical,common abbreviation (not in data)
+cicd,CI/CD,technical,common abbreviation (not in data)
+DevOps,DevOps,technical,students_unified.csv:5; jobs.csv:16
+ETL,ETL,technical,students_unified.csv:7; jobs.csv:27
+Enterprise Resource Planning,Enterprise Resource Planning,technical,students_unified.csv:3
+erp,Enterprise Resource Planning,technical,students_unified.csv:1; jobs.csv:32
+UI/UX Design,UI/UX Design,technical,jobs.csv:28
+ui/ux,UI/UX Design,technical,students_unified.csv:3; jobs.csv:28
+ux/ui,UI/UX Design,technical,jobs.csv:59
+ui ux,UI/UX Design,technical,common abbreviation (not in data)
+ui-ux,UI/UX Design,technical,common abbreviation (not in data)
+SEO,SEO,technical,jobs.csv:324
+search engine optimization,SEO,technical,jobs.csv:46
+Software Testing,Software Testing,technical,common abbreviation (not in data)
+testing,Software Testing,technical,students_unified.csv:3; jobs.csv:450
+Manual Testing,Manual Testing,technical,students_unified.csv:1
+Automation Testing,Automation Testing,technical,students_unified.csv:1
+test automation,Automation Testing,technical,jobs.csv:72
+Drafting,Drafting,technical,students_unified.csv:3; jobs.csv:80
+Backend Development,Backend Development,technical,students_unified.csv:3; jobs.csv:24
+backend,Backend Development,technical,students_unified.csv:2; jobs.csv:53
+APIs,APIs,technical,students_unified.csv:2; jobs.csv:26
+api,APIs,technical,jobs.csv:83
+api integration,APIs,technical,students_unified.csv:2; jobs.csv:13
+Version Control,Version Control,technical,students_unified.csv:2; jobs.csv:40
+NoSQL,NoSQL,technical,students_unified.csv:4; jobs.csv:37
+Supabase,Supabase,technical,students_unified.csv:3
+VS Code,VS Code,technical,students_unified.csv:3
+vscode,VS Code,technical,common abbreviation (not in data)
+visual studio code,VS Code,technical,common abbreviation (not in data)
+Google Sheets,Google Sheets,technical,students_unified.csv:1
+Streamlit,Streamlit,technical,students_unified.csv:2
+WebSockets,WebSockets,technical,students_unified.csv:2
+websocket,WebSockets,technical,students_unified.csv:1
+Socket.IO,Socket.IO,technical,students_unified.csv:2
+Postman,Postman,technical,students_unified.csv:2
+Ollama,Ollama,technical,students_unified.csv:2
+YOLO,YOLO,technical,students_unified.csv:2
+CrewAI,CrewAI,technical,students_unified.csv:2
+Neo4j,Neo4j,technical,students_unified.csv:2
+Rust,Rust,technical,students_unified.csv:2
+Dart,Dart,technical,students_unified.csv:2
+Flutter,Flutter,technical,students_unified.csv:2; jobs.csv:12
+Android,Android,technical,students_unified.csv:2
+android development,Android,technical,common abbreviation (not in data)
+XML,XML,technical,students_unified.csv:2; jobs.csv:15
+Blockchain,Blockchain,technical,students_unified.csv:2
+Agile,Agile,technical,jobs.csv:49
+agile methodology,Agile,technical,students_unified.csv:2
+scrum,Agile,technical,students_unified.csv:1; jobs.csv:16
+Eclipse,Eclipse,technical,students_unified.csv:3
+Crystal Reports,Crystal Reports,technical,common abbreviation (not in data)
+crystal report,Crystal Reports,technical,students_unified.csv:2
+SAP ABAP,SAP ABAP,technical,students_unified.csv:2
+SharePoint,SharePoint,technical,students_unified.csv:2
+microsoft sharepoint,SharePoint,technical,students_unified.csv:2
+Informatica,Informatica,technical,students_unified.csv:3; jobs.csv:7
+Entity Framework,Entity Framework,technical,students_unified.csv:2
+Apache Hive,Apache Hive,technical,common abbreviation (not in data)
+hive,Apache Hive,technical,students_unified.csv:2
+Sqoop,Sqoop,technical,students_unified.csv:2
+apache hadoop sqoop,Sqoop,technical,students_unified.csv:2
+Network Security,Network Security,technical,students_unified.csv:2; jobs.csv:95
+Cisco,Cisco,technical,students_unified.csv:4; jobs.csv:14
+VPN,VPN,technical,students_unified.csv:2
+LAN,LAN,technical,students_unified.csv:2
+RMAN,RMAN,technical,students_unified.csv:2
+Functional Testing,Functional Testing,technical,students_unified.csv:3
+Sales,Sales,technical,students_unified.csv:4; jobs.csv:529
+Marketing,Marketing,technical,students_unified.csv:2; jobs.csv:612
+Operations Management,Operations Management,technical,students_unified.csv:1; jobs.csv:6
+operations,Operations Management,technical,students_unified.csv:3; jobs.csv:59
+Communication,Communication,soft,students_unified.csv:2; jobs.csv:1393
+communication skills,Communication,soft,students_unified.csv:1; jobs.csv:850
+Teamwork,Teamwork,soft,students_unified.csv:1
+team work,Teamwork,soft,common abbreviation (not in data)
+team player,Teamwork,soft,common abbreviation (not in data)
+Leadership,Leadership,soft,students_unified.csv:1; jobs.csv:200
+Problem Solving,Problem Solving,soft,students_unified.csv:1
+problem-solving,Problem Solving,soft,jobs.csv:621
+Time Management,Time Management,soft,jobs.csv:102
+Attention to Detail,Attention to Detail,soft,jobs.csv:579
+Critical Thinking,Critical Thinking,soft,students_unified.csv:1; jobs.csv:39
+Project Management,Project Management,soft,jobs.csv:152
+Presentation Skills,Presentation Skills,soft,jobs.csv:34
+presentation,Presentation Skills,soft,jobs.csv:61
+Documentation,Documentation,soft,students_unified.csv:5; jobs.csv:139

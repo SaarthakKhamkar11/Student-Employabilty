@@ -7,10 +7,17 @@ from app.agents.learning_agent import LearningAgent
 from app.agents.matching_agent import MatchingAgent
 from app.agents.profile_agent import ProfileAgent
 from app.agents.supervisor import SupervisorAgent
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
+from app.db.job_repository import JobRepository, build_job_repository
+from app.db.profile_repository import ProfileRepository, build_profile_repository
 from app.db.store import AgentRunStore
+from app.embeddings.provider import EmbeddingProvider, build_embedding_provider
 from app.llm import LLMClient
+from app.tools.job_tools import register_job_tools
+from app.tools.profile_tools import register_profile_tools
 from app.tools.registry import ToolRegistry
+
+_UNSET = object()
 
 SPECIALIST_CLASSES: tuple[type[BaseAgent], ...] = (
     ProfileAgent, JobIntelligenceAgent, MatchingAgent, LearningAgent, ExplainabilityAgent,
@@ -19,8 +26,26 @@ AGENT_CLASSES: tuple[type[BaseAgent], ...] = (SupervisorAgent, *SPECIALIST_CLASS
 
 
 def build_agents(registry: ToolRegistry | None = None, settings: Settings | None = None,
-                 llm: LLMClient | None = None, store: AgentRunStore | None = None) -> dict[str, BaseAgent]:
-    """Instantiate all six agents. Fails fast if any agent declares an unregistered tool."""
+                 llm: LLMClient | None = None, store: AgentRunStore | None = None,
+                 profile_repo: ProfileRepository | None | object = _UNSET,
+                 job_repo: JobRepository | None | object = _UNSET,
+                 embedder: EmbeddingProvider | None = None) -> dict[str, BaseAgent]:
+    """Instantiate all six agents and register their tools. Fails fast if any declared tool is missing.
+
+    profile_repo / job_repo default to Postgres when DATABASE_URL is set; pass None for "no database"
+    (the agents then report saved=false) or an in-memory repository in tests.
+    """
+    settings = settings or get_settings()
+    registry = registry if registry is not None else ToolRegistry()
+    if not registry.has("extract_text"):
+        register_profile_tools(
+            registry,
+            repo=build_profile_repository(settings) if profile_repo is _UNSET else profile_repo,
+            embedder=embedder or build_embedding_provider(settings),
+        )
+    if not registry.has("extract_job_text"):
+        register_job_tools(registry, repo=build_job_repository(settings) if job_repo is _UNSET else job_repo,
+                           settings=settings)
     specialists = {cls.name: cls(registry=registry, settings=settings) for cls in SPECIALIST_CLASSES}
     supervisor = SupervisorAgent(agents=specialists, llm=llm, store=store, registry=registry, settings=settings)
     return {"supervisor": supervisor, **specialists}

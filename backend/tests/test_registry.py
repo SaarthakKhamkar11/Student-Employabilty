@@ -92,5 +92,20 @@ def test_every_call_is_logged_with_redacted_arguments(registry, caplog):
     (record,) = [r for r in caplog.records if r.getMessage() == "tool_call"]
     assert record.fields["tool_name"] == "echo_email"
     assert record.fields["success"] is True
-    assert record.fields["arguments"] == {"email": "[REDACTED]", "x": 4}
+    assert record.fields["arguments"] == {"email": "[REDACTED]", "x": 4}  # shapes and numbers only
+
+
+def test_tool_call_logs_never_contain_argument_text(registry, caplog):
+    caplog.set_level(logging.INFO, logger="employability")
+    call(registry, "echo_email", {"email": "a@b.co", "x": 1})
+    asyncio.run(registry.call("add_one", {"x": 2}))
+    reg2 = ToolRegistry()
+
+    @reg2.register("take_posting", output_schema=Num)
+    def take_posting(posting, note):
+        return {"value": 1}
+
+    asyncio.run(reg2.call("take_posting", {"posting": {"description": "Analyse sales data"}, "note": "secret plan"}))
+    (record,) = [r for r in caplog.records if r.fields.get("tool_name") == "take_posting"]
+    assert record.fields["arguments"] == {"posting": {"description": "[str len=18]"}, "note": "[str len=11]"}
     assert "duration_ms" in record.fields
