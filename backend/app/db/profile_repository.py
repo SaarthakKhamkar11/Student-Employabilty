@@ -61,6 +61,8 @@ class SaveResult:
 class ProfileRepository(Protocol):
     def get_student(self, student_id: str) -> dict[str, Any] | None: ...
 
+    def get_stored_profile(self, student_id: str) -> dict[str, Any] | None: ...
+
     def save_profile(self, profile: StudentProfile, embeddings: list[EmbeddingRow]) -> SaveResult: ...
 
 
@@ -85,6 +87,11 @@ class PostgresProfileRepository:
             row = conn.execute(f"SELECT {', '.join(STUDENT_SCHEMA)} FROM student_profiles WHERE student_id = %s",
                                (student_id,)).fetchone()
         return dict(row) if row else None
+
+    def get_stored_profile(self, student_id: str) -> dict[str, Any] | None:
+        with psycopg.connect(self._dsn, connect_timeout=self._timeout) as conn:
+            row = conn.execute("SELECT profile FROM student_profiles WHERE student_id = %s", (student_id,)).fetchone()
+        return row[0] if row else None
 
     def save_profile(self, profile: StudentProfile, embeddings: list[EmbeddingRow]) -> SaveResult:
         version, sid = profile.extractor_version, profile.student_id
@@ -127,7 +134,13 @@ class InMemoryProfileRepository:
     def get_student(self, student_id: str) -> dict[str, Any] | None:
         return self.students.get(student_id)
 
+    def get_stored_profile(self, student_id: str) -> dict[str, Any] | None:
+        return self.profiles.get(student_id)
+
     def save_profile(self, profile: StudentProfile, embeddings: list[EmbeddingRow]) -> SaveResult:
+        # as in Postgres: a new id (a resume upload) gets a row with only its source; stored columns stay empty
+        self.students.setdefault(profile.student_id, {"student_id": profile.student_id,
+                                                      "source_dataset": "resume_upload", "is_synthetic": False})
         self.profiles[profile.student_id] = profile.model_dump(mode="json")
         for e in embeddings:
             self.embeddings[(profile.student_id, e.section, e.model_name, e.model_version)] = e

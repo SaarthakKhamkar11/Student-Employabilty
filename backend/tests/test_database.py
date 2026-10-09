@@ -256,3 +256,13 @@ def test_an_uploaded_jd_is_stored_once_with_unguessed_columns_null(dsn, embedder
         with psycopg.connect(dsn, autocommit=True) as conn:
             conn.execute("DELETE FROM embeddings WHERE entity_type = 'job' AND entity_id = %s", (jid,))
             conn.execute("DELETE FROM jobs WHERE job_id = %s", (jid,))
+
+
+@PG
+def test_duplicate_lookup_works_for_jobs_without_a_company(dsn):
+    """Regression (Phase 7, job-dedup-v2): a NULL company must not reach Postgres as an untyped parameter."""
+    from app.db.job_repository import PostgresJobRepository
+
+    repo = PostgresJobRepository(dsn)
+    assert isinstance(repo.candidates(None, "A title no job has"), list)
+    assert isinstance(repo.candidates("Example Co", "A title no job has"), list)

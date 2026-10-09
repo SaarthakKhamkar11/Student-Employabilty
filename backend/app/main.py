@@ -2,8 +2,10 @@
 
 Phase 3: the Supervisor is live behind POST /requests. Phase 4: the Profile
 Agent is live, including POST /requests/resume-file for .pdf/.docx/.txt
-uploads. The other specialists are still shells, so their results read "Not
-yet evaluated" or "Insufficient evidence" until their phases. There is no
+uploads. Phase 5: the Job Intelligence Agent. Phase 6: the relevance-labelling
+page (/labelling) and the recorded embedding-selection experiments
+(/experiments). The other specialists are still shells, so their results read
+"Not yet evaluated" or "Insufficient evidence" until their phases. There is no
 authentication yet (Phase 16): ports bind to 127.0.0.1 only.
 """
 
@@ -16,11 +18,14 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 
+from app import experiments
 from app.agents import SupervisorAgent, build_agents
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, log_event
 from app.db.store import build_store
 from app.embeddings.provider import build_embedding_provider
+from app.labelling import routes as labelling
+from app.labelling.repository import build_labelling_repository
 from app.llm import build_llm_client
 from app.profile.text_extraction import MAX_FILE_BYTES
 from app.schemas.agent_io import SupervisorInput, SupervisorResponse
@@ -45,7 +50,12 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Student Employability Intelligence API", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Student Employability Intelligence API", version="0.6.0", lifespan=lifespan)
+# Phase 6: the human relevance-labelling page and the recorded model-selection experiments
+labelling.configure(build_labelling_repository(settings))
+experiments.configure(settings.database_url.get_secret_value() if settings.database_url else None)
+app.include_router(labelling.router)
+app.include_router(experiments.router)
 
 
 def get_supervisor() -> SupervisorAgent:

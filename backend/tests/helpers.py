@@ -22,7 +22,7 @@ from app.schemas.agent_io import (
     AgentOutput, CallTool, ExplainabilityAgentOutput, Finish, JobIntelligenceOutput, LearningAgentOutput,
     MatchingAgentOutput, MatchResult, ProfileAgentOutput, SkillGap,
 )
-from app.schemas.agent_state import ModelVersionInfo
+from app.schemas.agent_state import PredictionVersions
 from app.schemas.job import JobPosting, JobVisibility
 from app.schemas.student import NormalizedSkill, StudentProfile
 from app.tools.registry import ToolRegistry
@@ -35,6 +35,11 @@ JOB = dict(job_id="J0000001", source_job_id="1", experience_required="0 to 2 Yea
            work_type="Intern", job_title="Data Analyst", role="Data Analyst", job_portal="Test",
            job_description="Analyse data.", skills="Python SQL Power BI", responsibilities="Reports",
            company_name="Example Co", gender_preference="both")
+
+# A stub's metadata is labelled as a stub, never a sentinel: predictions require real values (spec §24).
+STUB_VERSIONS = PredictionVersions(embedding_model="stub", embedding_version="stub-v", matching_model="stub",
+                                   matching_model_version="stub-v", feature_version="stub-features",
+                                   dataset_version="stub-data", experiment_id="stub-experiment")
 
 STUB_OUTPUTS: dict[str, BaseModel] = {
     "profile_agent": ProfileAgentOutput(profile=StudentProfile(
@@ -54,7 +59,7 @@ STUB_OUTPUTS: dict[str, BaseModel] = {
         visibility=JobVisibility(gender_preference="both"), duplicate_check="Not yet evaluated",
         pii="Not yet evaluated", missing_fields=[], extractor_version="test")),
     "matching_agent": MatchingAgentOutput(matches=[MatchResult(
-        student_id="S00001", job_id="J0000001", rank=1, model_versions=ModelVersionInfo(),
+        student_id="S00001", job_id="J0000001", rank=1, model_versions=STUB_VERSIONS,
         skill_gap=SkillGap(matched_skills=["python", "sql"], partially_related_skills=[], missing_skills=["power bi"],
                            important_missing_skills=["power bi"], transferable_skills=[]))]),
     "learning_agent": LearningAgentOutput(),

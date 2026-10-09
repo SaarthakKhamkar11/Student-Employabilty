@@ -74,9 +74,21 @@ def test_agent_output_cannot_claim_success_without_data():
 
 
 def test_prediction_requires_model_version_metadata():
+    """Spec §24 / Phase 7 rule 16: all seven fields, with real values, or the prediction is not valid."""
+    real = dict(embedding_model="m", embedding_version="v", matching_model="mm", matching_model_version="mv",
+                feature_version="f", dataset_version="d", experiment_id="e")
     with pytest.raises(ValidationError):
         MatchResult(student_id="S1", job_id="J1", rank=1)
-    m = MatchResult(student_id="S1", job_id="J1", rank=1, model_versions=ModelVersionInfo())
+    with pytest.raises(ValidationError):  # sentinels are not metadata
+        MatchResult(student_id="S1", job_id="J1", rank=1, model_versions=ModelVersionInfo().model_dump())
+    for field in real:
+        for bad in (None, "", " ", NOT_YET_EVALUATED):
+            with pytest.raises(ValidationError):
+                MatchResult(student_id="S1", job_id="J1", rank=1, model_versions={**real, field: bad})
+        with pytest.raises(ValidationError):
+            MatchResult(student_id="S1", job_id="J1", rank=1,
+                        model_versions={k: v for k, v in real.items() if k != field})
+    m = MatchResult(student_id="S1", job_id="J1", rank=1, model_versions=real)
     assert m.suitability_score == NOT_YET_EVALUATED
 
 

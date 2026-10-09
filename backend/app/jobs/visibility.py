@@ -26,3 +26,13 @@ def is_visible_to(gender_preference: str | None, student_gender: str | None, *, 
     if preference not in _KNOWN or student not in _KNOWN:
         return True  # "both", missing or unknown on either side: never hide
     return preference == student
+
+
+def posting_visible_to(visibility: dict | str | None, student_gender: str | None, *, enabled: bool = True) -> bool:
+    """The same rule, given a JobPosting's `visibility` block (or its "Not yet evaluated" sentinel).
+
+    The Matching Agent calls this, so the employer's preference stays confined to this module and the
+    posting schema: matching code never reads or names the field (tests/test_fairness_guards.py).
+    """
+    preference = visibility.get("gender_preference") if isinstance(visibility, dict) else None
+    return is_visible_to(preference, student_gender, enabled=enabled)

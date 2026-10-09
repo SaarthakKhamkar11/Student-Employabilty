@@ -12,3 +12,10 @@ sentence-transformers==5.1.2
 transformers==4.57.6
 torch==2.8.0
 psutil==7.2.2
+huggingface-hub==0.36.2  # pinned snapshots: the benchmark records each model's revision
+
+# Phase 6 evaluation (src/evaluation, model_evaluation_engine.py)
+scipy==1.17.1            # Kendall tau
+PyYAML==6.0.3            # config/model_selection_weights.yaml, config/weak_label_rules.yaml
+packaging==26.3          # dependency footprint per model
+psycopg[binary]==3.3.6   # optional: --record-db stores experiments in Postgres

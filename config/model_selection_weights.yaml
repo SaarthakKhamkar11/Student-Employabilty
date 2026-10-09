@@ -1,0 +1,89 @@
+# Phase 6 embedding model selection (spec §9): a transparent multi-criteria decision.
+# Every weight has a one-line reason, and the weights in a scenario sum to 1.
+# Change weights here, never in code. The engine records this file's SHA-256 with every experiment.
+version: weights-v1
+
+evaluation:
+  ks: [5, 10]                    # spec default; the main table uses primary_k, the K=10 table is reported alongside
+  primary_k: 5                   # a student looks at the first few recommendations, so the top 5 matters most
+  relevance_threshold: 2         # grade >= 2 (moderate or strong match) counts as relevant for P/R/MRR/Hit Rate
+  selection_split: validation    # selection uses validation only; train is never evaluated; test is held back for Phase 14
+  primary_protocol: full_text    # one embedding per profile/job; section_weighted is reported as a robustness check
+  bootstrap_resamples: 2000      # paired bootstrap over students for 95% confidence intervals
+  seed: 42
+
+normalization:
+  method: min_max                # min_max (default) or z_score, across the evaluated models, per criterion
+  # Cost metrics span orders of magnitude (TF-IDF is ~100x cheaper than a transformer), so they are compared
+  # on log10. On a raw scale the floor's near-zero cost would squash every neural model to about 0.
+  log_scale: [latency, memory, size, dimension, scalability]
+
+# Criteria: quality (higher is better) and cost (lower is better).
+#   mrr, ndcg, recall, precision  label-based quality at primary_k, never mean cosine similarity
+#   latency      CPU single-pair latency, median of 30 warm trials (the Docker backend runs on CPU)
+#   memory       peak resident memory added by loading the model and encoding a batch (isolated process)
+#   size         parameter bytes (fp32) or, for TF-IDF, vocabulary + IDF
+#   dimension    bytes per stored vector (dense: dim x 4; sparse TF-IDF: non-zeros x 8)
+#   complexity   preprocessing + runtime points (prefixes, corpus refitting, deep-learning runtime)
+#   scalability  extrapolated CPU minutes to embed 100,000 job texts, from measured batch throughput
+scenarios:
+  balanced:
+    description: The default. Quality first, but a model has to be affordable to run for every request.
+    weights:
+      mrr:         {weight: 0.15, reason: "Where the first good job appears is what a student notices first."}
+      ndcg:        {weight: 0.20, reason: "Uses the graded labels (strong vs moderate), so it is the most informative quality metric."}
+      recall:      {weight: 0.10, reason: "Missing relevant jobs costs students opportunities."}
+      precision:   {weight: 0.10, reason: "Irrelevant jobs at the top waste the student's attention."}
+      latency:     {weight: 0.15, reason: "Every profile or JD upload is embedded while the user waits."}
+      memory:      {weight: 0.10, reason: "The backend shares one machine with Postgres and Redis."}
+      size:        {weight: 0.05, reason: "Image size and cold start, but disk is cheap."}
+      dimension:   {weight: 0.05, reason: "Storage and pgvector search cost grow with vector size."}
+      complexity:  {weight: 0.05, reason: "Prefixes and refitting are bug sources, but manageable."}
+      scalability: {weight: 0.05, reason: "Re-embedding all jobs after a model change; rare and offline."}
+  quality_prioritized:
+    description: Accuracy matters most; any model that fits on the server is acceptable.
+    weights:
+      mrr:         {weight: 0.20, reason: "First relevant job, weighted up with all quality metrics."}
+      ndcg:        {weight: 0.30, reason: "The graded metric gets the largest share."}
+      recall:      {weight: 0.15, reason: "Coverage of relevant jobs."}
+      precision:   {weight: 0.15, reason: "Cleanliness of the top of the list."}
+      latency:     {weight: 0.05, reason: "Still must respond in reasonable time."}
+      memory:      {weight: 0.05, reason: "Still must fit in memory."}
+      size:        {weight: 0.025, reason: "Minor in this scenario."}
+      dimension:   {weight: 0.025, reason: "Minor in this scenario."}
+      complexity:  {weight: 0.025, reason: "Minor in this scenario."}
+      scalability: {weight: 0.025, reason: "Minor in this scenario."}
+  low_resource_deployment:
+    description: A college server or laptop with no GPU and limited RAM.
+    weights:
+      mrr:         {weight: 0.10, reason: "Quality still counts: a fast model that matches badly is useless."}
+      ndcg:        {weight: 0.15, reason: "The main quality signal, at reduced weight."}
+      recall:      {weight: 0.05, reason: "Reduced weight."}
+      precision:   {weight: 0.05, reason: "Reduced weight."}
+      latency:     {weight: 0.20, reason: "CPU-only inference makes latency the binding constraint."}
+      memory:      {weight: 0.20, reason: "Limited RAM is the other binding constraint."}
+      size:        {weight: 0.10, reason: "Download and disk on a small server."}
+      dimension:   {weight: 0.05, reason: "Vector storage on a small database."}
+      complexity:  {weight: 0.05, reason: "Less to go wrong on a lightly maintained server."}
+      scalability: {weight: 0.05, reason: "Bulk re-embedding is slower on a small CPU."}
+
+# BEST MODEL FOR LOCAL DEPLOYMENT: cost-only composite, among models that ran fully offline in the benchmark
+# (and, once labels exist, that beat the TF-IDF floor on quality).
+local_deployment:
+  latency:    {weight: 0.30, reason: "CPU latency decides whether a laptop or college server can serve requests."}
+  memory:     {weight: 0.30, reason: "RAM is the usual hard limit on such machines."}
+  size:       {weight: 0.20, reason: "Download, disk and cold start."}
+  complexity: {weight: 0.20, reason: "Fewer moving parts to install and keep working."}
+
+# Does the winner survive other reasonable weightings? Weights are drawn from a Dirichlet distribution
+# centred on the balanced weights (larger concentration = closer to them).
+sensitivity:
+  random_weightings: 1000
+  concentration: 20
+  seed: 42
+
+# Spec: TF-IDF is "the floor every embedding model must beat". An embedding model whose primary quality metric
+# is not above the floor's is not eligible for BEST OVERALL / QUALITY / LOCAL DEPLOYMENT.
+gate:
+  must_beat_floor: true
+  primary_quality_metric: ndcg

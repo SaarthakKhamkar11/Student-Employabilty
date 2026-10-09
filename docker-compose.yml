@@ -42,6 +42,8 @@ services:
     volumes:
       # processed datasets, read-only, for `docker compose exec backend python -m app.db.seed`
       - ./data/processed:/srv/data/processed:ro
+      # Phase 6 benchmark files (labelling pool), read-only, for `python -m app.labelling.load_pool`
+      - ./data/benchmark:/srv/data/benchmark:ro
     depends_on:
       postgres:
         condition: service_healthy

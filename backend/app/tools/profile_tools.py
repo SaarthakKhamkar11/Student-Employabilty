@@ -66,6 +66,9 @@ class LoadStudentIn(_Model):
 class LoadStudentOut(_Model):
     found: bool
     record: dict[str, Any] | None
+    # A resume upload's raw text is never stored (PII), so its stored structured profile is the only source
+    # for it: set for uploads, None otherwise.
+    stored_profile: dict[str, Any] | None = None
 
 
 class TextIn(_Model):
@@ -183,7 +186,12 @@ def register_profile_tools(registry: ToolRegistry, *, repo: ProfileRepository | 
         record = _repo().get_student(student_id)
         if record is None and required:
             raise ToolInputRejected("load_student_record", f"unknown student_id {student_id}")
-        return {"found": record is not None, "record": record}
+        stored = None
+        if record is not None and record.get("source_dataset") == "resume_upload":
+            stored = _repo().get_stored_profile(student_id)
+            if stored is None and required:  # no resume now, none stored: nothing honest to build from
+                raise ToolInputRejected("load_student_record", f"{student_id}: upload the resume again")
+        return {"found": record is not None, "record": record, "stored_profile": stored}
 
     @registry.register("parse_resume", input_schema=TextIn, output_schema=SectionsOut)
     def tool_parse_resume(text):

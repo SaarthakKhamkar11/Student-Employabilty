@@ -229,3 +229,16 @@ def test_logs_contain_pii_flags_but_never_pii(agents, caplog):
     log_text = "\n".join(lines)
     assert not [v for v in PII_VALUES if v in log_text]
     assert "Crop disease detection" not in log_text  # no resume content either
+
+
+def test_an_uploaded_student_asked_for_again_keeps_their_profile(agents, repo):
+    """Regression (found in Phase 7): asking for an uploaded student by id rebuilt the profile from the stored
+    columns, which are empty for uploads (the resume text is never stored), and overwrote the real profile."""
+    first, _ = run(agents, {"resume_text": SYNTHETIC_RESUME})
+    profile = first.data["profile"]
+    again, _ = run(agents, {"student_id": profile["student_id"]})
+    assert again.status == "success" and again.data["saved"] is False
+    assert again.data["profile"] == profile
+    assert repo.profiles[profile["student_id"]]["source"] == "resume"  # not overwritten by an empty rebuild
+    assert again.data["stages"]["load_student_record"] == "success"
+    assert again.data["stages"]["extract_profile"] == "skipped"

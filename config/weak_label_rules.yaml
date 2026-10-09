@@ -1,0 +1,70 @@
+# Weak relevance labels (label_source = weakly_labelled): rules, not people, and no model.
+#
+# A job's role name is matched against job families (case-insensitive regular expressions; a role can be in
+# several families). A student's stated domain lists primary and related families.
+#   3  the role is in one of the student's primary families
+#   1  the role is only in a related family
+#   0  otherwise
+# No grade 2: the rules can't tell a strong match from a moderate one.
+#
+# These labels only know "is this job in the student's field". They ignore the student's actual skills,
+# so they are a sanity benchmark and future training signal, never ground truth. Written by the Phase 6
+# assistant; the team should review the families before trusting the weak-label results.
+# Inputs: students_unified.csv `domain` (the placement-cell domain the student chose, or the Kaggle dataset's
+# resume category) and jobs.csv `role`. Neither is in the text any model sees.
+version: weak-rules-v1
+
+families:
+  data_ml: '\b(data scientist|machine learning|data analyst|data quality analyst|business intelligence)\b'
+  data_engineering: '\b(data engineer|big data|data architect|etl developer|database developer|database engineer)\b'
+  database_admin: '\bdatabase\b'
+  software_dev: '\b(api developer|backend developer|back-end developer|server developer|java|mobile app developer|full-stack developer|backend web developer)\b'
+  web_frontend: '\b(front-?end|frontend|web developer|web designer|javascript developer|ui/ux developer|accessibility developer|full-stack developer|web application developer)\b'
+  ux_design: '\b(ui/ux designer|ux/ui designer|user experience|user interface designer|interaction designer|ux strategist|usability analyst|user researcher)\b'
+  qa_testing: '\b(tester|test automation|automation test|testing specialist|qa manager|qa tester|software qa)\b|^quality assurance (analyst|manager)$'
+  cloud_devops: '\b(devops|cloud)\b'
+  networking_security: '\b(network|cybersecurity|security consultant|security operations|database security)\b'
+  it_support_admin: '\b(desktop support|help desk|it support|it systems administrator|systems? administrator|technical support|it analyst|it director|infrastructure manager)\b'
+  software_architecture: '\b(enterprise architect|solution architect|cloud architect)\b'
+  business_analysis: '\b(business analyst|business systems analyst|business intelligence)\b'
+  project_product_mgmt: '\b(project manager|product owner|technical product manager|project coordinator)\b'
+  hr: '\b(hr|human resources|benefits coordinator|employee development|employee relations|recruitment|talent acquisition|training coordinator)\b'
+  sales_bd: '\b(sales|account executive|account manager|key account|business development|client relationship|market expansion|strategic partnerships|strategic account|product demonstrator|brand promoter)\b'
+  legal: '\b(lawyer|attorney|counsel|paralegal|legal|litigat\w*|court clerk|mediator)\b'
+  arts_design: '\b(art|arts|curator|creative director|visual designer|graphic designer)\b'
+  health_therapy: '\b(physical therapist|occupational therapist)\b'
+  civil: '\b(civil|structural|bridge engineer|construction engineer|transportation engineer|water resources)\b|^design engineer$'
+  civil_planning: '\b(city planner|urban planner|transportation planner|environmental planner|construction project)\b'
+  electrical: '\b(electrical|electronics|power systems|controls engineer|pcb designer|lighting designer|avionics)\b'
+  mechanical: '\b(mechanical|hvac|manufacturing engineer|cad technician|aircraft design|industrial engineer|product designer)\b'
+  operations_supply: '\b((?<!security )operations|logistics|supply chain|demand planner|inventory|procurement|sourcing|purchasing|facilities manager|quality control manager)\b'
+
+domains:
+  # placement cell (the student's chosen domain)
+  "Data Analyst and Machine Learning": {primary: [data_ml], related: [data_engineering, business_analysis, database_admin]}
+  "Software Developer Engineer (SDE)": {primary: [software_dev, web_frontend], related: [qa_testing, cloud_devops, software_architecture, data_engineering]}
+  "Data Engineer": {primary: [data_engineering], related: [database_admin, data_ml, cloud_devops]}
+  "Web Developer": {primary: [web_frontend], related: [software_dev, ux_design]}
+  # Kaggle resume categories (mapped to domains in src/pipeline/ingest_kaggle_resumes.py)
+  "Software Development": {primary: [software_dev, web_frontend], related: [qa_testing, cloud_devops, software_architecture, database_admin]}
+  "Web Development": {primary: [web_frontend], related: [software_dev, ux_design]}
+  "QA/Testing": {primary: [qa_testing], related: [software_dev]}
+  "Database Administration": {primary: [database_admin], related: [data_engineering, it_support_admin]}
+  "Data Science": {primary: [data_ml], related: [data_engineering, business_analysis]}
+  "Big Data": {primary: [data_engineering], related: [data_ml, database_admin, cloud_devops]}
+  "Data Engineering": {primary: [data_engineering], related: [database_admin, data_ml]}
+  "Cloud/DevOps": {primary: [cloud_devops], related: [it_support_admin, networking_security, software_dev]}
+  "Networking/Security": {primary: [networking_security], related: [it_support_admin, cloud_devops]}
+  "Blockchain": {primary: [software_dev], related: [web_frontend, cloud_devops]}
+  "Enterprise Systems": {primary: [], related: [business_analysis, software_dev, database_admin]}   # SAP: no SAP roles in the job data
+  "Business Analysis": {primary: [business_analysis], related: [project_product_mgmt, data_ml]}
+  "Project Management": {primary: [project_product_mgmt], related: [business_analysis, operations_supply]}
+  "Operations": {primary: [operations_supply], related: [project_product_mgmt]}
+  "Human Resources": {primary: [hr], related: []}
+  "Sales": {primary: [sales_bd], related: []}
+  "Legal": {primary: [legal], related: []}
+  "Arts": {primary: [arts_design], related: [ux_design]}
+  "Health & Fitness": {primary: [], related: [health_therapy]}   # fitness resumes: therapy roles need clinical licences
+  "Core Civil": {primary: [civil], related: [civil_planning]}
+  "Core Electrical": {primary: [electrical], related: []}
+  "Core Mechanical": {primary: [mechanical], related: []}

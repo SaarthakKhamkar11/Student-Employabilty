@@ -22,11 +22,6 @@ import pandas as pd
 import sklearn
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-try:  # imported as a package (backend) or run as a script
-    from src.embeddings.embedding_model_benchmark import job_section_texts, student_section_texts
-except ImportError:
-    from embedding_model_benchmark import job_section_texts, student_section_texts
-
 MODEL_NAME = "tfidf_baseline"
 SECTIONS = ("skills", "experience", "education", "projects", "certifications")
 PARAMS = {
@@ -44,9 +39,31 @@ DEFAULT_STUDENTS = os.path.join(ROOT, "data", "processed", "students_unified.csv
 DEFAULT_JOBS = os.path.join(ROOT, "data", "processed", "jobs.csv")
 
 
+# The fitted vocabulary, and so the model version, depends on exactly these corpus texts. They are
+# frozen here rather than imported from the Phase 6 benchmark, so the benchmark's corrected text
+# views (audit I-3/I-4) can't silently change the deployed interim model.
+def _student_corpus_sections(row) -> dict:
+    return {
+        "skills": str(row.get("skills_raw", "") or ""),
+        "experience": str(row.get("internship_raw", "") or ""),
+        "education": f"{row.get('degree', '') or ''} {row.get('branch', '') or ''}".strip(),
+        "projects": str(row.get("technical_projects", "") or ""),
+        "certifications": str(row.get("certifications", "") or ""),
+    }
+
+
+def _job_corpus_sections(row) -> dict:
+    return {
+        "skills": str(row.get("skills", "") or ""),
+        "experience": f"{row.get('experience_required', '') or ''} {row.get('responsibilities', '') or ''}".strip(),
+        "education": str(row.get("qualification_required", "") or ""),
+        "description": str(row.get("job_description", "") or ""),
+    }
+
+
 def _full_text(sections: dict) -> str:
     seen, parts = set(), []
-    for text in sections.values():  # job_section_texts repeats job_description: count it once
+    for text in sections.values():
         if text and text not in seen:
             seen.add(text)
             parts.append(text)
@@ -56,8 +73,8 @@ def _full_text(sections: dict) -> str:
 def corpus_from_processed(students_csv: str = DEFAULT_STUDENTS, jobs_csv: str = DEFAULT_JOBS) -> list[str]:
     students = pd.read_csv(students_csv).fillna("")
     jobs = pd.read_csv(jobs_csv).fillna("")
-    texts = [_full_text(student_section_texts(r)) for _, r in students.iterrows()]
-    texts += [_full_text(job_section_texts(r)) for _, r in jobs.iterrows()]
+    texts = [_full_text(_student_corpus_sections(r)) for _, r in students.iterrows()]
+    texts += [_full_text(_job_corpus_sections(r)) for _, r in jobs.iterrows()]
     return [t for t in texts if t.strip()]
 
 

@@ -139,7 +139,9 @@ def test_inferred_marker_reaches_the_api_level_response(sup_settings, embedder):
     posting = resp.results["job_intelligence_agent"].data["posting"]
     assert resp.results["job_intelligence_agent"].status == "success"
     assert posting["skill_split"]["inferred"] is True and "INFERRED" in posting["skill_split"]["note"]
-    assert resp.results["matching_agent"].termination_reason == "not_implemented"  # Phase 7
+    # Phase 7: Matching runs, but with no database to match against it fails instead of inventing a ranking
+    assert resp.results["matching_agent"].termination_reason == "tool_failure"
+    assert resp.results["matching_agent"].data in ("Not yet evaluated", "Insufficient evidence")
 
 
 def test_real_dataset_rows_all_produce_valid_postings(settings, embedder):

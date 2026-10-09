@@ -257,9 +257,10 @@ def register_job_tools(registry: ToolRegistry, *, repo: JobRepository | None, se
     @registry.register("check_duplicates", input_schema=DuplicatesIn, output_schema=DuplicateCheck)
     def tool_check_duplicates(job):
         """Near-duplicate check against stored jobs before storing (docs/adr/0010)."""
-        if not (dedup.norm(job.get("company_name")) and dedup.norm(job.get("job_title"))):
+        if not dedup.norm(job.get("job_title")):
             return {"detector_version": dedup.DETECTOR_VERSION, "near_duplicate_of": None, "similarity": None}
-        match = dedup.match_existing(job, _repo().candidates(job["company_name"], job["job_title"]))
+        # no company: compared with stored jobs that have no company either (v2)
+        match = dedup.match_existing(job, _repo().candidates(job.get("company_name") or None, job["job_title"]))
         if match:
             log_event(logger, "near_duplicate_flagged", job_id=job.get("job_id"), **match)
         return {"detector_version": dedup.DETECTOR_VERSION, **(match or {"near_duplicate_of": None})}

@@ -63,7 +63,7 @@ def test_no_model_is_hard_coded_as_the_winner():
 
 def test_implemented_agents_and_delegation_rights():
     implemented = {cls.name for cls in AGENT_CLASSES if cls.implemented}
-    assert implemented == {"supervisor", "profile_agent", "job_intelligence_agent"}  # Phases 3-5
+    assert implemented == {"supervisor", "profile_agent", "job_intelligence_agent", "matching_agent"}  # Phases 3-5, 7
     supervisor = next(cls for cls in AGENT_CLASSES if cls.name == "supervisor")
     assert set(supervisor.allowed_delegates) == SPEC_AGENTS - {"supervisor"}
     assert all(not cls.allowed_delegates for cls in SPECIALIST_CLASSES)

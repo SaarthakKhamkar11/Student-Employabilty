@@ -11,7 +11,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.schemas.agent_state import NOT_YET_EVALUATED, ModelVersionInfo, Unavailable
+from app.schemas.agent_state import NOT_YET_EVALUATED, ModelVersionInfo, PredictionVersions, Unavailable
 from app.schemas.job import JobPosting
 from app.schemas.student import StudentProfile
 
@@ -274,6 +274,7 @@ class MatchingAgentInput(Contract):
     student_id: str | None = None
     job_id: str | None = None
     top_k: int = Field(10, ge=1, le=100)
+    job_source: Literal["all", "dataset", "uploaded"] = "all"  # jobs for a student: which postings to consider
 
     @model_validator(mode="after")
     def _ids_for_mode(self) -> "MatchingAgentInput":
@@ -284,14 +285,55 @@ class MatchingAgentInput(Contract):
         return self
 
 
-class SkillGap(Contract):
-    """Skills the evidence did not show are "not detected", not "not possessed" (spec §5.2)."""
+class SkillRelation(Contract):
+    job_skill: str
+    requirement: Literal["required", "preferred"]
+    student_skill: str  # the student's related ("transferable") skill
+    similarity: float
 
-    matched_skills: list[str]
-    partially_related_skills: list[str]
-    missing_skills: list[str]
-    important_missing_skills: list[str]
-    transferable_skills: list[str]
+
+class SkillGap(Contract):
+    """Stage 6 output, built in Phase 7 so the Learning Agent (Phase 10) can consume it unchanged.
+
+    Skills the evidence did not show are "not detected", not "not possessed" (spec §5.2).
+    """
+
+    matched_skills: list[str]  # job skills the profile names
+    partially_related_skills: list[str]  # job skills it doesn't name, but a related skill covers in part
+    missing_skills: list[str]  # job skills with neither
+    important_missing_skills: list[str]  # missing AND required by the job (inferred split, docs/adr/0008)
+    transferable_skills: list[str]  # the student's skills that relate to a job skill they lack
+    relations: list[SkillRelation] = Field(default_factory=list)
+    required_skills: list[str] = Field(default_factory=list)
+    preferred_skills: list[str] = Field(default_factory=list)
+    method: str = ""
+
+
+Dimension = Literal["skill_match", "education_match", "experience_match", "project_relevance",
+                    "certification_relevance", "semantic_similarity", "career_interest_alignment",
+                    "transferable_skill_alignment"]
+
+
+class EmployabilityScore(Contract):
+    """Spec §15: a multi-dimensional score, never a raw similarity x 100. Each value is 0-100."""
+
+    overall: Annotated[float, Field(ge=0, le=100)] | Unavailable
+    dimensions: dict[Dimension, Annotated[float, Field(ge=0, le=100)] | Unavailable]
+    method: str
+
+
+class MatchTrace(Contract):
+    """Every raw ingredient behind a prediction, kept for the Explainability Agent (Phase 11)."""
+
+    eligibility: dict[str, Any]  # rules passed or failed, location tier
+    retrieval: dict[str, Any]  # raw section-weighted similarity, per-section cosines, retrieval rank
+    similarity_raw: dict[str, float | None]  # raw cosine per similarity signal (model-specific)
+    features: dict[str, float | None]  # the feature vector (feature_version)
+    normalised: dict[str, float | None]
+    weights: dict[str, float]
+    contributions: dict[str, float]  # weight x normalised value / weight covered; sums to suitability
+    weight_covered: float
+    missing_features: list[str]  # weighted features without evidence, left out (weights renormalised)
 
 
 class MatchResult(Contract):
@@ -299,13 +341,34 @@ class MatchResult(Contract):
     job_id: str
     rank: int = Field(ge=1)
     suitability_score: Annotated[float, Field(ge=0, le=1)] | Unavailable = NOT_YET_EVALUATED
-    semantic_similarity: float | Unavailable = NOT_YET_EVALUATED
+    semantic_similarity: float | Unavailable = NOT_YET_EVALUATED  # calibrated percentile, not raw cosine
+    employability: EmployabilityScore | Unavailable = NOT_YET_EVALUATED
     skill_gap: SkillGap | Unavailable = NOT_YET_EVALUATED
-    model_versions: ModelVersionInfo  # required: no prediction without version metadata (spec §24)
+    summary: dict[str, Any] = Field(default_factory=dict)  # job title, role, country / student branch, domain
+    trace: MatchTrace | Unavailable = NOT_YET_EVALUATED
+    model_versions: PredictionVersions  # required, strictly: no prediction without real metadata (spec §24)
+
+
+class MatchingFunnel(Contract):
+    corpus: str  # which postings were considered (job_source)
+    checked: int
+    excluded: dict[str, int]  # by the first hard rule failed
+    eligible: int
+    location_rule: str
+    retrieved: int
+    unscored: int  # eligible but nothing to compare (no section in common)
+    collapsed_same_role: int = 0  # further postings of a role already shown (ranking.max_per_role)
+    returned: int
 
 
 class MatchingAgentOutput(Contract):
+    mode: Literal["jobs_for_student", "candidates_for_job", "pair"] | Unavailable = NOT_YET_EVALUATED
+    query_id: str | Unavailable = NOT_YET_EVALUATED
     matches: list[MatchResult] | Unavailable = NOT_YET_EVALUATED
+    funnel: MatchingFunnel | Unavailable = NOT_YET_EVALUATED
+    pair_check: dict[str, Any] | None = None  # pair mode: the hard rules this pair fails (reported, not applied)
+    model_versions: PredictionVersions | Unavailable = NOT_YET_EVALUATED
+    notes: list[str] = Field(default_factory=list)
 
 
 # --------------------------------------------------------------------------

@@ -190,7 +190,8 @@ def test_real_agents_yield_evidence_or_sentinels_never_invented_results(sup_sett
                               profile_repo=InMemoryProfileRepository(), embedder=embedder)["supervisor"]
     resp = handle(supervisor, RESUME_REQUEST)
     assert resp.results["profile_agent"].status == "success"  # Phase 4: real
-    assert resp.results["matching_agent"].termination_reason == "not_implemented"  # still a shell
+    # Phase 7: Matching is real, but these settings have no database to match against: it fails, honestly
+    assert resp.results["matching_agent"].termination_reason == "tool_failure"
     assert resp.status == "failed"
     for name in ("matching_agent", "learning_agent", "explainability_agent"):
         assert resp.results[name].data in (NOT_YET_EVALUATED, INSUFFICIENT_EVIDENCE)

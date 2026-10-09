@@ -11,6 +11,11 @@ dataset is templated: its 4,990 postings have only 376 distinct
 descriptions, one per role. Text similarity alone would call every
 same-role posting a duplicate.
 
+v2 (Phase 7): an uploaded description with no company name is compared with
+stored jobs that also have no company name and the same title. v1 skipped
+the check for them, so the same JD uploaded twice was stored twice and then
+recommended twice.
+
 The canonical posting of a group is the one with the smallest job_id;
 the others get near_duplicate_of = that job_id.
 """
@@ -20,7 +25,7 @@ from collections import defaultdict
 from typing import Any
 
 SIMILARITY_THRESHOLD = 0.9
-DETECTOR_VERSION = "job-dedup-v1"
+DETECTOR_VERSION = "job-dedup-v2"
 
 
 def norm(text: str | None) -> str:
@@ -44,8 +49,8 @@ def find_near_duplicates(jobs: list[dict[str, Any]]) -> dict[str, dict[str, Any]
     """{job_id: {"near_duplicate_of": canonical_id, "similarity": s}} for every non-canonical duplicate."""
     groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for job in jobs:
-        if norm(job.get("company_name")) and norm(job.get("job_title")):
-            groups[(norm(job["company_name"]), norm(job["job_title"]))].append(job)
+        if norm(job.get("job_title")):  # v2: no company groups with other postings that have none
+            groups[(norm(job.get("company_name")), norm(job["job_title"]))].append(job)
     flagged: dict[str, dict[str, Any]] = {}
     for members in groups.values():
         if len(members) < 2:
@@ -66,7 +71,7 @@ def find_near_duplicates(jobs: list[dict[str, Any]]) -> dict[str, dict[str, Any]
 
 def match_existing(candidate: dict[str, Any], existing: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Return {"near_duplicate_of", "similarity"} for the earliest existing near-duplicate of `candidate`."""
-    if not (norm(candidate.get("company_name")) and norm(candidate.get("job_title"))):
+    if not norm(candidate.get("job_title")):
         return None
     mine = shingles(content(candidate))
     for job in sorted(existing, key=lambda j: j["job_id"]):

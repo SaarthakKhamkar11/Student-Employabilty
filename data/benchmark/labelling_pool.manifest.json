@@ -1,0 +1,42 @@
+{
+  "pool_version": "pool-5c6a5972b32d",
+  "created_at": "2026-10-09T07:07:56+00:00",
+  "seed": 42,
+  "split_version": "student-sha256-v1",
+  "students": 30,
+  "pairs": 360,
+  "jobs_per_student": 12,
+  "students_by_split": {
+    "validation": 15,
+    "test": 15
+  },
+  "students_by_source": {
+    "placement_cell": 20,
+    "kaggle_resume_dataset": 10
+  },
+  "students_by_domain": {
+    "Data Analyst and Machine Learning": 12,
+    "Software Developer Engineer (SDE)": 6,
+    "Software Development": 3,
+    "Data Engineer": 2,
+    "Data Science": 2,
+    "Big Data": 1,
+    "Enterprise Systems": 1,
+    "QA/Testing": 1,
+    "Blockchain": 1,
+    "Core Civil": 1
+  },
+  "method": "round-robin pooling of each model's top-ranked jobs (10 per student, seeded model order) + 2 uniform random jobs; seeded display order",
+  "models": {
+    "tfidf": "tfidf-3ec097a5876e",
+    "sbert": "sentence-transformers/all-mpnet-base-v2@e8c3b32edf54",
+    "e5": "intfloat/e5-base-v2@f52bf8ec8c71",
+    "bge": "BAAI/bge-base-en-v1.5@a5beb1e3e68b",
+    "minilm": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4"
+  },
+  "protocol": "full_text",
+  "device": "mps",
+  "job_corpus": "376 role representatives (lowest job_id per role)",
+  "eligibility": "validation/test split; branch != 'Non-Engineering / Management'; >= 15 words of profile text",
+  "random_fill_pairs": 60
+}

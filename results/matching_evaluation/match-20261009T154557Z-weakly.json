@@ -1,0 +1,229 @@
+{
+ "experiment_id": "match-20261009T154557Z-weakly",
+ "kind": "evaluation",
+ "started_at": "2026-10-09T15:45:57+00:00",
+ "finished_at": "2026-10-09T15:47:21+00:00",
+ "runtime_seconds": 83.7,
+ "dataset_version": "students:636d394f399c jobs:42c7d78b48c1",
+ "dataset_size": {
+  "students_with_profiles": 292,
+  "jobs_with_postings": 4992
+ },
+ "embedding_model": "tfidf_baseline",
+ "embedding_version": "tfidf-3ec097a5876e",
+ "matching_model": "weighted_baseline_v1",
+ "matching_model_version": "weighted_baseline_v1+ec6eb29bbf1c",
+ "feature_version": "features-v1",
+ "config": {
+  "path": "config/matching_baseline_v1.yaml",
+  "sha256": "ec6eb29bbf1cd5cea91742ec01e7bf211ba4ca1dde1594b013e210ca9fd212d3",
+  "weights": {
+   "skill_match_score": 0.2,
+   "required_skill_match_score": 0.1,
+   "preferred_skill_match_score": 0.03,
+   "semantic_similarity": 0.15,
+   "career_interest_alignment": 0.1,
+   "education_match": 0.06,
+   "branch_match": 0.06,
+   "degree_match": 0.02,
+   "experience_match": 0.08,
+   "experience_gap": 0.02,
+   "project_relevance": 0.06,
+   "certification_relevance": 0.03,
+   "transferable_skill_score": 0.03,
+   "matched_skill_ratio": 0.02,
+   "role_similarity": 0.02,
+   "domain_similarity": 0.02,
+   "preferred_skill_ratio": 0.0,
+   "matched_skill_count": 0.0,
+   "missing_skill_count": 0.0,
+   "required_skill_count": 0.0
+  },
+  "top_n": 50,
+  "eligibility": {
+   "degree_filter": true,
+   "experience_filter": true,
+   "experience_tolerance_years": 0,
+   "mandatory_skills": {
+    "by_job_id": {},
+    "by_role": {}
+   },
+   "country_tiering": true,
+   "min_same_country": 50,
+   "exclude_near_duplicates": true
+  },
+  "features": {
+   "partial_credit": 0.5,
+   "required_skill_weight": 2,
+   "experience_gap_cap_years": 5,
+   "transferable": {
+    "percentile": 98,
+    "min_similarity": 0.3
+   }
+  }
+ },
+ "calibration": "tfidf-3ec097a5876e",
+ "evaluation": {
+  "labels": {
+   "path": "data/benchmark/weak_labels.csv",
+   "sha256": "085a07c100d380c5b8a23c8384d0af173b30ff43a6ce57ab65b4171908217937",
+   "source": "weakly_labelled",
+   "split": "validation",
+   "pairs": 21432,
+   "students": 57,
+   "stamp": "WEAK LABELS \u2014 RULE-BASED, NOT HUMAN GROUND TRUTH",
+   "validity": {
+    "level": "LIMITED",
+    "line": "evaluation validity: LIMITED \u2014 weak rule-based labels, independent of the evaluated models",
+    "reasons": [],
+    "generated_by": "rules",
+    "pool_models": [],
+    "mean_per_student_kendall_tau": {
+     "weighted_baseline_v1": 0.257,
+     "semantic_only": 0.21
+    }
+   }
+  },
+  "weighted_baseline_v1": {
+   "mean": {
+    "hit_rate@10": 1.0,
+    "hit_rate@5": 0.8703703703703703,
+    "mrr": 0.7136757789535566,
+    "ndcg@10": 0.5146818436576325,
+    "ndcg@5": 0.517789188783068,
+    "precision@10": 0.387037037037037,
+    "precision@5": 0.4518518518518519,
+    "recall@10": 0.3824298995351626,
+    "recall@5": 0.23081457204264227,
+    "kendall_tau": 0.25725410757660855
+   },
+   "students_evaluated": 54,
+   "students_excluded_no_relevant": 3,
+   "pairs": 21432,
+   "unscored_pairs": 0,
+   "pool_size": {
+    "min": 376,
+    "max": 376
+   },
+   "degenerate_k": []
+  },
+  "semantic_only": {
+   "mean": {
+    "hit_rate@10": 0.9259259259259259,
+    "hit_rate@5": 0.7777777777777778,
+    "mrr": 0.6931337181337182,
+    "ndcg@10": 0.45224848788425503,
+    "ndcg@5": 0.4827572891031952,
+    "precision@10": 0.3351851851851852,
+    "precision@5": 0.4259259259259259,
+    "recall@10": 0.3239362651643353,
+    "recall@5": 0.21553706202829012,
+    "kendall_tau": 0.21043023962174856
+   },
+   "students_evaluated": 54,
+   "students_excluded_no_relevant": 3,
+   "pairs": 21432,
+   "unscored_pairs": 0,
+   "pool_size": {
+    "min": 376,
+    "max": 376
+   },
+   "degenerate_k": []
+  },
+  "ci95": {
+   "weighted_baseline_v1": {
+    "mrr": [
+     0.6189342666078779,
+     0.803629298941799
+    ],
+    "ndcg@5": [
+     0.43456322197783454,
+     0.6022534832930088
+    ],
+    "ndcg@10": [
+     0.44784601187199086,
+     0.5819247467131051
+    ]
+   },
+   "semantic_only": {
+    "mrr": [
+     0.5857731080647748,
+     0.7965090388007056
+    ],
+    "ndcg@5": [
+     0.38865899046553787,
+     0.5726371501803366
+    ],
+    "ndcg@10": [
+     0.3787737300435897,
+     0.5219842965950683
+    ]
+   }
+  },
+  "baseline_minus_semantic_ndcg@5": {
+   "mean_difference": 0.03503189967987275,
+   "ci95": [
+    -0.047299311096138136,
+    0.12445113826529682
+   ],
+   "students": 54,
+   "distinguishable": false
+  },
+  "seconds": 70.4
+ },
+ "benchmark": {
+  "students": [
+   "S00002",
+   "S00003",
+   "S00018",
+   "S00019",
+   "S00027",
+   "S00032",
+   "S00035",
+   "S00039",
+   "S00043",
+   "S00051"
+  ],
+  "stage_ms": {
+   "eligibility": {
+    "median": 255.2,
+    "p95": 430.8
+   },
+   "retrieval": {
+    "median": 288.2,
+    "p95": 328.6
+   },
+   "similarity": {
+    "median": 265.3,
+    "p95": 303.0
+   },
+   "features": {
+    "median": 107.7,
+    "p95": 127.0
+   },
+   "prediction": {
+    "median": 6.6,
+    "p95": 7.6
+   },
+   "ranking": {
+    "median": 0.1,
+    "p95": 0.2
+   },
+   "skill_gaps": {
+    "median": 81.2,
+    "p95": 89.2
+   }
+  },
+  "total_ms": {
+   "median": 1011.8,
+   "p95": 1218.5
+  }
+ },
+ "hardware": {
+  "machine": "arm64",
+  "system": "Darwin 25.6.0",
+  "python": "3.11.17"
+ },
+ "notes": "Registers weighted_baseline_v1 (interim, placeholder weights pending Phase 8). Quality is on the labels given, validation split only; the benchmark times the full Stage 1-6 pipeline.",
+ "limitations": "Weak labels share role families with branch_match and reflect the student's stated domain, as career_interest_alignment does: a sanity check, not a selection. Synthetic templated job data. Laptop timings with Docker running."
+}

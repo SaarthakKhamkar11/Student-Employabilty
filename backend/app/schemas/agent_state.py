@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # The only two values allowed for a result that does not exist (spec rule 19).
 NOT_YET_EVALUATED = "Not yet evaluated"
@@ -33,6 +33,28 @@ class ModelVersionInfo(BaseModel):
     feature_version: str = NOT_YET_EVALUATED
     dataset_version: str = NOT_YET_EVALUATED
     experiment_id: str = NOT_YET_EVALUATED
+
+
+class PredictionVersions(BaseModel):
+    """The spec §24 metadata on every prediction, strictly: all seven fields are required and must be real
+    values. A missing, empty or sentinel field fails validation, so such a prediction is never returned."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    embedding_model: str
+    embedding_version: str
+    matching_model: str
+    matching_model_version: str
+    feature_version: str
+    dataset_version: str
+    experiment_id: str
+
+    @field_validator("*")
+    @classmethod
+    def _real_value(cls, value: str) -> str:
+        if not value or not value.strip() or value in (NOT_YET_EVALUATED, INSUFFICIENT_EVIDENCE):
+            raise ValueError("prediction metadata must be a real value, not missing or a sentinel")
+        return value
 
 
 class AgentState(BaseModel):

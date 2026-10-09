@@ -86,6 +86,12 @@ class ProfileAgent(BaseAgent):
     # -- decisions -------------------------------------------------------------
     async def decide_next_action(self, ctx: AgentContext) -> CallTool | Finish:
         x = self._init(ctx)
+        loaded = self._out(ctx, "load_student_record")
+        if not x["has_resume"] and loaded is not None and loaded.stored_profile is not None:
+            # A resume upload asked for again by id: its raw resume is not stored, so rebuilding from the empty
+            # stored columns would overwrite the real profile with an empty one. Reuse the stored profile instead.
+            x["reused"] = loaded.stored_profile
+            return Finish(reason="reused the stored profile of a resume upload")
         done = {o.tool_name for o in ctx.observations}
         for stage in x["pipeline"]:
             if stage in done or stage in x["stages"]:
@@ -237,6 +243,10 @@ class ProfileAgent(BaseAgent):
     def _output(self, ctx: AgentContext) -> ProfileAgentOutput:
         x = ctx.extras
         stages = {**{o.tool_name: "success" for o in ctx.observations}, **x.get("stages", {})}
+        if x.get("reused") is not None:
+            skipped = {s: "skipped" for s in RECORD_PIPELINE if s != "load_student_record"}
+            return ProfileAgentOutput(profile=x["reused"], embedding=NOT_YET_EVALUATED, saved=False,
+                                      stages={**skipped, **stages})
         embedding, saved = self._out(ctx, "generate_embedding"), self._out(ctx, "save_profile")
         stored = saved is not None and saved.saved
         info = (EmbeddingInfo(model_name=embedding.model_name, model_version=embedding.model_version,

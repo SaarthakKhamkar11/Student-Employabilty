@@ -1,0 +1,99 @@
+# Phase 7 matching configuration: weighted_baseline_v1, an INTERIM, untrained baseline.
+# Its weights are placeholders pending Phase 8's matching-model comparison (docs/adr/0014).
+# matching_model_version is a hash of this file (minus `registration`), so any edit changes the version and
+# predictions are refused until the edited config is registered again (python -m app.matching.evaluate --register).
+matching_model: weighted_baseline_v1
+feature_version: features-v1
+
+retrieval:
+  # Semantic retrieval keeps the top_n most similar jobs (or students) after eligibility filtering.
+  # Similarity is Phase 6's section-weighted protocol: skills vs skills, experience vs responsibilities,
+  # projects vs description (src/embeddings/embedding_model_benchmark.py SECTION_PAIRS / SECTION_WEIGHTS).
+  top_n: 50
+
+ranking:
+  # Jobs for a student: at most this many postings of one role in the returned list (the best-scored first).
+  # Every posting of a role has identical text in this dataset, so without a cap one role fills the list.
+  max_per_role: 1
+
+eligibility:
+  # Hard filters are for requirements a candidate clearly fails. Every other gap is a score penalty.
+  degree_filter: true              # the job's minimum degree level is above the student's
+  experience_filter: true          # the job's minimum years exceed the student's stated experience + tolerance
+  experience_tolerance_years: 0
+  mandatory_skills:                # ONLY skills listed here exclude; required skills are scored, not filtered
+    by_job_id: {}
+    by_role: {}
+  country_tiering: true            # jobs for a student: same-country jobs first (docs/adr/0013)
+  min_same_country: 50             # widen to other countries when fewer eligible same-country jobs remain
+  exclude_near_duplicates: true    # a reposted job (docs/adr/0010) is recommended once, as its canonical posting
+  # The employer gender-preference visibility filter is the existing JOB_GENDER_VISIBILITY_FILTER setting
+  # (docs/adr/0009). It applies only to what a student sees, never to ranking candidates.
+
+features:
+  partial_credit: 0.5              # a job skill covered only by a related (transferable) student skill counts half
+  required_skill_weight: 2         # in skill_match_score a required skill counts twice a preferred one
+  experience_gap_cap_years: 5      # experience_gap normalises as 1 - min(gap, cap) / cap
+  transferable:
+    # Two skills are related when the embedding similarity of their names is in the top (100 - percentile)%
+    # of all pairs of distinct skills in the data AND at least min_similarity (calibrated per embedding model).
+    percentile: 98
+    min_similarity: 0.3
+
+# weighted_baseline_v1: suitability = sum(weight x normalised feature) over the features present,
+# renormalised over those present. PLACEHOLDER weights pending Phase 8 (docs/adr/0014). Sum = 1.
+weights:
+  skill_match_score:           {weight: 0.20, reason: "Skills are the most direct evidence of fit; required skills count double and related skills half."}
+  required_skill_match_score:  {weight: 0.10, reason: "Required skills matter more than preferred ones (spec §5.3), so they also count on their own."}
+  preferred_skill_match_score: {weight: 0.03, reason: "Nice-to-have skills: a small bonus."}
+  semantic_similarity:         {weight: 0.15, reason: "Overall meaning of profile vs job (Phase 6 section-weighted similarity), as a calibrated percentile."}
+  career_interest_alignment:   {weight: 0.10, reason: "A job in the student's stated field is far more likely to be wanted and pursued."}
+  education_match:             {weight: 0.06, reason: "Meeting the degree level the job asks for."}
+  branch_match:                {weight: 0.06, reason: "The student's branch fits the job's field."}
+  degree_match:                {weight: 0.02, reason: "The exact degree named; weak here because this dataset assigns it at random."}
+  experience_match:            {weight: 0.08, reason: "Enough stated experience for the job's minimum."}
+  experience_gap:              {weight: 0.02, reason: "How many years short of the minimum, beyond the yes/no of experience_match."}
+  project_relevance:           {weight: 0.06, reason: "Projects show applied skill, the main evidence for students without jobs."}
+  certification_relevance:     {weight: 0.03, reason: "Supporting evidence; many students have no certifications."}
+  transferable_skill_score:    {weight: 0.03, reason: "Credit for related skills where a required skill is missing."}
+  matched_skill_ratio:         {weight: 0.02, reason: "Plain share of the job's skills matched, as a check on the weighted score."}
+  role_similarity:             {weight: 0.02, reason: "Past roles similar to this one."}
+  domain_similarity:           {weight: 0.02, reason: "The student's field vs the job's full text."}
+  preferred_skill_ratio:       {weight: 0.0, reason: "Redundant with preferred_skill_match_score; kept as a feature for Phase 8."}
+  matched_skill_count:         {weight: 0.0, reason: "A count is not good or bad on its own (it grows with the job's skill list); kept for Phase 8."}
+  missing_skill_count:         {weight: 0.0, reason: "Same: depends on how many skills the job lists; kept for Phase 8."}
+  required_skill_count:        {weight: 0.0, reason: "Describes the job, not the fit; kept for Phase 8."}
+
+# Spec §15 employability dimensions, each 0-100: the weighted mean of its features' normalised values
+# (weights as above). A dimension with no evidence reads "Insufficient evidence", never a guess.
+dimensions:
+  skill_match: [skill_match_score, required_skill_match_score, preferred_skill_match_score, matched_skill_ratio]
+  education_match: [education_match, branch_match, degree_match]
+  experience_match: [experience_match, experience_gap, role_similarity]
+  project_relevance: [project_relevance]
+  certification_relevance: [certification_relevance]
+  semantic_similarity: [semantic_similarity, domain_similarity]
+  career_interest_alignment: [career_interest_alignment]
+  transferable_skill_alignment: [transferable_skill_score]
+
+# branch_match: the job's field comes from its role, via the role families in config/weak_label_rules.yaml.
+# First matching rule wins. NOTE: weak labels use the same role families, so Phase 8 must not judge a model
+# that uses branch_match by the weak labels alone (docs/adr/0014).
+branch_rules:
+  - pattern: 'comput|information tech|data science|software|\bit\b'
+    families: [data_ml, data_engineering, database_admin, software_dev, web_frontend, ux_design, qa_testing,
+               cloud_devops, networking_security, it_support_admin, software_architecture, business_analysis]
+  - pattern: 'mechanic|production|automobile|aero'
+    families: [mechanical, operations_supply]
+  - pattern: 'civil|construction'
+    families: [civil, civil_planning]
+  - pattern: 'electric|electronic|instrumentation'
+    families: [electrical]
+  - pattern: 'management|commerce|business|non-engineering|arts|law'
+    families: [business_analysis, project_product_mgmt, hr, sales_bd, legal, operations_supply, arts_design]
+
+# Which recorded experiment registered this exact configuration (spec §24: every prediction names one).
+# Filled by `python -m app.matching.evaluate --register`; predictions are refused while config_sha256 differs.
+registration:
+  experiment_id: match-20261009T155859Z-weakly
+  config_sha256: 545cea3bb7677391d115bcfd557dbde6875c97b8bbecf0c1eb9968186f8c9cb3

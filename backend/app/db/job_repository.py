@@ -35,7 +35,7 @@ def _children(posting: JobPosting) -> dict[str, list[tuple]]:
 class JobRepository(Protocol):
     def get_job(self, job_id: str) -> dict[str, Any] | None: ...
 
-    def candidates(self, company_name: str, job_title: str) -> list[dict[str, Any]]: ...
+    def candidates(self, company_name: str | None, job_title: str) -> list[dict[str, Any]]: ...
 
     def save_posting(self, posting: JobPosting, embeddings: list[EmbeddingRow], is_new: bool) -> SaveResult: ...
 
@@ -54,12 +54,16 @@ class PostgresJobRepository:
                                (job_id,)).fetchone()
         return dict(row) if row else None
 
-    def candidates(self, company_name: str, job_title: str) -> list[dict[str, Any]]:
+    def candidates(self, company_name: str | None, job_title: str) -> list[dict[str, Any]]:
+        """Stored jobs with the same company and title; with no company, those that have none either."""
+        if company_name:
+            where, params = "lower(company_name) = lower(%s) AND ", [company_name.strip()]
+        else:  # no parameter here: an untyped NULL parameter makes Postgres reject the query
+            where, params = "company_name IS NULL AND ", []
         with self._connect(row_factory=dict_row) as conn:
             rows = conn.execute(
                 "SELECT job_id, company_name, job_title, job_description, responsibilities, skills FROM jobs "
-                "WHERE lower(company_name) = lower(%s) AND lower(job_title) = lower(%s)",
-                (company_name.strip(), job_title.strip())).fetchall()
+                f"WHERE {where}lower(job_title) = lower(%s)", (*params, job_title.strip())).fetchall()
         return [dict(r) for r in rows]
 
     def save_posting(self, posting: JobPosting, embeddings: list[EmbeddingRow], is_new: bool) -> SaveResult:
@@ -111,8 +115,8 @@ class InMemoryJobRepository:
     def get_job(self, job_id: str) -> dict[str, Any] | None:
         return self.jobs.get(job_id)
 
-    def candidates(self, company_name: str, job_title: str) -> list[dict[str, Any]]:
-        key = (company_name.strip().lower(), job_title.strip().lower())
+    def candidates(self, company_name: str | None, job_title: str) -> list[dict[str, Any]]:
+        key = ((company_name or "").strip().lower(), job_title.strip().lower())
         return [j for j in self.jobs.values()
                 if ((j.get("company_name") or "").strip().lower(), (j.get("job_title") or "").strip().lower()) == key]
 

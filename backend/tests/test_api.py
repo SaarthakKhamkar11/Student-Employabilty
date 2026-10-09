@@ -24,7 +24,8 @@ def test_health_reports_no_llm_calls_and_leaks_no_secrets():
 def test_agents_endpoint_reports_implementation_status():
     agents = {a["name"]: a for a in client.get("/agents").json()}
     assert len(agents) == 6
-    assert {n for n, a in agents.items() if a["implemented"]} == {"supervisor", "profile_agent", "job_intelligence_agent"}
+    assert {n for n, a in agents.items() if a["implemented"]} == {"supervisor", "profile_agent", "job_intelligence_agent",
+                                                                  "matching_agent"}
     assert len(agents["profile_agent"]["allowed_tools"]) == 11
 
 

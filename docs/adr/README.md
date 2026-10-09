@@ -15,3 +15,6 @@ One file per significant decision (spec §44). The original `docs/ADR.md`, which
 | [0009](0009-gender-preference-visibility-filter.md) | Employer gender preference: visibility filter only, never a feature (concern recorded) | Accepted (owner decision) |
 | [0010](0010-job-near-duplicate-detection.md) | Near-duplicate job detection at ingest time | Accepted (2026-10-08) |
 | [0011](0011-sparse-tfidf-embedding-storage.md) | TF-IDF embeddings stored as sparse vectors | Accepted (2026-10-08) |
+| [0012](0012-embedding-model-selection.md) | Embedding model selection: the rule is fixed before the human labels; the primary model is chosen from them | Proposed (2026-10-09): selection pending human labels |
+| [0013](0013-matching-eligibility-and-location-tiering.md) | Matching Stage 1: hard eligibility rules (clear failures only) and same-country-first tiering | Accepted (2026-10-09) |
+| [0014](0014-matching-pipeline-and-weighted-baseline.md) | Matching pipeline, features-v1, calibrated similarity, and the interim weighted baseline (placeholder weights pending Phase 8) | Accepted as interim (2026-10-09) |
