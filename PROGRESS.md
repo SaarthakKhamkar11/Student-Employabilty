@@ -4,7 +4,7 @@
 
 Last updated: **2026-10-08** · Last completed phase: **Phase 5 (Job Intelligence Agent)** · Next phase: **Phase 6 (Embedding experimentation framework)**
 
-**Latest pushed code: branch `phase-4-5-profile-job-agents`** (chain: `phase-1-audit` → `phase-2-3-supervisor` → `phase-4-5-profile-job-agents`; none merged into `main` yet).
+**Latest code: `main`** (Phases 1–5 fast-forwarded into `main` on 2026-10-08; the per-phase branches `phase-1-audit`, `phase-2-3-supervisor` and `phase-4-5-profile-job-agents` are kept for history).
 
 Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1 audit: [`PROJECT_AUDIT.md`](PROJECT_AUDIT.md).
 
@@ -211,7 +211,7 @@ docker compose down                  # add -v to also delete the database volume
 - About 0.1% of phrases are under-split.
 - Qualifications in the job data look randomly assigned (an Event Manager requiring an M.Tech), which is more evidence it is synthetic (audit I-7).
 
-**Git:** Phases 4 and 5 committed together (their changes overlap in shared files) on branch `phase-4-5-profile-job-agents` and pushed.
+**Git:** Phases 4 and 5 committed together (their changes overlap in shared files) on branch `phase-4-5-profile-job-agents`, pushed, and fast-forwarded into `main`.
 
 ---
 
