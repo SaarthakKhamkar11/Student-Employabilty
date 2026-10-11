@@ -2,15 +2,15 @@
 
 **Rule:** update this file at the end of every phase. That means the status table, the "Pick up here" block, and a new entry in the Phase log. **From Phase 6 on, also extend `scripts/demo.py`** with a live demo of the phase's new capability, and run it once against the backend, and refresh the owner's progress dashboard (a private claude.ai artifact: aggregates only, real measured numbers, with the same caveats as the reports). Anyone taking over should be able to read only this file and know exactly where to start.
 
-Last updated: **2026-10-11** · Last completed phase: **Phase 8 (Matching model experimentation; the model choice waits for the human labels)** · Next phase: **Phase 9 (Skill-gap analysis)**. The team's labelling (below) is still open and now finishes TWO choices: the embedding model (ADR 0012) and the matching model (ADR 0015).
+Last updated: **2026-10-11** · Last completed phase: **Phase 9 (Skill-gap analysis)** · Next phase: **Phase 10 (Learning Agent)**. The team's labelling (below) is still open and now finishes TWO choices: the embedding model (ADR 0012) and the matching model (ADR 0015).
 
-**Latest code: `main`** holds Phases 1–7. Phase 8 is in the working tree (not yet committed). Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
+**Latest code: `main`** holds Phases 1–8 (Phase 8 committed directly on `main` as `7e680b6`). Phase 9 is in the working tree (not yet committed). Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
 
 Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1 audit: [`PROJECT_AUDIT.md`](PROJECT_AUDIT.md).
 
 ---
 
-## ▶ Pick up here: Phase 9 (Skill-gap analysis), plus one team task that finishes Phases 6 AND 8
+## ▶ Pick up here: Phase 10 (Learning Agent), plus one team task that finishes Phases 6 AND 8
 
 **Team task (still open).** Grade the relevance pairs on the labelling page:
 1. Start the stack (`docker compose up -d --wait`) and open **http://127.0.0.1:8000/labelling**. Enter your initials, or open `/labelling?labeller=AB`.
@@ -37,15 +37,30 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
      run on other embeddings.
    - Rebuild the backend image after `--activate` (the image copies `config/` and `models/`).
 
-**Phase 9 needs:**
-1. The Phase 9 prompt.
-2. What exists: Stage 6 `identify_skill_gaps` (Phase 7: matched / partially related / missing / important
-   missing / transferable, `app/matching/skill_gap.py`). Known limits: 92% of job skill phrases aren't in the
-   alias table, and TF-IDF relatedness is lexical (ADR 0014).
-3. The matching model in use is whatever `config/matching_model.yaml` names: Baseline 3 today.
-4. **Owner decisions pending:**
+**Phase 10 needs:**
+1. The Phase 10 prompt.
+2. **The input contract is fixed:** `SkillGapReport` (`app/schemas/agent_io.py`, ADR
+   [0016](docs/adr/0016-skill-gap-analysis.md)). It holds:
+   - `matched_skills`;
+   - `missing_required` and `missing_preferred`: lists of `SkillGap` (`skill`, `importance_score`,
+     `transferable_candidate`, `transferable_similarity`), ordered by importance;
+   - `partially_related`;
+   - provenance: `importance_model`, `similarity_model`, `thresholds`, `method`, `note`.
+
+   The Supervisor already passes it as `LearningAgentInput.skill_gap_report`, plus `skill_gaps`: the names, most
+   important first. Don't change the shape without updating ADR 0016.
+3. **What the report can and can't say:**
+   - **Importance ties within a requirement class.** `features-v1` sees skills as counts, so every model scores
+     every required gap of a job the same; ties are broken alphabetically. The Learning Agent must not present a tie
+     as a ranking.
+   - **A missing skill is "not detected"**, never "lacking" (keep the report's `note`).
+   - **Transferable candidates are lexical with TF-IDF** (ADR 0016's evidence).
+4. **Spec §17:** learning resources must come from a course catalogue, never generated. No catalogue exists in the
+   repo yet; that is Phase 10's first data question.
+5. **Owner decisions pending:**
    - the hard degree/experience filters (ADR 0013: all 18 diploma students get no eligible job on this dataset);
-   - the gender visibility filter (ADR 0009).
+   - the gender visibility filter (ADR 0009);
+   - whether to make the TF-IDF version hash platform-stable (ADR 0015).
 
 Decisions already made (do not re-ask):
 - **LLM provider: Gemini.** Wherever the spec or a prompt says "Claude / Anthropic", use Gemini (`GEMINI_API_KEY`).
@@ -76,8 +91,8 @@ Open items owned by the project owner:
 | 6 | Embedding experimentation framework | ✅ Done (2026-10-09): framework, labelling page, cost and weak-label results. The model choice waits for the team's human labels (ADR 0012) |
 | 7 | Matching Agent | ✅ Done (2026-10-09): Stages 1-6 as separate tools, interim weighted baseline (placeholder weights pending Phase 8) |
 | 8 | Matching model experimentation | ✅ Done (2026-10-11): 6 candidates trained, measured and wired behind a config flag; quality "Not yet evaluated" and Baseline 3 stays active until the human labels (ADR 0015) |
-| 9 | Skill-gap analysis | ⏭ Next |
-| 10 | Learning Agent | Not started |
+| 9 | Skill-gap analysis | ✅ Done (2026-10-11): `src/scoring/skill_gap_analysis.py`, counterfactual importance, tuned relation tiers, the `SkillGapReport` contract (ADR 0016) |
+| 10 | Learning Agent | ⏭ Next |
 | 11 | Explainability Agent + SHAP | Not started |
 | 12 | Agent state/tracing | Not started |
 | 13 | Research dashboard | Not started |
@@ -93,7 +108,7 @@ Open items owned by the project owner:
 
 ---
 
-## Repository layout (after Phase 8)
+## Repository layout (after Phase 9)
 
 ```
 preprocess.py                 thin entry point → src/pipeline/build_unified_dataset.py
@@ -105,6 +120,7 @@ config/matching_baseline_v1.yaml  Phase 7 matching config: top_n, hard rules, ra
 config/matching_model.yaml    Phase 8 THE FLAG: which model Stage 4 uses (active), whose artifacts, which selection run
 config/matching_model_candidates.yaml  Phase 8 candidates: fixed hyperparameters (a reason each), training settings, rubrics
 config/matching_model_selection_weights.yaml  Phase 8 selection weights: 3 scenarios, gate, sensitivity, "close enough"
+config/skill_gap.yaml         Phase 9 relation-tier thresholds per embedding model family, with the tuning evidence
 src/parsing/                  section_parser.py (+ parse_job_sections, P5), resume_text_parser.py
 src/pipeline/                 ingest_placement_cell.py, ingest_kaggle_resumes.py, ingest_real_jobs.py,
                               validate_and_report.py, build_unified_dataset.py
@@ -115,7 +131,8 @@ src/evaluation/               splits.py (fixed per-student splits), relevance_la
                               retrieval_metrics.py (P/R/MRR/NDCG/Hit@K, bootstrap CIs), labelling_pool.py, weak_labels.py
 src/scoring/                  Phase 8: matching_models.py (build/train/save/load/score/SHAP per candidate; isolated
                               measurement worker), matching_model_selection_engine.py (the Phase 8 table, scenarios,
-                              sensitivity, simpler-model check, ADR 0015 decision, --activate, --record-db)
+                              sensitivity, simpler-model check, ADR 0015 decision, --activate, --record-db),
+                              skill_gap_analysis.py (P9: the SkillGapReport; Stage 6 wraps it; CLI per pair)
 backend/app/agents/           base.py, supervisor.py + routing.py (P3), profile_agent.py (P4), job_intelligence_agent.py (P5), 3 shells
 backend/app/schemas/          agent_state.py, agent_io.py, student.py, job.py
 backend/app/tools/            registry.py, profile_tools.py (11 tools), job_tools.py (12 tools, incl. check_job_visibility),
@@ -140,10 +157,10 @@ backend/app/experiments.py    GET /experiments, GET /experiments/{id} (recorded 
 backend/migrations/           0001 agent_runs · 0002 student tables · 0003 embeddings + model_versions · 0004 profile columns ·
                               0005/0006 student_skills unique-key fix · 0007 jobs tables + sparse embeddings ·
                               0008 relevance_pool, relevance_judgments, experiment_runs, experiment_metrics
-docs/adr/                     architecture decision records 0001–0015 (index: docs/adr/README.md)
+docs/adr/                     architecture decision records 0001–0016 (index: docs/adr/README.md)
 backend/app/main.py           FastAPI: GET /health, GET /agents, POST /requests, POST /requests/resume-file, GET /requests/{id},
                               /labelling (page + API), /experiments
-backend/tests/                314 tests (297 run by default; 17 skipped: 14 need TEST_DATABASE_URL, 1 live Gemini, 2 others)
+backend/tests/                327 tests (310 run by default; 17 skipped: 14 need TEST_DATABASE_URL, 1 live Gemini, 2 others)
 backend/db/init/              01_enable_pgvector.sql (runs on first postgres start)
 docker-compose.yml            postgres+pgvector, redis, backend
 .env.example                  template; copy to .env (gitignored)
@@ -236,6 +253,12 @@ python -m src.scoring.matching_model_selection_engine --labels data/benchmark/we
 .venv/bin/python scripts/demo.py 13                  # recorded Phase 8 runs (GET /experiments?kind=matching_selection)
 MATCHING_MODEL=decision_tree ...                     # force a trained model for one process (demo/tests only)
 ```
+
+**Phase 9 skill gaps** (needs `DATABASE_URL`):
+```bash
+python -m src.scoring.skill_gap_analysis --student S00001 --job J0974289 [--model lightgbm]   # one pair's report
+.venv/bin/python scripts/demo.py 14                  # the top match's report through the live API
+```
 On Windows, a native PostgreSQL service may already hold port 5432. Publish the project's postgres elsewhere with a
 local (uncommitted) compose override (`ports: !override ["127.0.0.1:5434:5432"]`).
 
@@ -248,6 +271,42 @@ local (uncommitted) compose override (`ports: !override ["127.0.0.1:5434:5432"]`
 ---
 
 ## Phase log
+
+### Phase 9: Skill-gap analysis (2026-10-11) ✅
+
+**What was built** (ADR [0016](docs/adr/0016-skill-gap-analysis.md)):
+
+| Piece | Where | Notes |
+|---|---|---|
+| Module | `src/scoring/skill_gap_analysis.py` | Matched; missing required and preferred, ranked by importance; transferable; partially related. The method is in its docstring. CLI per pair |
+| Importance | same file | **Counterfactual re-scoring:** suitability with the skill detected minus suitability as is, by the active matching model (`config/matching_model.yaml`) through `build_features`, batched per pair. Text-similarity features are held fixed. The model is named in every report |
+| Normaliser | `app/profile/skills.py` | Reused (`normalize_skills`, `skill_key`); no second normaliser |
+| Tiers | `config/skill_gap.yaml` | TF-IDF: partial 0.40, transferable 0.60, tuned on 12,022 real not-detected skills with a spot check. A model without an entry gets no tiers |
+| Contract | `app/schemas/agent_io.py` | `SkillGap` (one skill), `PartiallyRelatedSkill`, `SkillGapReport` (for Phase 10). It replaces Phase 7's per-pair `SkillGap`. `MatchResult.skill_gap` and `LearningAgentInput.skill_gap_report` use it |
+| Stage 6 | `pipeline.skill_gaps`, `identify_skill_gaps` | Wraps the module. The tool now also receives `compute_similarity`'s percentiles, which the counterfactuals hold fixed |
+| Tests | `backend/tests/test_skill_gap_analysis.py` (13) | Normaliser reuse; importance equals an independent re-score through the real pipeline; importance follows the model (a doubled model doubles it); tier boundaries; no tiers without thresholds; ordering; the not-detected note; agent end to end |
+| Demo | `scripts/demo.py 14` | The top match's report through the live API. Demo 11 now shows the top gaps by importance |
+
+**Real reports** (CLI, active model `weighted_baseline_v1+545cea3bb767`, TF-IDF `tfidf-953a75d166d8`):
+
+| Pair | Gap profile | Matched | Missing required (importance; transferable) | Missing preferred (importance; transferable) | Partially related |
+|---|---|---|---|---|---|
+| S00073 × J0002158 Data Scientist / ML Engineer | near-perfect | Machine learning algorithms, Data Cleaning & Preprocessing, Model Evaluation | none | Deep Learning +0.024; Python programming +0.024 ← Python 0.6465 | Deep Learning ← Supervised Learning 0.4855 |
+| S00001 × J0974289 Data Business Analyst | moderate | Data Analysis | Data Modeling +0.095; Data Visualization +0.095 | SQL Data tools +0.034 ← SQL 0.7214 | none |
+| S00023 × J0071584 Cloud Systems Engineer | poor (ML student, cloud job) | none | Automation Security in the cloud, Cloud infrastructure, Cloud systems engineering: +0.083 each | DevOps practices, Disaster recovery, Scalability: +0.036 each | none |
+
+The same S00001 pair with `--model lightgbm`: the required gaps are +0.259 each and SQL Data tools is +0.009. **The
+importance is the model's own:** Baseline 3 and LightGBM weigh the same gaps very differently.
+
+**Findings:**
+- **Importance ties within a requirement class**, under every model: `features-v1` describes skills only as counts
+  and ratios. Ranking same-class skills needs per-skill features (`features-v2`, then retraining). See ADR 0016.
+- **Exact matches are rare.** Among jobs with 3 or more required skills, the best real coverage is 1 of 3. The
+  transferable tier carries much of the signal ("Data analysis techniques" ← "Data Analysis" 0.78 in demo 14).
+- **TF-IDF relatedness is lexical**, so 0.60 isn't a precision gate. Spot-check precision is about 90% from 0.40
+  up, and about 50% below.
+
+**Tests:** 309 passed, 17 skipped, 1 failed (the platform-dependent TF-IDF version pin, unchanged since Phase 8).
 
 ### Phase 8: Matching model experimentation (2026-10-11) ✅ (no model selected: no human labels yet)
 

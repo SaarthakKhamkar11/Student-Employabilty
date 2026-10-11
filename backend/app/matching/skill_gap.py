@@ -1,4 +1,5 @@
-"""Skill comparison for one student and one job: shared by the features (Stage 3) and the skill gap (Stage 6).
+"""Skill comparison for one student and one job, as the features (Stage 3) use it. The Stage 6 report is built by
+src/scoring/skill_gap_analysis.py (Phase 9), which uses this comparison for its counterfactual re-scoring.
 
   matched   a job skill the student's profile names (same canonical name after the shared normaliser)
   related   a job skill the profile doesn't name, but one of the student's skills is related to it: the
@@ -67,19 +68,3 @@ def compare_skills(student_skills: tuple[str, ...], job_skills: tuple[tuple[str,
         out.missing = unmatched
     return out
 
-
-def skill_gap(comparison: SkillComparison, job_skills: tuple[tuple[str, str], ...]) -> dict:
-    """The SkillGap contract (app/schemas/agent_io.py), consumed unchanged by the Learning Agent (Phase 10)."""
-    return {
-        "matched_skills": [n for n, _ in comparison.matched],
-        "partially_related_skills": [n for n, _, _, _ in comparison.related],
-        "missing_skills": [n for n, _ in comparison.missing],
-        "important_missing_skills": [n for n, r in comparison.missing if r == "required"],
-        "transferable_skills": sorted({s for _, _, s, _ in comparison.related}),
-        "relations": [{"job_skill": n, "requirement": r, "student_skill": s, "similarity": sim}
-                      for n, r, s, sim in comparison.related],
-        "required_skills": [n for n, r in job_skills if r == "required"],
-        "preferred_skills": [n for n, r in job_skills if r == "preferred"],
-        "method": ("exact match on normalised skill names; related = embedding similarity of skill names at or "
-                   "above the calibrated threshold; required/preferred is the job's inferred split (ADR 0008)"),
-    }

@@ -144,8 +144,10 @@ class MatchingAgent(BaseAgent):
             return {"suitability": {c: p.suitability for c, p in predictions.items()}, "top_k": x["top_k"],
                     "groups": groups}
         if stage == "identify_skill_gaps":
-            return {"query_kind": kind, "query_id": qid,
-                    "candidates": [r.id for r in self._out(ctx, "rank_candidates").ranked]}
+            ranked = [r.id for r in self._out(ctx, "rank_candidates").ranked]
+            sims = self._out(ctx, "compute_similarity").percentiles
+            return {"query_kind": kind, "query_id": qid, "candidates": ranked,
+                    "percentiles": {c: sims[c] for c in ranked if c in sims}}
         return None
 
     def _top_n(self) -> int:

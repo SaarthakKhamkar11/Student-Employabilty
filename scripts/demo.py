@@ -1,6 +1,7 @@
 """Live demo of the finished phases against the running backend: the Supervisor, Profile and Job
 Intelligence agents (Phases 3-5), the embedding-selection framework (Phase 6, demos 9-10), the
-Matching Agent (Phase 7, demos 11-12) and the Matching Model Selection Engine (Phase 8, demo 13).
+Matching Agent (Phase 7, demos 11-12), the Matching Model Selection Engine (Phase 8, demo 13) and the
+skill-gap report (Phase 9, demo 14).
 
 Start the stack first:   docker compose up -d --wait
 Then run:                .venv/bin/python scripts/demo.py           (all demos)
@@ -289,8 +290,9 @@ def demo_matching_for_student() -> None:
         print(f"  #{match['rank']} {sm['job_title']} / {sm['role'] or 'role not stated'} "
               f"({sm['country'] or 'country not stated'}): OVERALL {e['overall']}")
         print(f"      {_dims(e)}")
-        print(f"      matched {g['matched_skills'][:4]} | related {g['partially_related_skills'][:2]} "
-              f"| important missing {g['important_missing_skills'][:3]}")
+        top_gaps = [f"{x['skill']} (+{x['importance_score']:.3f})" if x["importance_score"] is not None else x["skill"]
+                    for x in g["missing_required"][:3]]
+        print(f"      matched {g['matched_skills'][:4]} | not detected, required, by importance {top_gaps}")
     v = d["matches"][0]["model_versions"] if d["matches"] else {}
     print("\n  Every prediction carries its 7 version fields (spec §24):")
     for k, val in v.items():
@@ -344,6 +346,29 @@ def demo_matching_model_selection() -> None:
         print(f"  DECISION (ADR 0015 rule)   {rep['recommendation']['line']}")
 
 
+def demo_skill_gap_report() -> None:
+    title(14, "Phase 9: the skill-gap report for a student's top job (counterfactual importance)")
+    resp = call("POST", "/requests", {"actor": "student", "request_kind": "question", "request_text": "What am I missing?",
+                                      "task_type": "recommend_jobs_for_student", "student_id": "S00001"})
+    m = resp["results"]["matching_agent"]
+    if m["status"] != "success" or not m["data"]["matches"]:
+        print(f"  Matching Agent: {m['status']} ({m['termination_reason']}): {m['data']}")
+        return
+    top = m["data"]["matches"][0]
+    g, sm = top["skill_gap"], top["summary"]
+    print(f"  S00001 -> #{top['rank']} {top['job_id']} {sm['job_title']} / {sm['role']} (suitability {top['suitability_score']})")
+    print(f"  importance from {g['importance_model']}; similarity {g['similarity_model']}; thresholds {g['thresholds']}")
+    print(f"  matched: {g['matched_skills']}")
+    for kind in ("missing_required", "missing_preferred"):
+        print(f"  {kind.replace('_', ' ')} (not detected in the profile), most important first:")
+        for x in g[kind]:
+            tr = f" | transferable from '{x['transferable_candidate']}' ({x['transferable_similarity']})" if x["transferable_candidate"] else ""
+            print(f"      {x['skill']:40s} importance {x['importance_score']:+.4f}{tr}")
+    for x in g["partially_related"]:
+        print(f"  partially related: {x['skill']} <- '{x['related_student_skill']}' ({x['similarity']})")
+    print(f"  {g['note']}")
+
+
 if __name__ == "__main__":
     only = int(sys.argv[1]) if len(sys.argv) > 1 else None
     rid = None
@@ -364,4 +389,6 @@ if __name__ == "__main__":
         demo_candidates_for_job()
     if only in (None, 13):
         demo_matching_model_selection()
+    if only in (None, 14):
+        demo_skill_gap_report()
     print()

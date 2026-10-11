@@ -34,7 +34,7 @@ from app.llm import LLMClient
 from app.schemas.agent_io import (
     AgentError, AgentOutcome, AgentOutput, CallTool, Delegate, ExplainabilityAgentInput, Finish,
     JobIntelligenceInput, LearningAgentInput, MatchingAgentInput, MatchResult, ProfileAgentInput,
-    RoutingDecision, SkillGap, SupervisorInput, SupervisorOutput, SupervisorResponse, TaskType,
+    RoutingDecision, SkillGapReport, SupervisorInput, SupervisorOutput, SupervisorResponse, TaskType,
 )
 from app.schemas.agent_state import INSUFFICIENT_EVIDENCE, AgentState
 from app.tools.registry import ToolRegistry
@@ -235,10 +235,12 @@ class SupervisorAgent(BaseAgent):
             if top is None:
                 return None, "no match result available"
             if name == "learning_agent":
-                gaps = top.skill_gap.missing_skills if isinstance(top.skill_gap, SkillGap) else []
+                report = top.skill_gap if isinstance(top.skill_gap, SkillGapReport) else None
+                gaps = [g.skill for g in report.missing_required + report.missing_preferred] if report else []
                 if not gaps:
                     return None, NOT_NEEDED + "no skill gaps were identified"
-                return LearningAgentInput(student_id=top.student_id, job_id=top.job_id, skill_gaps=gaps), None
+                return LearningAgentInput(student_id=top.student_id, job_id=top.job_id, skill_gaps=gaps,
+                                          skill_gap_report=report), None
             if name == "explainability_agent":
                 return ExplainabilityAgentInput(match=top), None
         except ValidationError as exc:

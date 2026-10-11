@@ -7,7 +7,8 @@
     generate_features     Stage 3  the versioned feature vector (spec §11)
     predict_suitability   Stage 4  the model named by config/matching_model.yaml (Baseline 3 or a trained Phase 8 model)
     rank_candidates       Stage 5  deterministic ranking (ties by id)
-    identify_skill_gaps   Stage 6  matched / related / missing / important missing / transferable
+    identify_skill_gaps   Stage 6  SkillGapReport (src/scoring/skill_gap_analysis.py): matched, missing required /
+                                   preferred ranked by counterfactual importance, transferable, partially related
     evaluate_model                 ranking metrics of the current matching configuration on labelled pairs
     benchmark_matching             per-stage latency of the whole pipeline
 """
@@ -24,7 +25,7 @@ from app.db.matching_repository import MatchingRepository
 from app.embeddings.provider import EmbeddingProvider
 from app.matching import pipeline as P
 from app.matching.config import get_matching_config
-from app.schemas.agent_io import SkillGap
+from app.schemas.agent_io import SkillGapReport
 from app.schemas.agent_state import PredictionVersions
 from app.tools.registry import ToolInputRejected, ToolRegistry
 from src.evaluation.retrieval_metrics import evaluate
@@ -157,10 +158,11 @@ class GapsIn(_Model):
     query_kind: QueryKind
     query_id: str
     candidates: list[str]
+    percentiles: dict[str, dict[str, float | None]]  # compute_similarity's output, held fixed by the counterfactuals
 
 
 class GapsOut(_Model):
-    gaps: dict[str, SkillGap]
+    gaps: dict[str, SkillGapReport]
 
 
 class LabelledPair(_Model):
@@ -286,9 +288,10 @@ def register_matching_tools(registry: ToolRegistry, *, repo: MatchingRepository 
         return P.ranking(suitability, top_k, groups or None, ctx().cfg.ranking.get("max_per_role") if groups else None)
 
     @registry.register("identify_skill_gaps", input_schema=GapsIn, output_schema=GapsOut)
-    def tool_identify_skill_gaps(query_kind, query_id, candidates):
-        """Stage 6: matched, partially related, missing, important missing and transferable skills."""
-        return guarded("identify_skill_gaps", P.skill_gaps, ctx(), query_kind, query_id, candidates)
+    def tool_identify_skill_gaps(query_kind, query_id, candidates, percentiles):
+        """Stage 6: matched skills; missing required / preferred ranked by counterfactual importance under the
+        active model; transferable and partially related skills (src/scoring/skill_gap_analysis.py)."""
+        return guarded("identify_skill_gaps", P.skill_gaps, ctx(), query_kind, query_id, candidates, percentiles)
 
     @registry.register("evaluate_model", input_schema=EvaluateIn, output_schema=EvaluateOut)
     def tool_evaluate_model(pairs, ks, relevance_threshold):

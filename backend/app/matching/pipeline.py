@@ -19,7 +19,7 @@ from app.matching.entities import JobView, StudentView
 from app.matching.feature_builder import FEATURE_VERSION, build_features
 from app.matching.predictor import build_predictor
 from app.matching.similarity import compute_signals, retrieve
-from app.matching.skill_gap import SkillVectors, compare_skills, skill_gap
+from app.matching.skill_gap import SkillVectors, compare_skills
 from app.schemas.agent_state import PredictionVersions
 
 
@@ -223,10 +223,21 @@ def role_groups(retrieved_top: list[dict]) -> dict[str, str]:
 
 
 # -- Stage 6 -------------------------------------------------------------------
-def skill_gaps(ctx: MatchingContext, query_kind: str, query_id: str, candidates: list[str]) -> dict:
+def skill_gaps(ctx: MatchingContext, query_kind: str, query_id: str, candidates: list[str],
+               percentiles: dict[str, dict[str, float | None]]) -> dict:
+    """SkillGapReport per candidate (src/scoring/skill_gap_analysis.py). `percentiles` are the pair's similarity
+    features from compute_similarity: the counterfactual re-scoring keeps them fixed."""
+    from src.scoring import skill_gap_analysis as G
+
+    version, _ = ctx.provider.describe()
+    thresholds = G.load_thresholds(ctx.provider.model_name)
+    vectors, related = ctx.skill_vectors(), ctx.calibration().transferable_threshold
     out = {}
     for c, (student, job) in ctx.pairs(query_kind, query_id, candidates).items():
-        out[c] = skill_gap(comparison(ctx, student, job), job.skills)
+        rescore = G.pipeline_rescorer(student, job, percentiles.get(c, {}), ctx.cfg, ctx.predictor, vectors, related)
+        out[c] = G.analyse(student, job, rescore=rescore, vectors=vectors, thresholds=thresholds,
+                           importance_model=ctx.predictor.version,
+                           similarity_model=f"{ctx.provider.model_name} {version}")
     return {"gaps": out}
 
 
@@ -257,7 +268,7 @@ def run_pipeline(ctx: MatchingContext, mode: str, student_id: str | None, job_id
     ranked = ranking({c: p["suitability"] for c, p in preds["predictions"].items()}, top_k,
                      role_groups(stage2["top"]), ctx.cfg.ranking.get("max_per_role"))
     lap("ranking")
-    gaps = skill_gaps(ctx, kind, query_id, [r["id"] for r in ranked["ranked"]])
+    gaps = skill_gaps(ctx, kind, query_id, [r["id"] for r in ranked["ranked"]], sims["percentiles"])
     lap("skill_gaps")
     return {"eligibility": stage1, "retrieval": stage2, "similarity": sims, "features": feats,
             "prediction": preds, "ranked": ranked["ranked"], "collapsed": ranked["collapsed"], "gaps": gaps,

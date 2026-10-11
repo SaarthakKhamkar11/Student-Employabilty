@@ -20,7 +20,7 @@ from app.db.store import InMemoryAgentRunStore
 from app.llm import parse_structured
 from app.schemas.agent_io import (
     AgentOutput, CallTool, ExplainabilityAgentOutput, Finish, JobIntelligenceOutput, LearningAgentOutput,
-    MatchingAgentOutput, MatchResult, ProfileAgentOutput, SkillGap,
+    MatchingAgentOutput, MatchResult, ProfileAgentOutput, SkillGap, SkillGapReport,
 )
 from app.schemas.agent_state import PredictionVersions
 from app.schemas.job import JobPosting, JobVisibility
@@ -60,8 +60,9 @@ STUB_OUTPUTS: dict[str, BaseModel] = {
         pii="Not yet evaluated", missing_fields=[], extractor_version="test")),
     "matching_agent": MatchingAgentOutput(matches=[MatchResult(
         student_id="S00001", job_id="J0000001", rank=1, model_versions=STUB_VERSIONS,
-        skill_gap=SkillGap(matched_skills=["python", "sql"], partially_related_skills=[], missing_skills=["power bi"],
-                           important_missing_skills=["power bi"], transferable_skills=[]))]),
+        skill_gap=SkillGapReport(matched_skills=["python", "sql"], partially_related=[], missing_preferred=[],
+                                 missing_required=[SkillGap(skill="power bi", importance_score=0.05,
+                                                            transferable_candidate=None, transferable_similarity=None)]))]),
     "learning_agent": LearningAgentOutput(),
     "explainability_agent": ExplainabilityAgentOutput(),
 }

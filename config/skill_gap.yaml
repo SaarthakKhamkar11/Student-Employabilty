@@ -1,0 +1,30 @@
+# Phase 9 skill-gap analysis (src/scoring/skill_gap_analysis.py, docs/adr/0016).
+# Relation tiers for a job skill NOT DETECTED in the profile, by the cosine similarity of the job skill's NAME to the
+# closest skill NAME the student has (skill level, not whole profile):
+#   similarity >= transferable            -> transferable_candidate (the student's closest skill)
+#   partial <= similarity < transferable  -> partially_related
+#   below partial                         -> no relation reported
+# Thresholds belong to an embedding model family (cosine scales differ between models, Phase 6). A model with no
+# entry here gets no relation tiers ("Not yet evaluated"), never borrowed numbers.
+version: skill-gap-v1
+
+thresholds:
+  tfidf_baseline:
+    transferable: 0.60
+    partial: 0.40
+    tuned_on: tfidf-953a75d166d8
+    # Tuned 2026-10-11 on real output: every job skill not detected in the profile, over the 360 labelling-pool pairs
+    # plus each student's 10 most similar jobs (2,849 pairs, 12,022 not-detected job skills, 11,899 with a vector).
+    # Best-match similarity quantiles: median 0.00, p75 0.46, p90 0.70, p95 0.72, p98 0.84.
+    # Author's spot check of every distinct (job skill, student skill) pair >= 0.40 and samples below (is the student
+    # skill credibly related to the job skill?):
+    #   0.20-0.40 ~50% (samples of 24)   0.40-0.50 39/42 (93%)   0.50-0.60 30/33 (91%)
+    #   0.60-0.70 26/29 (90%)            0.70-0.80 20/25 (80%)   0.80-1.00 28/33 (85%)
+    # partial = 0.40: where precision jumps from ~50% to ~90% (below: "Office supplies management" <- "MS Office").
+    # transferable = 0.60: precision does NOT rise above 0.40 (TF-IDF is lexical, so one shared word can score 0.8:
+    #   "Model Evaluation" <- "MODEL-VIEW-CONTROLLER" 0.804), but 0.60 is where the same skill in other words starts to
+    #   dominate ("Python programming" <- "Python" 0.647, "CAD software" <- "CAD" 0.630, "Java frameworks" <- "Java EE"
+    #   0.691), while 0.40-0.60 is mostly adjacent skills ("Sales strategy development" <- "Sales" 0.410,
+    #   "AWS, Azure, etc" <- "AWS" 0.424). Known misses: "Proficiency in HTML" <- "HTML" scores 0.542 and
+    #   "AutoCAD proficiency" <- "AutoCAD" 0.567, so they are partially related, not transferable: a lexical model
+    #   can't tell wording from substance. A semantic model (ADR 0012) needs its own entry, tuned the same way.

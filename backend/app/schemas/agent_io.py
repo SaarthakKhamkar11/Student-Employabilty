@@ -285,28 +285,42 @@ class MatchingAgentInput(Contract):
         return self
 
 
-class SkillRelation(Contract):
-    job_skill: str
+class SkillGap(Contract):
+    """One job skill NOT DETECTED in the student's profile (Phase 9, src/scoring/skill_gap_analysis.py).
+
+    "Missing" means not detected in the profile, which is not proof the student lacks the skill (spec §5.2).
+    """
+
+    skill: str  # the job's canonical skill name (shared normaliser, app/profile/skills.py)
+    # Counterfactual re-scoring: the active matching model's suitability with this skill detected, minus without
+    # (0-1 suitability scale). None when the model could not score the pair.
+    importance_score: float | None
+    transferable_candidate: str | None  # the student's closest skill, if its name similarity >= transferable
+    transferable_similarity: float | None
+
+
+class PartiallyRelatedSkill(Contract):
+    """A not-detected job skill with a weaker relation: partial <= similarity < transferable."""
+
+    skill: str
     requirement: Literal["required", "preferred"]
-    student_skill: str  # the student's related ("transferable") skill
+    related_student_skill: str
     similarity: float
 
 
-class SkillGap(Contract):
-    """Stage 6 output, built in Phase 7 so the Learning Agent (Phase 10) can consume it unchanged.
+class SkillGapReport(Contract):
+    """Stage 6 output for one (student, job) pair. THE contract the Learning Agent (Phase 10) consumes: do not change
+    its shape without updating Phase 10 to match (docs/adr/0016)."""
 
-    Skills the evidence did not show are "not detected", not "not possessed" (spec §5.2).
-    """
-
-    matched_skills: list[str]  # job skills the profile names
-    partially_related_skills: list[str]  # job skills it doesn't name, but a related skill covers in part
-    missing_skills: list[str]  # job skills with neither
-    important_missing_skills: list[str]  # missing AND required by the job (inferred split, docs/adr/0008)
-    transferable_skills: list[str]  # the student's skills that relate to a job skill they lack
-    relations: list[SkillRelation] = Field(default_factory=list)
-    required_skills: list[str] = Field(default_factory=list)
-    preferred_skills: list[str] = Field(default_factory=list)
+    matched_skills: list[str]  # job skills (required or preferred) the profile names
+    missing_required: list[SkillGap]  # not detected, required by the job (inferred split, ADR 0008); by importance
+    missing_preferred: list[SkillGap]  # not detected, preferred by the job; by importance
+    partially_related: list[PartiallyRelatedSkill]  # missing skills with a weaker relation to a student skill
+    importance_model: str = ""  # matching_model_version that produced every importance_score
+    similarity_model: str = ""  # embedding model + version used for skill-name similarity
+    thresholds: dict[str, float] = Field(default_factory=dict)  # {"transferable": ..., "partial": ...}
     method: str = ""
+    note: str = "Missing = not detected in the profile, which is not proof the student lacks the skill."
 
 
 Dimension = Literal["skill_match", "education_match", "experience_match", "project_relevance",
@@ -343,7 +357,7 @@ class MatchResult(Contract):
     suitability_score: Annotated[float, Field(ge=0, le=1)] | Unavailable = NOT_YET_EVALUATED
     semantic_similarity: float | Unavailable = NOT_YET_EVALUATED  # calibrated percentile, not raw cosine
     employability: EmployabilityScore | Unavailable = NOT_YET_EVALUATED
-    skill_gap: SkillGap | Unavailable = NOT_YET_EVALUATED
+    skill_gap: SkillGapReport | Unavailable = NOT_YET_EVALUATED
     summary: dict[str, Any] = Field(default_factory=dict)  # job title, role, country / student branch, domain
     trace: MatchTrace | Unavailable = NOT_YET_EVALUATED
     model_versions: PredictionVersions  # required, strictly: no prediction without real metadata (spec §24)
@@ -377,7 +391,8 @@ class MatchingAgentOutput(Contract):
 class LearningAgentInput(Contract):
     student_id: str
     job_id: str
-    skill_gaps: list[str] = Field(min_length=1)
+    skill_gaps: list[str] = Field(min_length=1)  # missing skill names, most important first
+    skill_gap_report: SkillGapReport | None = None  # the full Phase 9 report (Phase 10 consumes it)
 
 
 class LearningResource(Contract):

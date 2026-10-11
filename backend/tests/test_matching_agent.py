@@ -163,15 +163,12 @@ def test_features_match_their_written_definitions(world, embedder, msettings):
     assert j1["semantic_similarity"] is None  # no evidence given: None, never a default
 
 
-def test_skill_gaps_separate_matched_related_missing_and_important(world, embedder, msettings):
-    gap = P.skill_gaps(context(world, embedder, msettings), "student", "S1", ["J2"])["gaps"]["J2"]
+def test_stage_6_returns_the_skill_gap_report(world, embedder, msettings):
+    gap = P.skill_gaps(context(world, embedder, msettings), "student", "S1", ["J2"], {})["gaps"]["J2"]
     assert gap["matched_skills"] == ["Python", "SQL"]
-    assert gap["missing_skills"] + gap["partially_related_skills"] == ["Deep learning"]
-    if gap["partially_related_skills"]:  # TF-IDF relates "Deep learning" to "Machine learning" through "learning"
-        assert gap["transferable_skills"] == ["Machine learning"] and gap["important_missing_skills"] == []
-    else:
-        assert gap["important_missing_skills"] == ["Deep learning"]
-    assert gap["required_skills"] == ["Python", "Deep learning"] and gap["preferred_skills"] == ["SQL"]
+    assert [g["skill"] for g in gap["missing_required"]] == ["Deep learning"] and gap["missing_preferred"] == []
+    assert gap["importance_model"].startswith("weighted_baseline_v1+")
+    assert gap["missing_required"][0]["importance_score"] > 0
 
 
 def test_weighted_baseline_renormalises_over_present_features(world):
