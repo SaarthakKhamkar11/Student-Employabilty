@@ -4,7 +4,7 @@
 
 Last updated: **2026-10-11** · Last completed phase: **Phase 9 (Skill-gap analysis)** · Next phase: **Phase 10 (Learning Agent)**. The team's labelling (below) is still open and now finishes TWO choices: the embedding model (ADR 0012) and the matching model (ADR 0015).
 
-**Latest code: `main`** holds Phases 1–8 (Phase 8 committed directly on `main` as `7e680b6`). Phase 9 is in the working tree (not yet committed). Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
+**Latest code: `main`** holds Phases 1–8 (Phase 8 committed directly on `main` as `7e680b6`). Phase 9 is also committed. Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
 
 Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1 audit: [`PROJECT_AUDIT.md`](PROJECT_AUDIT.md).
 
