@@ -13,11 +13,11 @@ from pathlib import Path
 
 from app.embeddings.provider import EmbeddingProvider
 from app.matching import eligibility as elig
-from app.matching.baseline import METHOD, predict
 from app.matching.calibration import Calibration, cached_calibration
 from app.matching.config import MatchingConfig
 from app.matching.entities import JobView, StudentView
 from app.matching.feature_builder import FEATURE_VERSION, build_features
+from app.matching.predictor import build_predictor
 from app.matching.similarity import compute_signals, retrieve
 from app.matching.skill_gap import SkillVectors, compare_skills, skill_gap
 from app.schemas.agent_state import PredictionVersions
@@ -42,7 +42,13 @@ class MatchingContext:
     processed_dir: str
     visibility_enabled: bool = True
     calibration_loader: object = cached_calibration
+    matching_model_override: str | None = None  # the MATCHING_MODEL setting; None = config/matching_model.yaml
+    predictor: object = None  # Stage 4's model (app/matching/predictor.py); built from the config flag when None
     _skill_vectors: SkillVectors | None = field(default=None, repr=False)
+
+    def __post_init__(self):
+        if self.predictor is None:
+            self.predictor = build_predictor(self.cfg, self.matching_model_override)
 
     def calibration(self) -> Calibration:
         version, _ = self.provider.describe()
@@ -54,15 +60,15 @@ class MatchingContext:
         return self._skill_vectors
 
     def versions(self) -> PredictionVersions:
-        """Spec §24 metadata. Refused (ValueError) unless this exact config was registered by an experiment."""
-        if not self.cfg.registered:  # short: agent errors longer than MAX_LOGGED_TEXT are redacted
-            raise ValueError(f"{self.cfg.matching_model_version} not registered; no predictions")
+        """Spec §24 metadata. Refused (ValueError) unless the active model was registered by an experiment and was
+        built for these feature and embedding versions."""
         version, _ = self.provider.describe()
+        self.predictor.check(version)
         return PredictionVersions(
             embedding_model=self.provider.model_name, embedding_version=version,
-            matching_model=self.cfg.matching_model, matching_model_version=self.cfg.matching_model_version,
+            matching_model=self.predictor.name, matching_model_version=self.predictor.version,
             feature_version=FEATURE_VERSION, dataset_version=dataset_version(self.processed_dir),
-            experiment_id=self.cfg.registration["experiment_id"])
+            experiment_id=self.predictor.experiment_id)
 
     # -- loading ---------------------------------------------------------------
     def student(self, student_id: str) -> tuple[StudentView, str | None]:
@@ -184,9 +190,9 @@ def prediction(ctx: MatchingContext, feature_vectors: dict[str, dict[str, float 
     """Refuses (ValueError) to predict without complete spec §24 metadata: see MatchingContext.versions().
     with_versions=False only for the evaluation that registers a configuration (app/matching/evaluate.py):
     its scores are metrics, never returned as predictions."""
-    out = {"matching_model": ctx.cfg.matching_model, "matching_model_version": ctx.cfg.matching_model_version,
-           "method": METHOD, "weights": ctx.cfg.weights,
-           "predictions": {c: predict(f, ctx.cfg) for c, f in feature_vectors.items()}}
+    model = ctx.predictor
+    out = {"matching_model": model.name, "matching_model_version": model.version, "method": model.method,
+           "weights": model.weights, "predictions": model.predict_many(feature_vectors)}
     if with_versions:
         out["model_versions"] = ctx.versions().model_dump()
     return out

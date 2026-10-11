@@ -1,0 +1,104 @@
+# Phase 8 matching-model candidates (spec §10, §13; docs/adr/0015).
+# Every candidate is trained on the SAME features (features-v1, the 20 spec §11 features), the SAME rows
+# (weak labels, train split) and the SAME target (relevance_label >= 2). Hyperparameters are FIXED here, each
+# with a reason, and are not tuned: tuning on weak labels would make the weak labels a selection signal, which
+# ADR 0014 forbids. The engine records this file's SHA-256 with every experiment.
+version: candidates-v1
+
+training:
+  target: "relevance_label >= 2"   # ADR 0015: binary job suitability (moderate or strong match)
+  label_source: weakly_labelled     # the only labels on the train split; human labels cover validation/test only
+  split: train
+  seed: 42
+  class_balance: balanced           # positives are ~3% of weak train pairs; every model weights classes 1:1
+  threads: 1                        # single-threaded for every model, so timings compare like for like
+  decision_threshold: 0.5           # for Accuracy/Precision/Recall/F1; ranking metrics use the score itself
+
+# Missing features (None: no evidence, docs/adr/0007) are NaN. XGBoost and LightGBM handle NaN natively; the
+# four scikit-learn models get median imputation + a missing-indicator column per feature inside their pipeline
+# (the indicator keeps "no evidence" distinguishable from "median evidence").
+candidates:
+  logistic_regression:
+    display: Logistic Regression
+    library: scikit-learn
+    preprocessing: [median_impute_with_indicator, standard_scale]
+    params: {C: 1.0, max_iter: 2000, solver: lbfgs}
+    reasons:
+      C: "sklearn default L2 strength; with 20 features and ~70k rows regularisation barely matters."
+      max_iter: "Enough for lbfgs to converge on standardised features."
+      solver: "sklearn default; deterministic for a fixed input."
+    interpretability: {score: 5, reason: "One signed coefficient per (standardised) feature: the whole model fits on a page."}
+    maintainability: {score: 5, reason: "Pure scikit-learn, no tuning surface, stable serialisation."}
+  decision_tree:
+    display: Decision Tree
+    library: scikit-learn
+    preprocessing: [median_impute_with_indicator]
+    params: {max_depth: 6, min_samples_leaf: 50}
+    reasons:
+      max_depth: "At most 6 questions per prediction keeps the tree printable and readable."
+      min_samples_leaf: "Leaves of >= 50 pairs stop the tree memorising individual weak labels."
+    interpretability: {score: 4, reason: "A depth-6 tree can be drawn and read, but 64 leaves is already a lot."}
+    maintainability: {score: 5, reason: "Pure scikit-learn; two hyperparameters."}
+  random_forest:
+    display: Random Forest
+    library: scikit-learn
+    preprocessing: [median_impute_with_indicator]
+    params: {n_estimators: 200, min_samples_leaf: 20, max_features: sqrt}
+    reasons:
+      n_estimators: "200 trees: past the point where adding trees changes the ranking noticeably."
+      min_samples_leaf: "Bounds tree size (and the serialised model) and smooths noisy weak labels."
+      max_features: "sklearn's classification default."
+    interpretability: {score: 2, reason: "200 deep trees: only post-hoc explanations (SHAP, importances)."}
+    maintainability: {score: 4, reason: "Pure scikit-learn, but the largest model on disk."}
+  gradient_boosting:
+    display: Gradient Boosting (scikit-learn)
+    library: scikit-learn
+    preprocessing: [median_impute_with_indicator]
+    params: {n_estimators: 200, max_depth: 3, learning_rate: 0.1}
+    reasons:
+      n_estimators: "Same boosting budget as XGBoost and LightGBM, so the three boosters compare fairly."
+      max_depth: "sklearn default depth-3 trees."
+      learning_rate: "sklearn default."
+    interpretability: {score: 2, reason: "200 additive trees: post-hoc explanations only."}
+    maintainability: {score: 4, reason: "Pure scikit-learn; no native missing-value support, so it needs the imputer."}
+  xgboost:
+    display: XGBoost
+    library: xgboost
+    preprocessing: []
+    params: {n_estimators: 200, max_depth: 4, learning_rate: 0.1, tree_method: hist}
+    reasons:
+      n_estimators: "Same boosting budget as the other boosters."
+      max_depth: "Shallow trees, as commonly used for tabular boosting; between sklearn GB (3) and LightGBM leaves."
+      learning_rate: "Same as the other boosters."
+      tree_method: "The default histogram algorithm."
+    interpretability: {score: 2, reason: "200 additive trees: post-hoc explanations only (exact TreeSHAP is built in)."}
+    maintainability: {score: 3, reason: "An extra native dependency with its own model format and frequent major releases."}
+  lightgbm:
+    display: LightGBM
+    library: lightgbm
+    preprocessing: []
+    params: {n_estimators: 200, num_leaves: 15, learning_rate: 0.1, deterministic: true, force_row_wise: true}
+    reasons:
+      n_estimators: "Same boosting budget as the other boosters."
+      num_leaves: "15 leaves ~ the capacity of a depth-4 tree, comparable to XGBoost's setting."
+      learning_rate: "Same as the other boosters."
+      deterministic: "Reproducible results on CPU (with force_row_wise)."
+      force_row_wise: "Required with deterministic=true for bit-identical refits."
+    interpretability: {score: 2, reason: "200 additive trees: post-hoc explanations only (exact TreeSHAP is built in)."}
+    maintainability: {score: 3, reason: "An extra native dependency (needs the OpenMP runtime, libgomp1) and its own model format."}
+
+# Baseline 3: structured feature matching. weighted_baseline_v1 (Phase 7) is kept as the floor every trained
+# model must beat, and for Phase 14's baseline comparison. It is not trained.
+baseline:
+  key: weighted_baseline_v1
+  display: "Baseline 3: structured feature matching (weighted_baseline_v1)"
+  interpretability: {score: 5, reason: "A weighted sum with a written reason per weight; every contribution is shown."}
+  maintainability: {score: 5, reason: "No dependency beyond the matching config; but its weights are hand-set placeholders."}
+
+# Complexity points (a rough proxy for the code and config needed to productionise a model):
+#   +2 per runtime dependency beyond scikit-learn, +1 per preprocessing step, +1 per 2 fixed hyperparameters
+#   (rounded up), +1 for a non-joblib model format that needs its own loader.
+# Explainability points (0-5), computed from measurements:
+#   +2 match-level trace verified (per-feature contributions add up to the model output on every checked pair),
+#   +2 global structure readable by a person (interpretability score >= 4),
+#   +1 a per-prediction explanation costs under 10 ms (median).

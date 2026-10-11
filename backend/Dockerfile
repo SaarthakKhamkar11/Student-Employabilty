@@ -10,6 +10,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv/backend
 
+# libgomp1: OpenMP runtime LightGBM needs (Phase 8 matching-model candidates)
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
 
@@ -18,6 +21,8 @@ COPY config /srv/config
 COPY src /srv/src
 COPY backend/app ./app
 COPY backend/migrations ./migrations
+# Phase 8 trained matching models (hash-checked against their manifest before loading)
+COPY models /srv/models
 
 RUN useradd --create-home --uid 10001 appuser
 USER appuser

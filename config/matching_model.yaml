@@ -1,0 +1,11 @@
+# Which model Stage 4 (predict_suitability) uses: the config flag the Matching Agent reads (docs/adr/0015).
+#   active: weighted_baseline_v1   Baseline 3, structured feature matching (config/matching_baseline_v1.yaml)
+#   active: <candidate key>        a trained Phase 8 model from models/matching/<artifacts_experiment>/
+# Changed only by the selection engine's --activate after a "select" decision on human labels, never by hand.
+# The MATCHING_MODEL environment variable overrides `active` for one process (demos, tests); it is never a default.
+# NO MODEL HAS BEEN SELECTED YET: the human relevance labels don't exist (2026-10-11), so Baseline 3 stays active.
+active: weighted_baseline_v1
+# The training run whose artifacts (hash-checked manifest) a trained model is loaded from.
+artifacts_experiment: mms-20261011T104041Z-nolabels
+# The human-label selection run that chose `active`; "none" until one exists.
+selection_experiment: none

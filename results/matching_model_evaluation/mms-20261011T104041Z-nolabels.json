@@ -1,0 +1,1317 @@
+{
+ "experiment_id": "mms-20261011T104041Z-nolabels",
+ "kind": "matching_selection",
+ "started_at": "2026-10-11T10:40:41+00:00",
+ "finished_at": "2026-10-11T10:42:50+00:00",
+ "runtime_seconds": 129.2,
+ "artifacts_experiment": "mms-20261011T104041Z-nolabels",
+ "artifacts_dir": "models/matching/mms-20261011T104041Z-nolabels",
+ "dataset_version": "students:636d394f399c jobs:42c7d78b48c1",
+ "feature_version": "features-v1",
+ "embedding_model": "tfidf_baseline",
+ "embedding_version": "tfidf-953a75d166d8",
+ "feature_matrix": {
+  "file": "data/benchmark/matching_features/features-v1-tfidf-953a75d166d8.csv.gz",
+  "sha256": "39ad3c33f0d3758d647174e891aefe4280177cdbe689a4868d925ae80f9d5ffc",
+  "pairs": 107536,
+  "missing_share_per_feature": {
+   "skill_match_score": 0.0,
+   "required_skill_match_score": 0.0,
+   "preferred_skill_match_score": 0.0346,
+   "semantic_similarity": 0.0,
+   "education_match": 0.2273,
+   "degree_match": 0.2273,
+   "branch_match": 0.4548,
+   "experience_match": 0.0,
+   "experience_gap": 0.0,
+   "project_relevance": 0.5874,
+   "certification_relevance": 0.6084,
+   "career_interest_alignment": 0.0227,
+   "transferable_skill_score": 0.0006,
+   "matched_skill_count": 0.0,
+   "missing_skill_count": 0.0,
+   "required_skill_count": 0.0,
+   "matched_skill_ratio": 0.0,
+   "preferred_skill_ratio": 0.0346,
+   "role_similarity": 0.2036,
+   "domain_similarity": 0.0
+  }
+ },
+ "exclusion_check": {
+  "columns_given_to_models": [
+   "skill_match_score",
+   "required_skill_match_score",
+   "preferred_skill_match_score",
+   "semantic_similarity",
+   "education_match",
+   "degree_match",
+   "branch_match",
+   "experience_match",
+   "experience_gap",
+   "project_relevance",
+   "certification_relevance",
+   "career_interest_alignment",
+   "transferable_skill_score",
+   "matched_skill_count",
+   "missing_skill_count",
+   "required_skill_count",
+   "matched_skill_ratio",
+   "preferred_skill_ratio",
+   "role_similarity",
+   "domain_similarity"
+  ],
+  "extra_columns": [],
+  "protected_present": [],
+  "passed": true
+ },
+ "splits": {
+  "version": "student-sha256-v1",
+  "training": {
+   "target": "relevance_label >= 2",
+   "label_source": "weakly_labelled",
+   "split": "train",
+   "seed": 42,
+   "class_balance": "balanced",
+   "threads": 1,
+   "decision_threshold": 0.5
+  },
+  "selection_split": "validation",
+  "train_evaluated": false,
+  "test": "held back for Phase 14"
+ },
+ "target": {
+  "formulation": "binary classification: suitable = relevance_label >= 2 (docs/adr/0015)",
+  "train_label_distribution": {
+   "0": 63489,
+   "1": 2361,
+   "2": 0,
+   "3": 1830
+  }
+ },
+ "config": {
+  "weights_file": "config/matching_model_selection_weights.yaml",
+  "weights_version": "matching-weights-v1",
+  "weights_sha256": "9ba5250aec746349668b43f75e2b554e6adda9cc288ad4d96f44a2a0d8c886e2",
+  "candidates_file": "config/matching_model_candidates.yaml",
+  "candidates_version": "candidates-v1",
+  "candidates_sha256": "8156f7634b685a39fc5c28037f33d950f4480e8c8b3d6527455e950520f01669",
+  "evaluation": {
+   "ks": [
+    5,
+    10
+   ],
+   "primary_k": 10,
+   "relevance_threshold": 2,
+   "selection_split": "validation",
+   "bootstrap_resamples": 2000,
+   "seed": 42
+  },
+  "normalization": {
+   "method": "min_max",
+   "log_scale": [
+    "latency",
+    "training_time",
+    "memory"
+   ]
+  },
+  "gate": {
+   "must_beat_baseline": true,
+   "primary_quality_metric": "ndcg"
+  },
+  "sensitivity": {
+   "random_weightings": 1000,
+   "concentration": 20,
+   "seed": 42
+  },
+  "close_enough_margin": 0.02
+ },
+ "labels": {
+  "provided": false,
+  "path": null
+ },
+ "validity": "Not yet evaluated",
+ "models": {
+  "logistic_regression": {
+   "display": "Logistic Regression",
+   "library": "scikit-learn",
+   "params": {
+    "C": 1.0,
+    "max_iter": 2000,
+    "solver": "lbfgs"
+   },
+   "role": "candidate"
+  },
+  "decision_tree": {
+   "display": "Decision Tree",
+   "library": "scikit-learn",
+   "params": {
+    "max_depth": 6,
+    "min_samples_leaf": 50
+   },
+   "role": "candidate"
+  },
+  "random_forest": {
+   "display": "Random Forest",
+   "library": "scikit-learn",
+   "params": {
+    "n_estimators": 200,
+    "min_samples_leaf": 20,
+    "max_features": "sqrt"
+   },
+   "role": "candidate"
+  },
+  "gradient_boosting": {
+   "display": "Gradient Boosting (scikit-learn)",
+   "library": "scikit-learn",
+   "params": {
+    "n_estimators": 200,
+    "max_depth": 3,
+    "learning_rate": 0.1
+   },
+   "role": "candidate"
+  },
+  "xgboost": {
+   "display": "XGBoost",
+   "library": "xgboost",
+   "params": {
+    "n_estimators": 200,
+    "max_depth": 4,
+    "learning_rate": 0.1,
+    "tree_method": "hist"
+   },
+   "role": "candidate"
+  },
+  "lightgbm": {
+   "display": "LightGBM",
+   "library": "lightgbm",
+   "params": {
+    "n_estimators": 200,
+    "num_leaves": 15,
+    "learning_rate": 0.1,
+    "deterministic": true,
+    "force_row_wise": true
+   },
+   "role": "candidate"
+  },
+  "weighted_baseline_v1": {
+   "display": "Baseline 3: structured feature matching",
+   "library": "none",
+   "params": "weights in config/matching_baseline_v1.yaml",
+   "role": "baseline (floor)"
+  }
+ },
+ "measurements": {
+  "logistic_regression": {
+   "key": "logistic_regression",
+   "display": "Logistic Regression",
+   "library": "scikit-learn",
+   "params": {
+    "C": 1.0,
+    "max_iter": 2000,
+    "solver": "lbfgs"
+   },
+   "artifact": {
+    "file": "logistic_regression.joblib",
+    "format": "joblib",
+    "sha256": "0ef5d12071b7a6fb9d6b63b2f11ba67de3d31ddc3519a8a8ba5aae7e4e498798",
+    "size_bytes": 2382
+   },
+   "training": {
+    "rows": 67680,
+    "positives": 1830,
+    "seconds": [
+     4.186,
+     4.03,
+     3.535
+    ],
+    "median_seconds": 4.03,
+    "memory_added_mb": 61.8,
+    "memory_peak_mb": 310.9,
+    "threads": 1,
+    "seed": 42
+   },
+   "reproducibility": {
+    "seed": 42,
+    "max_abs_diff_between_refits": 0.0,
+    "deterministic": true
+   },
+   "inference": {
+    "single_pair_ms": {
+     "median": 1.2821,
+     "p95": 1.8729,
+     "trials": 30
+    },
+    "batch_50_ms": {
+     "median": 1.2848,
+     "p95": 1.4285,
+     "trials": 30
+    },
+    "throughput_pairs_per_s": 2265799.6,
+    "throughput_rows": 39856
+   },
+   "scalability": {
+    "measured": [
+     {
+      "rows": 16920,
+      "seconds": 3.359
+     },
+     {
+      "rows": 33840,
+      "seconds": 4.538
+     },
+     {
+      "rows": 67680,
+      "seconds": 4.03
+     }
+    ],
+    "exponent": 0.13,
+    "training_seconds_1M_pairs": 6.2,
+    "training_seconds_10M_pairs": 8.3,
+    "basis": "EXTRAPOLATED: power law fitted to 3 measured training-set sizes (25%, 50%, 100% of the train split), single thread; not measured at that scale"
+   },
+   "explainability": {
+    "explainer": "shap.LinearExplainer (exact for a linear model in log-odds, independent features)",
+    "pairs_checked": 200,
+    "additivity_max_abs_error": 3.552713678800501e-15,
+    "output_space": "log-odds",
+    "single_pair_explanation_ms": {
+     "median": 1.1601,
+     "p95": 1.2899,
+     "trials": 10
+    },
+    "mean_abs_contribution": {
+     "branch_match": 2.63721,
+     "project_relevance": 1.01537,
+     "career_interest_alignment": 0.69871,
+     "domain_similarity": 0.40748,
+     "skill_match_score": 0.39801,
+     "certification_relevance": 0.23557,
+     "experience_match": 0.12897,
+     "experience_gap": 0.12011,
+     "role_similarity": 0.11146,
+     "matched_skill_ratio": 0.10799,
+     "semantic_similarity": 0.09056,
+     "preferred_skill_match_score": 0.08746,
+     "missing_skill_count": 0.08046,
+     "transferable_skill_score": 0.08033,
+     "required_skill_count": 0.05698,
+     "education_match": 0.04996,
+     "degree_match": 0.0362,
+     "preferred_skill_ratio": 0.03179,
+     "matched_skill_count": 0.02143,
+     "required_skill_match_score": 0.01292
+    }
+   }
+  },
+  "decision_tree": {
+   "key": "decision_tree",
+   "display": "Decision Tree",
+   "library": "scikit-learn",
+   "params": {
+    "max_depth": 6,
+    "min_samples_leaf": 50
+   },
+   "artifact": {
+    "file": "decision_tree.joblib",
+    "format": "joblib",
+    "sha256": "8a11032b8829b6ba3bb728396ed411bc648b690caf285b7c815a071d8926f1c3",
+    "size_bytes": 3970
+   },
+   "training": {
+    "rows": 67680,
+    "positives": 1830,
+    "seconds": [
+     0.222,
+     0.197,
+     0.197
+    ],
+    "median_seconds": 0.197,
+    "memory_added_mb": 42.1,
+    "memory_peak_mb": 286.6,
+    "threads": 1,
+    "seed": 42
+   },
+   "reproducibility": {
+    "seed": 42,
+    "max_abs_diff_between_refits": 0.0,
+    "deterministic": true
+   },
+   "inference": {
+    "single_pair_ms": {
+     "median": 1.0759,
+     "p95": 1.4028,
+     "trials": 30
+    },
+    "batch_50_ms": {
+     "median": 1.2655,
+     "p95": 1.4963,
+     "trials": 30
+    },
+    "throughput_pairs_per_s": 3890690.9,
+    "throughput_rows": 39856
+   },
+   "scalability": {
+    "measured": [
+     {
+      "rows": 16920,
+      "seconds": 0.044
+     },
+     {
+      "rows": 33840,
+      "seconds": 0.081
+     },
+     {
+      "rows": 67680,
+      "seconds": 0.197
+     }
+    ],
+    "exponent": 1.08,
+    "training_seconds_1M_pairs": 3.5,
+    "training_seconds_10M_pairs": 41.5,
+    "basis": "EXTRAPOLATED: power law fitted to 3 measured training-set sizes (25%, 50%, 100% of the train split), single thread; not measured at that scale"
+   },
+   "explainability": {
+    "explainer": "shap.TreeExplainer (exact TreeSHAP, tree_path_dependent)",
+    "pairs_checked": 200,
+    "additivity_max_abs_error": 7.803757640090225e-13,
+    "output_space": "probability",
+    "single_pair_explanation_ms": {
+     "median": 0.9962,
+     "p95": 1.4266,
+     "trials": 10
+    },
+    "mean_abs_contribution": {
+     "branch_match": 0.31085,
+     "career_interest_alignment": 0.15638,
+     "project_relevance": 0.03297,
+     "semantic_similarity": 0.02704,
+     "domain_similarity": 0.02458,
+     "experience_match": 0.01705,
+     "experience_gap": 0.00573,
+     "missing_skill_count": 0.00472,
+     "certification_relevance": 0.00262,
+     "required_skill_count": 0.00062,
+     "skill_match_score": 0.0,
+     "required_skill_match_score": 0.0,
+     "preferred_skill_match_score": 0.0,
+     "education_match": 0.0,
+     "degree_match": 0.0,
+     "transferable_skill_score": 0.0,
+     "matched_skill_count": 0.0,
+     "matched_skill_ratio": 0.0,
+     "preferred_skill_ratio": 0.0,
+     "role_similarity": 0.0
+    }
+   }
+  },
+  "random_forest": {
+   "key": "random_forest",
+   "display": "Random Forest",
+   "library": "scikit-learn",
+   "params": {
+    "n_estimators": 200,
+    "min_samples_leaf": 20,
+    "max_features": "sqrt"
+   },
+   "artifact": {
+    "file": "random_forest.joblib",
+    "format": "joblib",
+    "sha256": "f41d56400a6090f1ae6080ac752a8f96d2d89a946e4a565a6dc1d70fc13ab3da",
+    "size_bytes": 2494529
+   },
+   "training": {
+    "rows": 67680,
+    "positives": 1830,
+    "seconds": [
+     5.511,
+     5.333,
+     5.298
+    ],
+    "median_seconds": 5.333,
+    "memory_added_mb": 44.6,
+    "memory_peak_mb": 299.3,
+    "threads": 1,
+    "seed": 42
+   },
+   "reproducibility": {
+    "seed": 42,
+    "max_abs_diff_between_refits": 0.0,
+    "deterministic": true
+   },
+   "inference": {
+    "single_pair_ms": {
+     "median": 8.3978,
+     "p95": 11.0268,
+     "trials": 30
+    },
+    "batch_50_ms": {
+     "median": 9.3404,
+     "p95": 12.3709,
+     "trials": 30
+    },
+    "throughput_pairs_per_s": 175174.6,
+    "throughput_rows": 39856
+   },
+   "scalability": {
+    "measured": [
+     {
+      "rows": 16920,
+      "seconds": 1.23
+     },
+     {
+      "rows": 33840,
+      "seconds": 2.406
+     },
+     {
+      "rows": 67680,
+      "seconds": 5.333
+     }
+    ],
+    "exponent": 1.06,
+    "training_seconds_1M_pairs": 90.3,
+    "training_seconds_10M_pairs": 1032.1,
+    "basis": "EXTRAPOLATED: power law fitted to 3 measured training-set sizes (25%, 50%, 100% of the train split), single thread; not measured at that scale"
+   },
+   "explainability": {
+    "explainer": "shap.TreeExplainer (exact TreeSHAP, tree_path_dependent)",
+    "pairs_checked": 200,
+    "additivity_max_abs_error": 2.2673947138243666e-13,
+    "output_space": "probability",
+    "single_pair_explanation_ms": {
+     "median": 10.7094,
+     "p95": 13.8767,
+     "trials": 10
+    },
+    "mean_abs_contribution": {
+     "branch_match": 0.22633,
+     "career_interest_alignment": 0.12406,
+     "domain_similarity": 0.0599,
+     "semantic_similarity": 0.03643,
+     "project_relevance": 0.02298,
+     "certification_relevance": 0.0195,
+     "role_similarity": 0.01894,
+     "skill_match_score": 0.01644,
+     "missing_skill_count": 0.00964,
+     "experience_gap": 0.00744,
+     "required_skill_count": 0.00732,
+     "preferred_skill_match_score": 0.0071,
+     "education_match": 0.0065,
+     "experience_match": 0.00596,
+     "required_skill_match_score": 0.00542,
+     "transferable_skill_score": 0.00501,
+     "degree_match": 0.00458,
+     "matched_skill_ratio": 0.00116,
+     "matched_skill_count": 0.00048,
+     "preferred_skill_ratio": 0.0003
+    }
+   }
+  },
+  "gradient_boosting": {
+   "key": "gradient_boosting",
+   "display": "Gradient Boosting (scikit-learn)",
+   "library": "scikit-learn",
+   "params": {
+    "n_estimators": 200,
+    "max_depth": 3,
+    "learning_rate": 0.1
+   },
+   "artifact": {
+    "file": "gradient_boosting.joblib",
+    "format": "joblib",
+    "sha256": "755cd311f4cb53f6db943d085978eae8a3d0b17f98e59735e70902e3757ce3fa",
+    "size_bytes": 91996
+   },
+   "training": {
+    "rows": 67680,
+    "positives": 1830,
+    "seconds": [
+     11.289,
+     11.103,
+     11.125
+    ],
+    "median_seconds": 11.125,
+    "memory_added_mb": 44.0,
+    "memory_peak_mb": 296.1,
+    "threads": 1,
+    "seed": 42
+   },
+   "reproducibility": {
+    "seed": 42,
+    "max_abs_diff_between_refits": 0.0,
+    "deterministic": true
+   },
+   "inference": {
+    "single_pair_ms": {
+     "median": 1.4938,
+     "p95": 2.009,
+     "trials": 30
+    },
+    "batch_50_ms": {
+     "median": 1.4439,
+     "p95": 1.798,
+     "trials": 30
+    },
+    "throughput_pairs_per_s": 627582.3,
+    "throughput_rows": 39856
+   },
+   "scalability": {
+    "measured": [
+     {
+      "rows": 16920,
+      "seconds": 2.894
+     },
+     {
+      "rows": 33840,
+      "seconds": 5.718
+     },
+     {
+      "rows": 67680,
+      "seconds": 11.125
+     }
+    ],
+    "exponent": 0.97,
+    "training_seconds_1M_pairs": 152.5,
+    "training_seconds_10M_pairs": 1427.8,
+    "basis": "EXTRAPOLATED: power law fitted to 3 measured training-set sizes (25%, 50%, 100% of the train split), single thread; not measured at that scale"
+   },
+   "explainability": {
+    "explainer": "shap.TreeExplainer (exact TreeSHAP, tree_path_dependent)",
+    "pairs_checked": 200,
+    "additivity_max_abs_error": 1.7763568394002505e-12,
+    "output_space": "log-odds",
+    "single_pair_explanation_ms": {
+     "median": 1.0476,
+     "p95": 1.2746,
+     "trials": 10
+    },
+    "mean_abs_contribution": {
+     "branch_match": 3.33883,
+     "career_interest_alignment": 1.43725,
+     "domain_similarity": 1.12094,
+     "project_relevance": 0.98501,
+     "missing_skill_count": 0.28428,
+     "required_skill_count": 0.23283,
+     "semantic_similarity": 0.22672,
+     "experience_gap": 0.10948,
+     "role_similarity": 0.10156,
+     "skill_match_score": 0.07151,
+     "experience_match": 0.05188,
+     "degree_match": 0.04934,
+     "certification_relevance": 0.04464,
+     "required_skill_match_score": 0.03823,
+     "education_match": 0.03631,
+     "preferred_skill_match_score": 0.01966,
+     "preferred_skill_ratio": 0.00507,
+     "matched_skill_ratio": 0.00199,
+     "transferable_skill_score": 0.0,
+     "matched_skill_count": 0.0
+    }
+   }
+  },
+  "xgboost": {
+   "key": "xgboost",
+   "display": "XGBoost",
+   "library": "xgboost",
+   "params": {
+    "n_estimators": 200,
+    "max_depth": 4,
+    "learning_rate": 0.1,
+    "tree_method": "hist"
+   },
+   "artifact": {
+    "file": "xgboost.json",
+    "format": "xgboost-json",
+    "sha256": "b1863fbcd54a1b62746d5f79e06cffefa659e04d58908c17dc667c0710279734",
+    "size_bytes": 360746
+   },
+   "training": {
+    "rows": 67680,
+    "positives": 1830,
+    "seconds": [
+     1.125,
+     1.07,
+     1.117
+    ],
+    "median_seconds": 1.117,
+    "memory_added_mb": 8.0,
+    "memory_peak_mb": 262.5,
+    "threads": 1,
+    "seed": 42
+   },
+   "reproducibility": {
+    "seed": 42,
+    "max_abs_diff_between_refits": 0.0,
+    "deterministic": true
+   },
+   "inference": {
+    "single_pair_ms": {
+     "median": 2.1862,
+     "p95": 2.5446,
+     "trials": 30
+    },
+    "batch_50_ms": {
+     "median": 2.3506,
+     "p95": 2.6483,
+     "trials": 30
+    },
+    "throughput_pairs_per_s": 3031408.0,
+    "throughput_rows": 39856
+   },
+   "scalability": {
+    "measured": [
+     {
+      "rows": 16920,
+      "seconds": 0.395
+     },
+     {
+      "rows": 33840,
+      "seconds": 0.704
+     },
+     {
+      "rows": 67680,
+      "seconds": 1.117
+     }
+    ],
+    "exponent": 0.75,
+    "training_seconds_1M_pairs": 8.6,
+    "training_seconds_10M_pairs": 48.4,
+    "basis": "EXTRAPOLATED: power law fitted to 3 measured training-set sizes (25%, 50%, 100% of the train split), single thread; not measured at that scale"
+   },
+   "explainability": {
+    "explainer": "shap.TreeExplainer (exact TreeSHAP, tree_path_dependent)",
+    "pairs_checked": 200,
+    "additivity_max_abs_error": 1.0311719961464405e-05,
+    "output_space": "log-odds",
+    "single_pair_explanation_ms": {
+     "median": 2.6286,
+     "p95": 3.2271,
+     "trials": 10
+    },
+    "mean_abs_contribution": {
+     "branch_match": 5.50023,
+     "domain_similarity": 1.81499,
+     "career_interest_alignment": 1.33746,
+     "project_relevance": 1.02985,
+     "missing_skill_count": 0.37806,
+     "required_skill_count": 0.24846,
+     "semantic_similarity": 0.14997,
+     "experience_match": 0.10428,
+     "experience_gap": 0.09428,
+     "education_match": 0.08076,
+     "certification_relevance": 0.07635,
+     "degree_match": 0.05538,
+     "role_similarity": 0.04556,
+     "preferred_skill_ratio": 0.02381,
+     "preferred_skill_match_score": 0.01569,
+     "skill_match_score": 0.01541,
+     "required_skill_match_score": 0.0096,
+     "transferable_skill_score": 0.00839,
+     "matched_skill_ratio": 0.00441,
+     "matched_skill_count": 0.00113
+    }
+   }
+  },
+  "lightgbm": {
+   "key": "lightgbm",
+   "display": "LightGBM",
+   "library": "lightgbm",
+   "params": {
+    "n_estimators": 200,
+    "num_leaves": 15,
+    "learning_rate": 0.1,
+    "deterministic": true,
+    "force_row_wise": true
+   },
+   "artifact": {
+    "file": "lightgbm.txt",
+    "format": "lightgbm-text",
+    "sha256": "1d6a56be4632d18439fb4201c5c34d735ba1210ceb0a3d85b86d123b5f4ad4f2",
+    "size_bytes": 353955
+   },
+   "training": {
+    "rows": 67680,
+    "positives": 1830,
+    "seconds": [
+     1.03,
+     1.018,
+     1.052
+    ],
+    "median_seconds": 1.03,
+    "memory_added_mb": 22.8,
+    "memory_peak_mb": 274.4,
+    "threads": 1,
+    "seed": 42
+   },
+   "reproducibility": {
+    "seed": 42,
+    "max_abs_diff_between_refits": 0.0,
+    "deterministic": true
+   },
+   "inference": {
+    "single_pair_ms": {
+     "median": 0.5114,
+     "p95": 1.1279,
+     "trials": 30
+    },
+    "batch_50_ms": {
+     "median": 0.4537,
+     "p95": 0.5951,
+     "trials": 30
+    },
+    "throughput_pairs_per_s": 1397549.1,
+    "throughput_rows": 39856
+   },
+   "scalability": {
+    "measured": [
+     {
+      "rows": 16920,
+      "seconds": 0.338
+     },
+     {
+      "rows": 33840,
+      "seconds": 0.614
+     },
+     {
+      "rows": 67680,
+      "seconds": 1.03
+     }
+    ],
+    "exponent": 0.8,
+    "training_seconds_1M_pairs": 9.1,
+    "training_seconds_10M_pairs": 58.0,
+    "basis": "EXTRAPOLATED: power law fitted to 3 measured training-set sizes (25%, 50%, 100% of the train split), single thread; not measured at that scale"
+   },
+   "explainability": {
+    "explainer": "shap.TreeExplainer (exact TreeSHAP, tree_path_dependent)",
+    "pairs_checked": 200,
+    "additivity_max_abs_error": 2.042810365310288e-14,
+    "output_space": "log-odds",
+    "single_pair_explanation_ms": {
+     "median": 1.1838,
+     "p95": 2.2783,
+     "trials": 10
+    },
+    "mean_abs_contribution": {
+     "branch_match": 2.24063,
+     "domain_similarity": 0.71618,
+     "project_relevance": 0.43643,
+     "career_interest_alignment": 0.36694,
+     "missing_skill_count": 0.36539,
+     "required_skill_count": 0.27652,
+     "experience_match": 0.20859,
+     "semantic_similarity": 0.12893,
+     "education_match": 0.10329,
+     "experience_gap": 0.06085,
+     "degree_match": 0.05844,
+     "certification_relevance": 0.04618,
+     "role_similarity": 0.04487,
+     "skill_match_score": 0.03655,
+     "preferred_skill_match_score": 0.02064,
+     "transferable_skill_score": 0.0102,
+     "required_skill_match_score": 0.00919,
+     "preferred_skill_ratio": 0.00859,
+     "matched_skill_ratio": 0.00374,
+     "matched_skill_count": 0.0
+    }
+   }
+  },
+  "weighted_baseline_v1": {
+   "key": "weighted_baseline_v1",
+   "display": "Baseline 3: structured feature matching",
+   "library": "none",
+   "params": {
+    "weights": {
+     "skill_match_score": 0.2,
+     "required_skill_match_score": 0.1,
+     "preferred_skill_match_score": 0.03,
+     "semantic_similarity": 0.15,
+     "career_interest_alignment": 0.1,
+     "education_match": 0.06,
+     "branch_match": 0.06,
+     "degree_match": 0.02,
+     "experience_match": 0.08,
+     "experience_gap": 0.02,
+     "project_relevance": 0.06,
+     "certification_relevance": 0.03,
+     "transferable_skill_score": 0.03,
+     "matched_skill_ratio": 0.02,
+     "role_similarity": 0.02,
+     "domain_similarity": 0.02,
+     "preferred_skill_ratio": 0.0,
+     "matched_skill_count": 0.0,
+     "missing_skill_count": 0.0,
+     "required_skill_count": 0.0
+    }
+   },
+   "artifact": {
+    "file": "matching_baseline_v1.yaml",
+    "format": "yaml (weights)",
+    "sha256": "545cea3bb7677391d115bcfd557dbde6875c97b8bbecf0c1eb9968186f8c9cb3",
+    "size_bytes": 7533,
+    "matching_model_version": "weighted_baseline_v1+545cea3bb767"
+   },
+   "training": {
+    "rows": 0,
+    "positives": 0,
+    "seconds": [
+     0.0
+    ],
+    "median_seconds": 0.0,
+    "memory_added_mb": 0.0,
+    "memory_peak_mb": null,
+    "threads": 1,
+    "seed": null,
+    "note": "not trained: hand-set placeholder weights (docs/adr/0014)"
+   },
+   "reproducibility": {
+    "seed": null,
+    "max_abs_diff_between_refits": 0.0,
+    "deterministic": true
+   },
+   "inference": {
+    "single_pair_ms": {
+     "median": 0.0359,
+     "p95": 0.0557,
+     "trials": 30
+    },
+    "batch_50_ms": {
+     "median": 2.1297,
+     "p95": 3.0108,
+     "trials": 30
+    },
+    "throughput_pairs_per_s": 23029.4,
+    "throughput_rows": 39856
+   },
+   "scalability": {
+    "measured": [],
+    "exponent": 0.0,
+    "training_seconds_1M_pairs": 0.0,
+    "training_seconds_10M_pairs": 0.0,
+    "basis": "nothing to train"
+   },
+   "explainability": {
+    "explainer": "built in: weight x normalised feature / weight covered",
+    "pairs_checked": 39856,
+    "additivity_max_abs_error": 2.220446049250313e-16,
+    "output_space": "suitability",
+    "single_pair_explanation_ms": {
+     "median": 0.0,
+     "p95": 0.0,
+     "trials": 0,
+     "note": "contributions come with every prediction"
+    },
+    "mean_abs_contribution": {}
+   }
+  }
+ },
+ "quality": {},
+ "confidence": {},
+ "engineering": {
+  "logistic_regression": {
+   "complexity": {
+    "points": 4,
+    "reasons": [
+     "+1 median_impute_with_indicator",
+     "+1 standard_scale",
+     "+2 for 3 fixed hyperparameters"
+    ]
+   },
+   "explainability": {
+    "points": 5,
+    "reasons": [
+     "+2 match-level trace verified on 200 pairs (max error 3.6e-15)",
+     "+2 readable global structure (interpretability 5/5)",
+     "+1 explanation 1.16 ms per pair"
+    ]
+   },
+   "interpretability": {
+    "score": 5,
+    "reason": "One signed coefficient per (standardised) feature: the whole model fits on a page."
+   },
+   "maintainability": {
+    "score": 5,
+    "reason": "Pure scikit-learn, no tuning surface, stable serialisation."
+   }
+  },
+  "decision_tree": {
+   "complexity": {
+    "points": 2,
+    "reasons": [
+     "+1 median_impute_with_indicator",
+     "+1 for 2 fixed hyperparameters"
+    ]
+   },
+   "explainability": {
+    "points": 5,
+    "reasons": [
+     "+2 match-level trace verified on 200 pairs (max error 7.8e-13)",
+     "+2 readable global structure (interpretability 4/5)",
+     "+1 explanation 1.00 ms per pair"
+    ]
+   },
+   "interpretability": {
+    "score": 4,
+    "reason": "A depth-6 tree can be drawn and read, but 64 leaves is already a lot."
+   },
+   "maintainability": {
+    "score": 5,
+    "reason": "Pure scikit-learn; two hyperparameters."
+   }
+  },
+  "random_forest": {
+   "complexity": {
+    "points": 3,
+    "reasons": [
+     "+1 median_impute_with_indicator",
+     "+2 for 3 fixed hyperparameters"
+    ]
+   },
+   "explainability": {
+    "points": 2,
+    "reasons": [
+     "+2 match-level trace verified on 200 pairs (max error 2.3e-13)",
+     "+0 post-hoc only (interpretability 2/5)",
+     "+0 explanation 10.7 ms per pair (>= 10 ms)"
+    ]
+   },
+   "interpretability": {
+    "score": 2,
+    "reason": "200 deep trees: only post-hoc explanations (SHAP, importances)."
+   },
+   "maintainability": {
+    "score": 4,
+    "reason": "Pure scikit-learn, but the largest model on disk."
+   }
+  },
+  "gradient_boosting": {
+   "complexity": {
+    "points": 3,
+    "reasons": [
+     "+1 median_impute_with_indicator",
+     "+2 for 3 fixed hyperparameters"
+    ]
+   },
+   "explainability": {
+    "points": 3,
+    "reasons": [
+     "+2 match-level trace verified on 200 pairs (max error 1.8e-12)",
+     "+0 post-hoc only (interpretability 2/5)",
+     "+1 explanation 1.05 ms per pair"
+    ]
+   },
+   "interpretability": {
+    "score": 2,
+    "reason": "200 additive trees: post-hoc explanations only."
+   },
+   "maintainability": {
+    "score": 4,
+    "reason": "Pure scikit-learn; no native missing-value support, so it needs the imputer."
+   }
+  },
+  "xgboost": {
+   "complexity": {
+    "points": 5,
+    "reasons": [
+     "+2 runtime dependency (xgboost)",
+     "+2 for 4 fixed hyperparameters",
+     "+1 own model format and loader"
+    ]
+   },
+   "explainability": {
+    "points": 3,
+    "reasons": [
+     "+2 match-level trace verified on 200 pairs (max error 1.0e-05)",
+     "+0 post-hoc only (interpretability 2/5)",
+     "+1 explanation 2.63 ms per pair"
+    ]
+   },
+   "interpretability": {
+    "score": 2,
+    "reason": "200 additive trees: post-hoc explanations only (exact TreeSHAP is built in)."
+   },
+   "maintainability": {
+    "score": 3,
+    "reason": "An extra native dependency with its own model format and frequent major releases."
+   }
+  },
+  "lightgbm": {
+   "complexity": {
+    "points": 6,
+    "reasons": [
+     "+2 runtime dependency (lightgbm)",
+     "+3 for 5 fixed hyperparameters",
+     "+1 own model format and loader"
+    ]
+   },
+   "explainability": {
+    "points": 3,
+    "reasons": [
+     "+2 match-level trace verified on 200 pairs (max error 2.0e-14)",
+     "+0 post-hoc only (interpretability 2/5)",
+     "+1 explanation 1.18 ms per pair"
+    ]
+   },
+   "interpretability": {
+    "score": 2,
+    "reason": "200 additive trees: post-hoc explanations only (exact TreeSHAP is built in)."
+   },
+   "maintainability": {
+    "score": 3,
+    "reason": "An extra native dependency (needs the OpenMP runtime, libgomp1) and its own model format."
+   }
+  },
+  "weighted_baseline_v1": {
+   "complexity": {
+    "points": 0,
+    "reasons": [
+     "no dependency, preprocessing, hyperparameter or model format of its own"
+    ]
+   },
+   "explainability": {
+    "points": 5,
+    "reasons": [
+     "+2 match-level trace verified on 39856 pairs (max error 2.2e-16)",
+     "+2 readable global structure (interpretability 5/5)",
+     "+1 explanation 0.00 ms per pair"
+    ]
+   },
+   "interpretability": {
+    "score": 5,
+    "reason": "A weighted sum with a written reason per weight; every contribution is shown."
+   },
+   "maintainability": {
+    "score": 5,
+    "reason": "No dependency beyond the matching config; but its weights are hand-set placeholders."
+   }
+  }
+ },
+ "criteria": {
+  "logistic_regression": {
+   "f1": null,
+   "ndcg": null,
+   "mrr": null,
+   "latency": 1.2848,
+   "training_time": 4.03,
+   "memory": 61.8,
+   "complexity": 4,
+   "explainability": 5
+  },
+  "decision_tree": {
+   "f1": null,
+   "ndcg": null,
+   "mrr": null,
+   "latency": 1.2655,
+   "training_time": 0.197,
+   "memory": 42.1,
+   "complexity": 2,
+   "explainability": 5
+  },
+  "random_forest": {
+   "f1": null,
+   "ndcg": null,
+   "mrr": null,
+   "latency": 9.3404,
+   "training_time": 5.333,
+   "memory": 44.6,
+   "complexity": 3,
+   "explainability": 2
+  },
+  "gradient_boosting": {
+   "f1": null,
+   "ndcg": null,
+   "mrr": null,
+   "latency": 1.4439,
+   "training_time": 11.125,
+   "memory": 44.0,
+   "complexity": 3,
+   "explainability": 3
+  },
+  "xgboost": {
+   "f1": null,
+   "ndcg": null,
+   "mrr": null,
+   "latency": 2.3506,
+   "training_time": 1.117,
+   "memory": 8.0,
+   "complexity": 5,
+   "explainability": 3
+  },
+  "lightgbm": {
+   "f1": null,
+   "ndcg": null,
+   "mrr": null,
+   "latency": 0.4537,
+   "training_time": 1.03,
+   "memory": 22.8,
+   "complexity": 6,
+   "explainability": 3
+  },
+  "weighted_baseline_v1": {
+   "f1": null,
+   "ndcg": null,
+   "mrr": null,
+   "latency": 2.1297,
+   "training_time": 0.0,
+   "memory": 0.0,
+   "complexity": 0,
+   "explainability": 5
+  }
+ },
+ "normalised": {
+  "complexity": {
+   "logistic_regression": 0.3333333333333333,
+   "decision_tree": 0.6666666666666666,
+   "random_forest": 0.5,
+   "gradient_boosting": 0.5,
+   "xgboost": 0.16666666666666666,
+   "lightgbm": 0.0,
+   "weighted_baseline_v1": 1.0
+  },
+  "explainability": {
+   "logistic_regression": 1.0,
+   "decision_tree": 1.0,
+   "random_forest": 0.0,
+   "gradient_boosting": 0.3333333333333333,
+   "xgboost": 0.3333333333333333,
+   "lightgbm": 0.3333333333333333,
+   "weighted_baseline_v1": 1.0
+  },
+  "latency": {
+   "logistic_regression": 0.6558557507953867,
+   "decision_tree": 0.6608598578100005,
+   "random_forest": 0.0,
+   "gradient_boosting": 0.6172582203504505,
+   "xgboost": 0.4561420908111148,
+   "lightgbm": 1.0,
+   "weighted_baseline_v1": 0.48877029477676054
+  },
+  "memory": {
+   "logistic_regression": 0.0,
+   "decision_tree": 0.059730228462459914,
+   "random_forest": 0.050753923794746664,
+   "gradient_boosting": 0.05286148614351892,
+   "xgboost": 0.3181304745690923,
+   "lightgbm": 0.15516138169455584,
+   "weighted_baseline_v1": 1.0
+  },
+  "training_time": {
+   "logistic_regression": 0.10898721581937508,
+   "decision_tree": 0.4329470837512494,
+   "random_forest": 0.0789186255144471,
+   "gradient_boosting": 0.0,
+   "xgboost": 0.2467060874598653,
+   "lightgbm": 0.255409334435965,
+   "weighted_baseline_v1": 1.0
+  }
+ },
+ "eligible": [
+  "logistic_regression",
+  "decision_tree",
+  "random_forest",
+  "gradient_boosting",
+  "xgboost",
+  "lightgbm"
+ ],
+ "scenarios": {
+  "balanced": {
+   "description": "The default. Quality first, but the model must stay cheap, simple and explainable.",
+   "weights": {
+    "f1": 0.15,
+    "ndcg": 0.2,
+    "mrr": 0.15,
+    "latency": 0.1,
+    "training_time": 0.05,
+    "memory": 0.05,
+    "complexity": 0.1,
+    "explainability": 0.2
+   },
+   "reasons": {
+    "f1": "Getting the suitable/not-suitable call right for each pair.",
+    "ndcg": "Graded quality of the ranked list a student actually sees.",
+    "mrr": "Where the first good job appears is what a student notices first.",
+    "latency": "Scoring runs inside every matching request.",
+    "training_time": "Retraining is offline and rare.",
+    "memory": "The backend shares one machine with Postgres and Redis.",
+    "complexity": "Every extra dependency and format is something to keep working.",
+    "explainability": "Spec \u00a716: every match must be explainable to the student (Phase 11)."
+   },
+   "overall": null,
+   "ranking": null,
+   "winner": null
+  },
+  "quality_prioritized": {
+   "description": "Ranking quality matters most; cost and simplicity are secondary.",
+   "weights": {
+    "f1": 0.2,
+    "ndcg": 0.3,
+    "mrr": 0.2,
+    "latency": 0.05,
+    "training_time": 0.025,
+    "memory": 0.025,
+    "complexity": 0.05,
+    "explainability": 0.15
+   },
+   "reasons": {
+    "f1": "Pair-level correctness, weighted up with all quality metrics.",
+    "ndcg": "The graded metric gets the largest share.",
+    "mrr": "First relevant job.",
+    "latency": "Still must respond in reasonable time.",
+    "training_time": "Minor in this scenario.",
+    "memory": "Minor in this scenario.",
+    "complexity": "Minor in this scenario.",
+    "explainability": "Explanations are still required by the spec."
+   },
+   "overall": null,
+   "ranking": null,
+   "winner": null
+  },
+  "low_resource_deployment": {
+   "description": "A college server or laptop with no GPU and limited RAM, maintained lightly.",
+   "weights": {
+    "f1": 0.1,
+    "ndcg": 0.15,
+    "mrr": 0.1,
+    "latency": 0.15,
+    "training_time": 0.1,
+    "memory": 0.15,
+    "complexity": 0.15,
+    "explainability": 0.1
+   },
+   "reasons": {
+    "f1": "Quality still counts: a cheap model that matches badly is useless.",
+    "ndcg": "The main quality signal, at reduced weight.",
+    "mrr": "Reduced weight.",
+    "latency": "CPU-only inference makes latency a binding constraint.",
+    "training_time": "Retraining on a small CPU is slow.",
+    "memory": "Limited RAM is the other binding constraint.",
+    "complexity": "Fewer dependencies to install and keep working on a lightly maintained server.",
+    "explainability": "Still required, at reduced weight."
+   },
+   "overall": null,
+   "ranking": null,
+   "winner": null
+  }
+ },
+ "winner_changes": null,
+ "random_weight_stability": null,
+ "simple_model_check": null,
+ "hardware": {
+  "machine": "x86_64",
+  "system": "Linux 5.15.167.4-microsoft-standard-WSL2",
+  "python": "3.11.17",
+  "cpu_count": 16,
+  "libraries": {
+   "scikit-learn": "1.6.1",
+   "xgboost-cpu": "3.2.0",
+   "lightgbm": "4.7.0",
+   "shap": "0.51.0",
+   "numpy": "2.0.2",
+   "pandas": "2.3.3"
+  }
+ },
+ "recommendation": {
+  "decision": "no_selection",
+  "model": null,
+  "line": "Insufficient evidence: no relevance labels. Keep weighted_baseline_v1 (Baseline 3) as the active matching model until the human-label run."
+ }
+}

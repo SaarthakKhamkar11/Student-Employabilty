@@ -19,3 +19,8 @@ scipy==1.17.1            # Kendall tau
 PyYAML==6.0.3            # config/model_selection_weights.yaml, config/weak_label_rules.yaml
 packaging==26.3          # dependency footprint per model
 psycopg[binary]==3.3.6   # optional: --record-db stores experiments in Postgres
+
+# Phase 8 matching-model experimentation (src/scoring): same pins as backend/requirements.txt
+xgboost-cpu==3.2.0
+lightgbm==4.7.0
+shap==0.51.0

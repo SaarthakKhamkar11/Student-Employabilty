@@ -1,6 +1,6 @@
 """Live demo of the finished phases against the running backend: the Supervisor, Profile and Job
-Intelligence agents (Phases 3-5), the embedding-selection framework (Phase 6, demos 9-10) and the
-Matching Agent (Phase 7, demos 11-12).
+Intelligence agents (Phases 3-5), the embedding-selection framework (Phase 6, demos 9-10), the
+Matching Agent (Phase 7, demos 11-12) and the Matching Model Selection Engine (Phase 8, demo 13).
 
 Start the stack first:   docker compose up -d --wait
 Then run:                .venv/bin/python scripts/demo.py           (all demos)
@@ -281,7 +281,8 @@ def demo_matching_for_student() -> None:
         return
     d = m["data"]
     _funnel(d["funnel"])
-    print(f"  Stages 3-6         : 20 features (features-v1) -> weighted_baseline_v1 (INTERIM, placeholder weights) "
+    model = d["matches"][0]["model_versions"]["matching_model"] if d["matches"] else "no prediction"
+    print(f"  Stages 3-6         : 20 features (features-v1) -> {model} (config/matching_model.yaml) "
           f"-> ranking -> skill gaps\n")
     for match in d["matches"][:3]:
         e, g, sm = match["employability"], match["skill_gap"], match["summary"]
@@ -316,6 +317,33 @@ def demo_candidates_for_job() -> None:
               f"| skills {e['dimensions']['skill_match']} | interest {e['dimensions']['career_interest_alignment']}")
 
 
+def demo_matching_model_selection() -> None:
+    title(13, "Phase 8: matching model selection (Matching Model Selection Engine)")
+    runs = call("GET", "/experiments?kind=matching_selection")
+    if isinstance(runs, dict) or not runs:
+        print("  No experiment recorded yet: run the engine with --record-db (see PROGRESS.md).")
+        return
+    latest = {}
+    for run in runs:  # newest first: keep the latest run per label source
+        latest.setdefault((run["labels"] or {}).get("used_source") or "no labels", run)
+    for source, run in latest.items():
+        rep = call("GET", f"/experiments/{run['experiment_id']}")["report"]
+        print(f"\n  Experiment {run['experiment_id']}  (labels: {source}; models from {rep['artifacts_experiment']})")
+        if rep["labels"].get("stamp"):
+            print(f"  *** {rep['labels']['stamp']}: NOT A SELECTION ***")
+        print(f"  {rep['validity']}")
+        print(f"    {'Model':44s} {'F1':>6s} {'NDCG@10':>8s} {'MRR':>6s} {'ms/50':>7s} {'train s':>8s} {'MB':>6s} "
+              f"{'cx':>3s} {'ex':>3s} {'Overall':>8s}")
+        overall = rep["scenarios"]["balanced"]["overall"] or {}
+        for key, c in rep["criteria"].items():
+            print(f"    {rep['models'][key]['display']:44s} {_short(c['f1']):>6s} {_short(c['ndcg']):>8s} "
+                  f"{_short(c['mrr']):>6s} {c['latency']:7.2f} {c['training_time']:8.2f} {c['memory']:6.1f} "
+                  f"{c['complexity']:3d} {c['explainability']:3d} {_short(overall.get(key)):>8s}")
+        winners = {n: s["winner"] for n, s in rep["scenarios"].items()}
+        print(f"  Winner by scenario: {winners}  (changes: {rep['winner_changes']})")
+        print(f"  DECISION (ADR 0015 rule)   {rep['recommendation']['line']}")
+
+
 if __name__ == "__main__":
     only = int(sys.argv[1]) if len(sys.argv) > 1 else None
     rid = None
@@ -334,4 +362,6 @@ if __name__ == "__main__":
         demo_matching_for_student()
     if only in (None, 12):
         demo_candidates_for_job()
+    if only in (None, 13):
+        demo_matching_model_selection()
     print()

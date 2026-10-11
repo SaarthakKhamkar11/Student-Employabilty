@@ -32,6 +32,7 @@ from app.embeddings.provider import build_embedding_provider
 from app.matching import pipeline as P
 from app.matching.config import MATCHING_CONFIG_PATH, get_matching_config
 from app.matching.feature_builder import FEATURE_VERSION
+from app.matching.predictor import BaselinePredictor
 from app.tools.matching_tools import build_context, score_labelled
 from src.evaluation.relevance_labels import STAMPS, circularity_check, load_labels
 from src.evaluation.retrieval_metrics import bootstrap_ci, evaluate, paired_difference
@@ -134,7 +135,7 @@ def main() -> None:
         raise SystemExit("DATABASE_URL is not set")
     provider = build_embedding_provider(settings)
     cfg = get_matching_config()
-    ctx = build_context(repo, provider, settings, cfg=cfg)
+    ctx = build_context(repo, provider, settings, cfg=cfg, predictor=BaselinePredictor(cfg))  # always Baseline 3
     version, _ = provider.describe()
     started = datetime.now(timezone.utc)
     t0 = time.time()

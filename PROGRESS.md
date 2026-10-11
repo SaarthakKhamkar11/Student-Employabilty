@@ -2,17 +2,17 @@
 
 **Rule:** update this file at the end of every phase. That means the status table, the "Pick up here" block, and a new entry in the Phase log. **From Phase 6 on, also extend `scripts/demo.py`** with a live demo of the phase's new capability, and run it once against the backend, and refresh the owner's progress dashboard (a private claude.ai artifact: aggregates only, real measured numbers, with the same caveats as the reports). Anyone taking over should be able to read only this file and know exactly where to start.
 
-Last updated: **2026-10-10** · Last completed phase: **Phase 7 (Matching Agent)** · Next phase: **Phase 8 (Matching model experimentation)**. The team's labelling (below) is still open.
+Last updated: **2026-10-11** · Last completed phase: **Phase 8 (Matching model experimentation; the model choice waits for the human labels)** · Next phase: **Phase 9 (Skill-gap analysis)**. The team's labelling (below) is still open and now finishes TWO choices: the embedding model (ADR 0012) and the matching model (ADR 0015).
 
-**Latest code: `main`** holds Phases 1–7. Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
+**Latest code: `main`** holds Phases 1–7. Phase 8 is in the working tree (not yet committed). Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
 
 Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1 audit: [`PROJECT_AUDIT.md`](PROJECT_AUDIT.md).
 
 ---
 
-## ▶ Pick up here: Phase 8 (Matching model experimentation), plus one team task
+## ▶ Pick up here: Phase 9 (Skill-gap analysis), plus one team task that finishes Phases 6 AND 8
 
-**Team task (still open; it finishes Phase 6's model choice AND is what Phase 8 needs).** Grade the relevance pairs on the labelling page:
+**Team task (still open).** Grade the relevance pairs on the labelling page:
 1. Start the stack (`docker compose up -d --wait`) and open **http://127.0.0.1:8000/labelling**. Enter your initials, or open `/labelling?labeller=AB`.
 2. There are 30 students × 12 jobs = **360 pairs**, about 2 hours in total if split between people. The rubric is on the page. Grades save as you click, and you can come back later.
    - 4 students are deliberately given to a second person, to measure agreement.
@@ -21,29 +21,28 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
    ```bash
    .venv/bin/python scripts/export_labels.py      # -> data/benchmark/human_labels.csv + .manifest.json
    export EXPERIMENTS_DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:5432/<db>
+   # Phase 6: the embedding model
    .venv/bin/python -m src.embeddings.model_evaluation_engine --labels data/benchmark/human_labels.csv --reuse-cost --record-db
+   # Phase 8: the matching model. It evaluates the SAME trained artifacts (no retraining), applies the ADR 0015
+   # rule and, only on a "select" decision, writes the winner into config/matching_model.yaml
+   python -m src.scoring.matching_model_selection_engine --labels data/benchmark/human_labels.csv \
+       --reuse-models mms-20261011T104041Z-nolabels --record-db --activate
    ```
-4. Copy the report's **Decision** line into [ADR 0012](docs/adr/0012-embedding-model-selection.md) and set its status to Accepted. The rule was fixed in advance, so don't change the weights after seeing the results.
-   - If the decision is "select X", follow the ADR's consequences: a `model_versions` row with the `experiment_id`, a new provider + `EMBEDDING_MODEL`, and a re-embed.
-   - If it is "keep TF-IDF", record that.
+4. Copy each report's **Decision** line into its ADR ([0012](docs/adr/0012-embedding-model-selection.md) embeddings,
+   [0015](docs/adr/0015-matching-model-target-training-and-selection.md) matching). The rules were fixed in advance,
+   so don't change the weights after seeing the results.
+   - If ADR 0012 selects a new embedding model, the features change: re-embed, rebuild the calibration
+     (`python -m app.matching.calibration`) and the feature matrix (`python -m app.matching.training_data`), then
+     retrain with the Phase 8 engine (no `--reuse-models`) and select again. A trained matching model refuses to
+     run on other embeddings.
+   - Rebuild the backend image after `--activate` (the image copies `config/` and `models/`).
 
-**Phase 8 needs:**
-1. The Phase 8 prompt.
-2. **The human labels** (above). Phase 8 must not select a matching model on the weak labels alone:
-   - `branch_match` uses the same role families as the weak-label rules;
-   - the weak labels reflect the student's stated domain, as `career_interest_alignment` does.
-   ADR 0014 records this leakage risk.
-3. What Phase 7 leaves for Phase 8:
-   - **Features:** the `features-v1` vector (20 spec §11 features, `app/matching/feature_builder.py`) for any
-     (student, job) pair, through `app.matching.pipeline.features`.
-   - **Baseline to beat:** `weighted_baseline_v1` (placeholder weights, ADR 0014). On weak labels it scores NDCG@5
-     0.518, not distinguishable from semantic similarity alone (0.483).
-   - **Data:** fixed per-student splits (train only for training); labels via `src/evaluation`; metrics via
-     `src/evaluation/retrieval_metrics.py` and the `evaluate_model` tool.
-   - **Registration:** `python -m app.matching.evaluate --register` writes the experiment into
-     `config/matching_baseline_v1.yaml`.
-   - **Metadata:** predictions carry 7 strict version fields (`PredictionVersions`). A new model needs its own
-     registered config/version, or predictions are refused.
+**Phase 9 needs:**
+1. The Phase 9 prompt.
+2. What exists: Stage 6 `identify_skill_gaps` (Phase 7: matched / partially related / missing / important
+   missing / transferable, `app/matching/skill_gap.py`). Known limits: 92% of job skill phrases aren't in the
+   alias table, and TF-IDF relatedness is lexical (ADR 0014).
+3. The matching model in use is whatever `config/matching_model.yaml` names: Baseline 3 today.
 4. **Owner decisions pending:**
    - the hard degree/experience filters (ADR 0013: all 18 diploma students get no eligible job on this dataset);
    - the gender visibility filter (ADR 0009).
@@ -58,7 +57,7 @@ Decisions already made (do not re-ask):
 
 Open items owned by the project owner:
 - **The GitHub repo is public** (checked 2026-10-08) and contains 120 real students' records in `data/processed/students_unified.csv`. Switch it to private.
-- **Relevance labels**: the team grades 360 pairs on `/labelling` (see Pick up here). This finalises the embedding choice (ADR 0012).
+- **Relevance labels**: the team grades 360 pairs on `/labelling` (see Pick up here). This finalises the embedding choice (ADR 0012) and the matching-model choice (ADR 0015).
 - **Gender visibility filter**: decide whether to keep it on (ADR 0009 recommends off).
 - 🔴 **Real PII in the committed processed data.** `data/processed/students_unified.csv` (public since the first commit, produced by the original preprocessing, which never masked PII) holds 3 Kaggle rows whose experience text contains an email, a phone number, a LinkedIn URL, an address and at least one personal name. Options: make the repo private; mask PII inside `src/pipeline` and regenerate the data (changes the data hash); and, if needed, rewrite git history. History rewrite is destructive and is the owner's call.
 - The original `docs/ADR.md` was never found. ADRs now live in `docs/adr/`. The TF-IDF baseline was **re-implemented** in Phase 4.
@@ -76,8 +75,8 @@ Open items owned by the project owner:
 | 5 | Job Intelligence Agent | ✅ Done (2026-10-08) |
 | 6 | Embedding experimentation framework | ✅ Done (2026-10-09): framework, labelling page, cost and weak-label results. The model choice waits for the team's human labels (ADR 0012) |
 | 7 | Matching Agent | ✅ Done (2026-10-09): Stages 1-6 as separate tools, interim weighted baseline (placeholder weights pending Phase 8) |
-| 8 | Matching model experimentation | ⏭ Next (needs the human labels) |
-| 9 | Skill-gap analysis | Not started |
+| 8 | Matching model experimentation | ✅ Done (2026-10-11): 6 candidates trained, measured and wired behind a config flag; quality "Not yet evaluated" and Baseline 3 stays active until the human labels (ADR 0015) |
+| 9 | Skill-gap analysis | ⏭ Next |
 | 10 | Learning Agent | Not started |
 | 11 | Explainability Agent + SHAP | Not started |
 | 12 | Agent state/tracing | Not started |
@@ -94,7 +93,7 @@ Open items owned by the project owner:
 
 ---
 
-## Repository layout (after Phase 7)
+## Repository layout (after Phase 8)
 
 ```
 preprocess.py                 thin entry point → src/pipeline/build_unified_dataset.py
@@ -103,6 +102,9 @@ config/model_selection_weights.yaml   Phase 6 selection weights: 3 scenarios, a 
 config/weak_label_rules.yaml  Phase 6 weak-label rules (role families x student domains; Phase 7 reuses the role families)
 config/matching_baseline_v1.yaml  Phase 7 matching config: top_n, hard rules, ranking cap, feature settings, weights
                               (each with a reason), employability dimensions, branch rules, registration
+config/matching_model.yaml    Phase 8 THE FLAG: which model Stage 4 uses (active), whose artifacts, which selection run
+config/matching_model_candidates.yaml  Phase 8 candidates: fixed hyperparameters (a reason each), training settings, rubrics
+config/matching_model_selection_weights.yaml  Phase 8 selection weights: 3 scenarios, gate, sensitivity, "close enough"
 src/parsing/                  section_parser.py (+ parse_job_sections, P5), resume_text_parser.py
 src/pipeline/                 ingest_placement_cell.py, ingest_kaggle_resumes.py, ingest_real_jobs.py,
                               validate_and_report.py, build_unified_dataset.py
@@ -111,6 +113,9 @@ src/embeddings/               embedding_model_benchmark.py (5 models: texts, sco
                               tfidf_baseline.py (re-implemented in Phase 4; corpus texts frozen in Phase 6)
 src/evaluation/               splits.py (fixed per-student splits), relevance_labels.py (loader + hard rules),
                               retrieval_metrics.py (P/R/MRR/NDCG/Hit@K, bootstrap CIs), labelling_pool.py, weak_labels.py
+src/scoring/                  Phase 8: matching_models.py (build/train/save/load/score/SHAP per candidate; isolated
+                              measurement worker), matching_model_selection_engine.py (the Phase 8 table, scenarios,
+                              sensitivity, simpler-model check, ADR 0015 decision, --activate, --record-db)
 backend/app/agents/           base.py, supervisor.py + routing.py (P3), profile_agent.py (P4), job_intelligence_agent.py (P5), 3 shells
 backend/app/schemas/          agent_state.py, agent_io.py, student.py, job.py
 backend/app/tools/            registry.py, profile_tools.py (11 tools), job_tools.py (12 tools, incl. check_job_visibility),
@@ -121,7 +126,10 @@ backend/app/jobs/             skills_split.py, requirements.py (inferred require
 backend/app/matching/         features.py (spec §11 contract + protected-attribute guard), config.py, entities.py (views),
                               eligibility.py (Stage 1), similarity.py + vectors.py (Stage 2, signals), calibration.py,
                               skill_gap.py, feature_builder.py (features-v1), baseline.py (weighted_baseline_v1),
-                              pipeline.py (all stages), evaluate.py (evaluate + benchmark + register)
+                              pipeline.py (all stages), evaluate.py (evaluate + benchmark + register Baseline 3),
+                              predictor.py (P8: Stage 4 model from the config flag), training_data.py (P8 feature matrix)
+models/matching/<experiment>/ Phase 8 trained artifacts (joblib / XGBoost JSON / LightGBM text) + manifest.json (SHA-256 of
+                              each, checked before loading) + measurements.json
 backend/app/embeddings/       provider.py (configured embedding model; interim TF-IDF, sparse vectors)
 backend/app/core/             config.py (.env loading), logging.py (JSON, PII-redacting), sanitize.py (prompt-injection defence)
 backend/app/llm/client.py     Gemini client (structured JSON output, validated locally)
@@ -132,22 +140,26 @@ backend/app/experiments.py    GET /experiments, GET /experiments/{id} (recorded 
 backend/migrations/           0001 agent_runs · 0002 student tables · 0003 embeddings + model_versions · 0004 profile columns ·
                               0005/0006 student_skills unique-key fix · 0007 jobs tables + sparse embeddings ·
                               0008 relevance_pool, relevance_judgments, experiment_runs, experiment_metrics
-docs/adr/                     architecture decision records 0001–0012 (index: docs/adr/README.md)
+docs/adr/                     architecture decision records 0001–0015 (index: docs/adr/README.md)
 backend/app/main.py           FastAPI: GET /health, GET /agents, POST /requests, POST /requests/resume-file, GET /requests/{id},
                               /labelling (page + API), /experiments
-backend/tests/                293 tests (278 run by default; 15 opt-in: 14 need TEST_DATABASE_URL, 1 live Gemini)
+backend/tests/                314 tests (297 run by default; 17 skipped: 14 need TEST_DATABASE_URL, 1 live Gemini, 2 others)
 backend/db/init/              01_enable_pgvector.sql (runs on first postgres start)
 docker-compose.yml            postgres+pgvector, redis, backend
 .env.example                  template; copy to .env (gitignored)
 docs/MASTER_SPEC.md           the project spec
 data/processed/               286 students, 4,990 jobs (committed)
 data/benchmark/               student_splits.csv, labelling_pool*.csv/.json, weak_labels.csv/.json, human_labels.csv/.json (once exported),
-                              matching_calibration/<model>-<version>.json (Phase 7)
+                              matching_calibration/<model>-<version>.json (Phase 7),
+                              matching_features/<feature_version>-<embedding_version>.csv.gz + .manifest.json (Phase 8)
 scripts/                      demo.py (live demo, extended every phase), export_labels.py (labelling page -> data/benchmark)
 data/raw/                     raw sources (gitignored; see setup)
 results/                      data-quality report; embedding_evaluation/<experiment_id>.{md,json} (every engine run),
                               embedding_model_evaluation[_<label source>].{md,json} (latest), embedding_cost_measurements.json,
-                              matching_evaluation/<experiment_id>.json (Phase 7 registration runs)
+                              matching_evaluation/<experiment_id>.json (Phase 7 registration runs),
+                              matching_model_evaluation/<experiment_id>.{md,json} (Phase 8 engine runs),
+                              matching_model_evaluation[_<label source>].{md,json} (latest)
+.gitattributes                data/** and models/** are never line-ending converted (their bytes are hashed)
 ```
 
 ---
@@ -213,6 +225,20 @@ DATABASE_URL=... PYTHONPATH=backend:. .venv/bin/python -m app.matching.evaluate 
 .venv/bin/python scripts/demo.py 11                  # jobs for a student;  scripts/demo.py 12: candidates for a job
 ```
 
+**Phase 8 matching models** (verified 2026-10-11 on Windows 11 + Docker Desktop/WSL2, inside the pinned
+Python 3.11 backend image; host-side `.venv` works the same with `PYTHONPATH=backend:.`):
+```bash
+python -m app.matching.training_data                 # features-v1 for all 107,536 labelled pairs (~3 min; needs DATABASE_URL)
+python -m src.scoring.matching_model_selection_engine --record-db    # trains 6 candidates, each in its own process (~2 min);
+#   quality "Not yet evaluated" without labels; registers the artifacts in config/matching_model.yaml (active unchanged)
+python -m src.scoring.matching_model_selection_engine --labels data/benchmark/weak_labels.csv \
+    --reuse-models mms-20261011T104041Z-nolabels --record-db    # stamped weak-label diagnostic, never a selection
+.venv/bin/python scripts/demo.py 13                  # recorded Phase 8 runs (GET /experiments?kind=matching_selection)
+MATCHING_MODEL=decision_tree ...                     # force a trained model for one process (demo/tests only)
+```
+On Windows, a native PostgreSQL service may already hold port 5432. Publish the project's postgres elsewhere with a
+local (uncommitted) compose override (`ports: !override ["127.0.0.1:5434:5432"]`).
+
 **Reproducibility check.** After step 3, these SHA-256 hashes must match exactly. `students_unified.csv` changed in Phase 4 by the documented `.NET` parser fix ([ADR 0006](docs/adr/0006-parser-dotnet-fix.md)); before that it was `a123ed6f…51520`.
 ```
 636d394f399c09e0c578a280b36e6294b333593418b80174161619d507c6b606  data/processed/students_unified.csv
@@ -222,6 +248,76 @@ DATABASE_URL=... PYTHONPATH=backend:. .venv/bin/python -m app.matching.evaluate 
 ---
 
 ## Phase log
+
+### Phase 8: Matching model experimentation (2026-10-11) ✅ (no model selected: no human labels yet)
+
+**Decisions made with the owner at the start** (ADR [0015](docs/adr/0015-matching-model-target-training-and-selection.md)):
+- **Labels: not graded yet** (0 of 360 pool pairs). Every quality metric reads "Not yet evaluated", no Overall Score
+  is computed, and no model is selected. Baseline 3 stays active.
+- **Training data.** The human pool has no train split (15 validation + 15 test students). The owner chose:
+  - train on the weak labels (train split);
+  - select on the human labels (validation split);
+  - hold the test split back for Phase 14.
+
+  Models are trained once. The human-label run only evaluates the same hash-checked artifacts.
+- **Target: binary suitability, `relevance_label >= 2`.** The real label distribution:
+  - human labels: none;
+  - weak labels: 100,848 × grade 0, 3,799 × 1, **0 × 2**, 2,889 × 3 (train split: 63,489 / 2,361 / 0 / 1,830).
+
+  With no grade 2, regression would be binary classification in disguise, and learning to rank wouldn't compare the
+  six models like for like.
+- **LightGBM installed** (4.7.0): all six candidates ran.
+
+**What was built:**
+
+| Piece | Where | Notes |
+|---|---|---|
+| Feature matrix | `app/matching/training_data.py` | features-v1, computed by Phase 7's own stage functions, for every weak-label and pool pair: 107,536 pairs, 0 unscored, 1.3 MB, no PII or protected column |
+| Candidates | `src/scoring/matching_models.py` + `config/matching_model_candidates.yaml` | LR, DT, RF, sklearn GB, XGBoost, LightGBM. Fixed hyperparameters (a reason each), balanced classes, seed 42, 1 thread. Missing values: native in XGBoost/LightGBM; median + missing indicator in the sklearn models |
+| Measurement | same file, `measure` worker | One process per model: a warm-up fit, then 3 timed fits; peak RSS; refit determinism; save → hash → reload → identical scores; latency (30 trials, 1 and 50 pairs); throughput; size; scalability (a power law over 3 training sizes, labelled EXTRAPOLATED); SHAP per model with an additivity check |
+| Engine | `src/scoring/matching_model_selection_engine.py` + `config/matching_model_selection_weights.yaml` | The Phase 8 table; the full quality suite (Acc/P/R/F1/ROC-AUC/PR-AUC/MRR/NDCG/P@K/R@K, with CIs); 3 scenarios shown in full; 1,000 random weightings; a gate (beat Baseline 3); a simpler-model check for every winner and always for XGBoost; the ADR 0015 decision. Options: `--reuse-models`, `--activate`, `--record-db`, `--record-existing` |
+| Wiring | `app/matching/predictor.py`, `config/matching_model.yaml`, `MATCHING_MODEL` | Stage 4 loads Baseline 3 or a trained artifact, as the flag says. Metadata: `matching_model=<key>`, `matching_model_version=<key>+<sha12>`, `experiment_id`. Refuses another feature or embedding version, or a tampered file. Baseline 3 is kept as the default and as Phase 14's "Baseline 3: structured feature matching"; Phase 7's `evaluate --register` always measures it |
+| Tests | `backend/tests/test_matching_models.py` (21) | Exclusion test on the training data and the committed matrix; round trips; tamper refusal; determinism; SHAP additivity per model; rubric; normalisation; "XGBoost is never preferred by name"; decision rule; `--activate` refusal; flag and override; version refusals; end-to-end agent metadata |
+| Demo | `scripts/demo.py 13` | The recorded runs. Demo 11 now names the active model |
+
+**Real results** (`results/matching_model_evaluation/`, recorded in Postgres):
+- **`mms-20261011T104041Z-nolabels`** (the training run):
+  - latency for 50 pairs: LightGBM 0.45 ms, DT 1.27, LR 1.28, GB 1.44, Baseline 3 2.13, XGB 2.35, RF 9.34;
+  - training time (median of 3): DT 0.20 s, LGBM 1.03, XGB 1.12, LR 4.03, RF 5.33, GB 11.12;
+  - every refit was bit-identical, and every model's SHAP contributions add up to its output.
+- **`mms-20261011T104404Z-weakly`** (weak labels: **NOT A SELECTION**):
+  - NDCG@10: LightGBM 0.954, XGB 0.954, GB 0.929, RF 0.910, DT 0.823, LR 0.813, Baseline 3 0.515.
+  - Winners: Balanced DT (0.711), Quality-prioritized LightGBM, Low-resource DT. **The winner changes by scenario.**
+  - Every trained model's top SHAP feature is `branch_match`: the leakage ADR 0014 predicted.
+- **Live wiring check:**
+  - With `MATCHING_MODEL=decision_tree` forced, S00002 (Data Science) gets Data and Business Analyst jobs, with
+    `decision_tree+8a11032b8829` in the metadata.
+  - An uploaded résumé with no branch or stated interest gets 0.0 for every job, because a weak-label model has no
+    other signal. This is another reason the human labels must decide.
+
+**Environment found and fixed on this machine (2026-10-11):**
+- **Setup.** There was no `.env` or `.venv`, and the Docker database dated from Phase 5. `.env` was recreated
+  (gitignored) from the existing container's own settings. The stack was rebuilt, seeded and processed per the
+  setup steps.
+- **Line endings.** With `core.autocrlf=true`, git checked `data/` out as CRLF, which changed every data hash.
+  `.gitattributes` now marks `data/**` and `models/**` as `-text`. The files were rewritten from HEAD (identical
+  blobs) and match the reproducibility hashes again.
+- **The TF-IDF version differs by platform.**
+  - It is `tfidf-953a75d166d8` here and `tfidf-3ec097a5876e` on the M2, on identical data. The likely cause is
+    rounding of `log` at the 6th decimal of the IDF values: 1,806 of them sit within 1e-9 of a rounding boundary.
+  - The calibration was rebuilt for `953a…`.
+  - `test_the_deployed_tfidf_version_is_unchanged_by_the_benchmark_rewrite` **fails on this platform** for that
+    reason, with or without Phase 8.
+  - Owner decision: whether to make the version hash platform-stable. That would change the version everywhere.
+- **Baseline 3's registration** still names `match-20261009T155859Z-weakly`, which is recorded in the M2's Postgres,
+  not this one.
+- **Backend image:**
+  - `xgboost-cpu`, because the full `xgboost` wheel bundles CUDA;
+  - `libgomp1`, which LightGBM needs;
+  - `models/` is copied into the image.
+
+**Tests:** in the backend image, 296 passed, 17 skipped and 1 failed (the platform-dependent TF-IDF version pin
+above).
 
 ### Phase 7: Matching Agent (2026-10-09) ✅ (prediction is an interim weighted baseline until Phase 8)
 

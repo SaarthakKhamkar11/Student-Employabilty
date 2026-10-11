@@ -1,0 +1,77 @@
+# Phase 8 matching-model selection (spec §10, §13): a transparent multi-criteria decision.
+# Every weight has a one-line reason, and the weights in a scenario sum to 1.
+# Change weights here, never in code. The engine records this file's SHA-256 with every experiment.
+# Fixed on 2026-10-11, BEFORE any human relevance label exists (docs/adr/0015).
+version: matching-weights-v1
+
+evaluation:
+  ks: [5, 10]
+  primary_k: 10                  # the table reports NDCG@10 (Phase 8 prompt); NDCG@5 is reported alongside
+  relevance_threshold: 2         # grade >= 2 is relevant / "suitable": the same threshold as the target
+  selection_split: validation    # selection uses validation only; train is never evaluated; test is held back for Phase 14
+  bootstrap_resamples: 2000
+  seed: 42
+
+normalization:
+  method: min_max                # across the evaluated models (trained candidates + Baseline 3), per criterion; 1 = best
+  # Cost metrics span orders of magnitude (Baseline 3 trains in 0 s, a forest in tens of seconds): compared on log10.
+  log_scale: [latency, training_time, memory]
+
+# Criteria (the Phase 8 table's columns):
+#   f1             pair-level F1 of "suitable" (label >= 2) at the 0.5 decision threshold
+#   ndcg, mrr      per-student ranking quality at primary_k (graded gain), never a mean score
+#   latency        one student x 50 retrieved jobs (top_n) scored by the loaded production artifact, median of 30 trials
+#   training_time  median of 3 fits on the full weak-label train split, single thread
+#   memory         peak resident memory added by training (isolated process)
+#   complexity     points (config/matching_model_candidates.yaml)
+#   explainability points 0-5 (same file), from measured SHAP / trace checks
+scenarios:
+  balanced:
+    description: The default. Quality first, but the model must stay cheap, simple and explainable.
+    weights:
+      f1:             {weight: 0.15, reason: "Getting the suitable/not-suitable call right for each pair."}
+      ndcg:           {weight: 0.20, reason: "Graded quality of the ranked list a student actually sees."}
+      mrr:            {weight: 0.15, reason: "Where the first good job appears is what a student notices first."}
+      latency:        {weight: 0.10, reason: "Scoring runs inside every matching request."}
+      training_time:  {weight: 0.05, reason: "Retraining is offline and rare."}
+      memory:         {weight: 0.05, reason: "The backend shares one machine with Postgres and Redis."}
+      complexity:     {weight: 0.10, reason: "Every extra dependency and format is something to keep working."}
+      explainability: {weight: 0.20, reason: "Spec §16: every match must be explainable to the student (Phase 11)."}
+  quality_prioritized:
+    description: Ranking quality matters most; cost and simplicity are secondary.
+    weights:
+      f1:             {weight: 0.20, reason: "Pair-level correctness, weighted up with all quality metrics."}
+      ndcg:           {weight: 0.30, reason: "The graded metric gets the largest share."}
+      mrr:            {weight: 0.20, reason: "First relevant job."}
+      latency:        {weight: 0.05, reason: "Still must respond in reasonable time."}
+      training_time:  {weight: 0.025, reason: "Minor in this scenario."}
+      memory:         {weight: 0.025, reason: "Minor in this scenario."}
+      complexity:     {weight: 0.05, reason: "Minor in this scenario."}
+      explainability: {weight: 0.15, reason: "Explanations are still required by the spec."}
+  low_resource_deployment:
+    description: A college server or laptop with no GPU and limited RAM, maintained lightly.
+    weights:
+      f1:             {weight: 0.10, reason: "Quality still counts: a cheap model that matches badly is useless."}
+      ndcg:           {weight: 0.15, reason: "The main quality signal, at reduced weight."}
+      mrr:            {weight: 0.10, reason: "Reduced weight."}
+      latency:        {weight: 0.15, reason: "CPU-only inference makes latency a binding constraint."}
+      training_time:  {weight: 0.10, reason: "Retraining on a small CPU is slow."}
+      memory:         {weight: 0.15, reason: "Limited RAM is the other binding constraint."}
+      complexity:     {weight: 0.15, reason: "Fewer dependencies to install and keep working on a lightly maintained server."}
+      explainability: {weight: 0.10, reason: "Still required, at reduced weight."}
+
+# Does the winner survive other reasonable weightings? Dirichlet draws centred on the balanced weights.
+sensitivity:
+  random_weightings: 1000
+  concentration: 20
+  seed: 42
+
+# A trained model must beat Baseline 3 (weighted_baseline_v1) on the primary quality metric to be eligible.
+gate:
+  must_beat_baseline: true
+  primary_quality_metric: ndcg
+
+# "Close enough": the report names the best simple model (Logistic Regression or Decision Tree) and states
+# whether its gap to the winner on the primary metric is within this margin OR not statistically distinguishable.
+simple_models: [logistic_regression, decision_tree]
+close_enough_margin: 0.02

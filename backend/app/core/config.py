@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     embedding_model: Literal["tfidf_baseline"] = "tfidf_baseline"
     processed_data_dir: Path = REPO_ROOT / "data" / "processed"
 
+    # Matching model (Stage 4): config/matching_model.yaml `active` is the flag (docs/adr/0015). MATCHING_MODEL
+    # overrides it for one process (demos, tests); unset = the config.
+    matching_model: str | None = None
+
     # Owner decision (docs/adr/0009): hide postings whose stated gender preference excludes the student.
     # Unknown student gender is never hidden. Set JOB_GENDER_VISIBILITY_FILTER=false to show every posting.
     job_gender_visibility_filter: bool = True

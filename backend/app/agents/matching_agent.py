@@ -8,8 +8,9 @@ Pipeline, each stage a validated tool call through the BaseAgent loop:
 Modes: jobs_for_student, candidates_for_job, and "pair" (jobs_for_student with a job_id: one named job,
 whose hard-rule failures are reported instead of applied). The agent is not a model: the embedding model
 is whatever EMBEDDING_MODEL configures (Phase 6 has not selected one yet, docs/adr/0012), and the
-prediction model is weighted_baseline_v1, an interim placeholder until Phase 8 (docs/adr/0014). Every
-prediction carries the seven spec §24 version fields, or is not returned.
+prediction model is whatever config/matching_model.yaml names (docs/adr/0015): Baseline 3,
+weighted_baseline_v1, until Phase 8's engine selects a trained model on human labels. Every prediction
+carries the seven spec §24 version fields, or is not returned.
 """
 
 from typing import Any, ClassVar
@@ -17,7 +18,6 @@ from typing import Any, ClassVar
 from pydantic import BaseModel
 
 from app.agents.base import GUARDRAILS, AgentContext, BaseAgent
-from app.matching.baseline import METHOD
 from app.matching.features import FEATURE_NAMES
 from app.schemas.agent_io import CallTool, Finish, MatchingAgentInput, MatchingAgentOutput
 from app.schemas.agent_state import INSUFFICIENT_EVIDENCE
@@ -25,7 +25,6 @@ from app.schemas.agent_state import INSUFFICIENT_EVIDENCE
 PIPELINE = ("filter_eligible", "retrieve", "compute_similarity", "generate_features", "predict_suitability",
             "rank_candidates", "identify_skill_gaps")
 NOTES = (
-    METHOD + ".",
     "Similarity values are percentiles among all student-job pairs for the configured embedding model, "
     "never raw cosine (raw values are model-specific; Phase 6).",
     "Required vs preferred job skills are inferred, not ground truth (docs/adr/0008).",
@@ -200,7 +199,8 @@ class MatchingAgent(BaseAgent):
                     "note": "reported, not applied: this job was asked for by name"}
         return MatchingAgentOutput(
             mode=x["mode"], query_id=x["query_id"], matches=matches, funnel=funnel, pair_check=pair,
-            model_versions=preds.model_versions if preds is not None else INSUFFICIENT_EVIDENCE, notes=list(NOTES))
+            model_versions=preds.model_versions if preds is not None else INSUFFICIENT_EVIDENCE,
+            notes=[preds.method + ".", *NOTES] if preds is not None else list(NOTES))
 
 
 def _or_sentinel(value: float | None) -> float | str:

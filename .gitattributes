@@ -1,0 +1,4 @@
+# Data and trained models are hashed byte for byte (dataset_version, TF-IDF version, artifact SHA-256), so git must
+# never convert their line endings (a Windows checkout with core.autocrlf=true otherwise changes every hash).
+data/** -text
+models/** -text

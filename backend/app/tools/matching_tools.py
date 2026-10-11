@@ -5,7 +5,7 @@
     retrieve_candidates   Stage 2  semantic retrieval of students for a job
     compute_similarity             per-pair similarity signals, calibrated to percentiles
     generate_features     Stage 3  the versioned feature vector (spec §11)
-    predict_suitability   Stage 4  weighted_baseline_v1 (interim, placeholder weights pending Phase 8)
+    predict_suitability   Stage 4  the model named by config/matching_model.yaml (Baseline 3 or a trained Phase 8 model)
     rank_candidates       Stage 5  deterministic ranking (ties by id)
     identify_skill_gaps   Stage 6  matched / related / missing / important missing / transferable
     evaluate_model                 ranking metrics of the current matching configuration on labelled pairs
@@ -202,6 +202,7 @@ def build_context(repo: MatchingRepository | None, embedder: EmbeddingProvider, 
         return None
     return P.MatchingContext(repo=repo, provider=embedder, cfg=overrides.pop("cfg", None) or get_matching_config(),
                              processed_dir=str(settings.processed_data_dir),
+                             matching_model_override=overrides.pop("matching_model_override", settings.matching_model),
                              visibility_enabled=settings.job_gender_visibility_filter, **overrides)
 
 
@@ -273,10 +274,10 @@ def register_matching_tools(registry: ToolRegistry, *, repo: MatchingRepository 
 
     @registry.register("predict_suitability", input_schema=PredictIn, output_schema=PredictOut)
     def tool_predict_suitability(features):
-        """Stage 4: weighted_baseline_v1, an interim weighted sum with placeholder weights (not a trained model)."""
+        """Stage 4: suitability from the model the config flag names (config/matching_model.yaml)."""
         try:
             return P.prediction(ctx(), features)
-        except ValueError as exc:  # unregistered configuration: deterministic, never retried
+        except ValueError as exc:  # unregistered or mismatched model: deterministic, never retried
             raise ToolInputRejected("predict_suitability", str(exc)) from exc
 
     @registry.register("rank_candidates", input_schema=RankIn, output_schema=RankOut)
