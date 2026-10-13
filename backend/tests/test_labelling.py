@@ -145,8 +145,13 @@ def pg_pool():
     apply_migrations(dsn)
     version = f"test-{uuid.uuid4().hex[:8]}"
     with psycopg.connect(dsn) as conn:
-        students = [r[0] for r in conn.execute("SELECT student_id FROM student_profiles ORDER BY student_id LIMIT 2")]
-        jobs = [r[0] for r in conn.execute("SELECT job_id FROM jobs ORDER BY job_id LIMIT 2")]
+        # a pair can be in only one pool version (0009), so use students and jobs no pool has yet
+        students = [r[0] for r in conn.execute("SELECT student_id FROM student_profiles s WHERE NOT EXISTS "
+                                               "(SELECT 1 FROM relevance_pool p WHERE p.student_id = s.student_id) "
+                                               "ORDER BY student_id LIMIT 2")]
+        jobs = [r[0] for r in conn.execute("SELECT job_id FROM jobs j WHERE NOT EXISTS "
+                                           "(SELECT 1 FROM relevance_pool p WHERE p.job_id = j.job_id) "
+                                           "ORDER BY job_id LIMIT 2")]
         for s in students:
             for i, j in enumerate(jobs, 1):
                 conn.execute("INSERT INTO relevance_pool (pool_version, student_id, job_id, split, display_order, created_at) "

@@ -54,8 +54,41 @@ def test_all_migrations_create_the_expected_tables(dsn):
         tables = {r[0] for r in conn.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")}
         applied = [r[0] for r in conn.execute("SELECT version FROM schema_migrations ORDER BY version")]
     assert {"agent_runs", "student_profiles", "student_skills", "student_projects", "student_certifications",
-            "student_experience", "embeddings", "model_versions"} <= tables
+            "student_experience", "embeddings", "model_versions", "users", "companies", "jobs", "job_skills",
+            "job_responsibilities", "experiment_runs", "experiment_metrics", "match_results", "skill_gaps",
+            "career_recommendations", "learning_resources", "learning_recommendations", "feedback_events",
+            "agent_messages", "audit_logs"} <= tables
     assert applied == sorted(p.name for p in (Path(__file__).parents[1] / "migrations").glob("*.sql"))
+
+
+@PG
+def test_pii_columns_exist_only_in_users_and_relevance_labels_is_a_view(dsn):
+    import psycopg
+
+    with psycopg.connect(dsn) as conn:
+        pii = {r[0] for r in conn.execute(
+            "SELECT table_name FROM information_schema.columns WHERE table_schema = 'public' "
+            "AND column_name IN ('email', 'phone', 'password_hash', 'password')")}
+        kind = conn.execute("SELECT relkind FROM pg_class WHERE relname = 'relevance_labels'").fetchone()[0]
+    assert pii == {"users"}
+    assert kind == "v"
+
+
+@PG
+def test_free_form_json_refuses_unredacted_pii_and_audit_logs_are_append_only(dsn):
+    import psycopg
+
+    with psycopg.connect(dsn) as conn:
+        with pytest.raises(psycopg.errors.CheckViolation), conn.transaction():
+            conn.execute("INSERT INTO audit_logs (actor_type, action, entity_type, details) "
+                         """VALUES ('system', 'x', 'y', '{"note": "write to a.b@example.com"}')""")
+        with pytest.raises(psycopg.errors.CheckViolation), conn.transaction():
+            conn.execute("INSERT INTO feedback_events (source, event_type) VALUES ('made_up', 'click')")
+        with pytest.raises(psycopg.errors.RaiseException), conn.transaction():
+            conn.execute("INSERT INTO audit_logs (actor_type, action, entity_type, details) "
+                         """VALUES ('system', 'x', 'y', '{"email": "[REDACTED]"}')""")  # redacted: accepted
+            conn.execute("UPDATE audit_logs SET action = 'z'")
+        conn.rollback()
 
 
 @PG

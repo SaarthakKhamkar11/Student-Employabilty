@@ -20,7 +20,7 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
 3. When everyone is done:
    ```bash
    .venv/bin/python scripts/export_labels.py      # -> data/benchmark/human_labels.csv + .manifest.json
-   export EXPERIMENTS_DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:5432/<db>
+   export EXPERIMENTS_DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:55433/<db>
    # Phase 6: the embedding model
    .venv/bin/python -m src.embeddings.model_evaluation_engine --labels data/benchmark/human_labels.csv --reuse-cost --record-db
    # Phase 8: the matching model. It evaluates the SAME trained artifacts (no retraining), applies the ADR 0015
@@ -206,7 +206,7 @@ python3.11 -m venv .venv
 # 5. Tests (about 35 s)
 .venv/bin/python -m pytest
 #    Optional: include the 14 real-database tests (start postgres first, step 6):
-#    TEST_DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:5432/<db> .venv/bin/python -m pytest
+#    TEST_DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:55433/<db> .venv/bin/python -m pytest
 
 # 6. Docker stack. The backend applies SQL migrations on start.
 cp .env.example .env    # then set POSTGRES_PASSWORD, the same password inside DATABASE_URL, and JWT_SECRET
@@ -229,13 +229,13 @@ docker compose down                  # add -v to also delete the database volume
 .venv/bin/python -m src.evaluation.weak_labels       # data/benchmark/weak_labels.csv (rule-based)
 .venv/bin/python -m src.embeddings.model_evaluation_engine       # no labels: measures cost (~13 min), quality "Not yet evaluated"
 .venv/bin/python -m src.embeddings.model_evaluation_engine --labels data/benchmark/weak_labels.csv --reuse-cost
-#   add --record-db with EXPERIMENTS_DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:5432/<db> to store the run
+#   add --record-db with EXPERIMENTS_DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:55433/<db> to store the run
 .venv/bin/python scripts/demo.py 9                   # labelling page status;  scripts/demo.py 10: recorded experiments
 ```
 
 **Phase 7 matching** (host-side, after `seed --process`; `DATABASE_URL` pointing at 127.0.0.1):
 ```bash
-DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:5432/<db> PYTHONPATH=backend:. \
+DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:55433/<db> PYTHONPATH=backend:. \
   .venv/bin/python -m app.matching.calibration       # similarity percentiles for the configured model (~20 s)
 DATABASE_URL=... PYTHONPATH=backend:. .venv/bin/python -m app.matching.evaluate --labels data/benchmark/weak_labels.csv --register
 #   records an experiment and writes its id into config/matching_baseline_v1.yaml; rebuild the backend image afterwards
@@ -259,8 +259,8 @@ MATCHING_MODEL=decision_tree ...                     # force a trained model for
 python -m src.scoring.skill_gap_analysis --student S00001 --job J0974289 [--model lightgbm]   # one pair's report
 .venv/bin/python scripts/demo.py 14                  # the top match's report through the live API
 ```
-On Windows, a native PostgreSQL service may already hold port 5432. Publish the project's postgres elsewhere with a
-local (uncommitted) compose override (`ports: !override ["127.0.0.1:5434:5432"]`).
+The project's postgres is published on host port 55433, because a native PostgreSQL service often holds 5432 on
+Windows. Inside Docker it is still `postgres:5432`.
 
 **Reproducibility check.** After step 3, these SHA-256 hashes must match exactly. `students_unified.csv` changed in Phase 4 by the documented `.NET` parser fix ([ADR 0006](docs/adr/0006-parser-dotnet-fix.md)); before that it was `a123ed6f…51520`.
 ```
