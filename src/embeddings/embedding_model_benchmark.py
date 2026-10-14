@@ -84,6 +84,31 @@ MODEL_CONFIGS = {
 }
 FLOOR = "tfidf"
 CANDIDATES = ("sbert", "e5", "bge", "minilm")
+
+
+def _domain_model_dir() -> str | None:
+    """Slot E is evaluated only on request: PHASE6_DOMAIN_MODEL names a model built by src/embeddings/domain_adapt.py
+    (models/embeddings/<name>, gitignored), so the benchmark's model list never depends on what a machine holds."""
+    name = os.environ.get("PHASE6_DOMAIN_MODEL", "").strip()
+    if not name:
+        return None
+    path = name if os.path.isabs(name) else os.path.join(ROOT, name)
+    if not os.path.exists(os.path.join(path, "manifest.json")):
+        raise FileNotFoundError(f"PHASE6_DOMAIN_MODEL={name!r}: no domain-adapted model (manifest.json) there")
+    return path
+
+
+DOMAIN_DIR = _domain_model_dir()
+if DOMAIN_DIR:
+    # Slot E: E5 fine-tuned on the train split's weak labels (docs/adr/0012). The same network as B with other
+    # weights, so its cost is B's measured cost (cost_as); its quality is measured like every other model's.
+    MODEL_CONFIGS["e5_domain"] = {
+        "spec_slot": "E", "display": "E5 e5-base-v2, domain-adapted", "family": "E5",
+        "kind": "sentence_transformers", "hf_name": None, "local_dir": DOMAIN_DIR, "cost_as": "e5",
+        "query_prefix": "query: ", "passage_prefix": "passage: ", "fine_tuned_in_house": True,
+        "runtime_packages": ["sentence-transformers"], "corpus_fitted": False,
+    }
+    CANDIDATES = (*CANDIDATES, "e5_domain")
 NOT_RUN_MODELS = {
     "custom": {
         "spec_slot": "E", "display": "Custom / domain-adapted",
@@ -184,10 +209,10 @@ class SentenceTransformerEncoder:
         from sentence_transformers import SentenceTransformer
 
         self.key, self.cfg, self.batch_size = key, MODEL_CONFIGS[key], batch_size
-        path = snapshot_path(self.cfg["hf_name"])
+        path = self.cfg.get("local_dir") or snapshot_path(self.cfg["hf_name"])
         self.model = SentenceTransformer(path, device=device)  # loading the snapshot pins the revision
         self.revision = os.path.basename(path)
-        self.version = f"{self.cfg['hf_name']}@{self.revision[:12]}"
+        self.version = self.revision if self.cfg.get("local_dir") else f"{self.cfg['hf_name']}@{self.revision[:12]}"
         self.dimension = int(self.model.get_sentence_embedding_dimension())
         self.max_seq_length = int(self.model.max_seq_length)
 
@@ -462,6 +487,8 @@ def complexity(key: str) -> dict:
         reasons.append("vocabulary is fitted on the corpus: refit and re-embed everything when the data changes")
     if cfg["kind"] == "sentence_transformers":
         reasons.append("needs the PyTorch + transformers runtime")
+    if cfg.get("fine_tuned_in_house"):
+        reasons.append("fine-tuned in house: retrain when the data or the weak-label rules change")
     return {"points": len(reasons), "reasons": reasons}
 
 

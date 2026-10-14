@@ -108,6 +108,17 @@ class ExtractProfileIn(_Model):
 
 class GenerateEmbeddingIn(_Model):
     section_texts: dict[str, str]
+    role: Literal["query", "passage"]  # student sections are queries, job sections passages (embeddings/provider.py)
+
+
+class FallbackVectors(_Model):
+    """The same sections under the fallback model (TF-IDF), stored next to the primary vectors (docs/adr/0012)."""
+
+    model_name: str
+    model_version: str
+    dimension: int
+    interim: bool
+    vectors: dict[str, Vector]
 
 
 class GenerateEmbeddingOut(_Model):
@@ -117,6 +128,20 @@ class GenerateEmbeddingOut(_Model):
     interim: bool
     vectors: dict[str, Vector]
     no_signal_sections: list[str]  # text with no in-vocabulary terms: not embedded
+    fallback: FallbackVectors | None = None
+
+
+def embedding_rows(embedding: "GenerateEmbeddingOut | None") -> list[EmbeddingRow]:
+    """Stored rows for the primary model's vectors and, when present, the fallback model's."""
+    if embedding is None:
+        return []
+    out = []
+    for block in (embedding, embedding.fallback):
+        if block is not None:
+            out += [EmbeddingRow(section=s, model_name=block.model_name, model_version=block.model_version,
+                                 dimension=block.dimension, values=v.values, indices=v.indices, interim=block.interim)
+                    for s, v in block.vectors.items()]
+    return out
 
 
 class ValidateProfileIn(_Model):
@@ -147,7 +172,7 @@ def missing_fields(profile: StudentProfile) -> list[str]:
 
 
 def register_profile_tools(registry: ToolRegistry, *, repo: ProfileRepository | None,
-                           embedder: EmbeddingProvider) -> None:
+                           embedder: EmbeddingProvider, fallback_embedder: EmbeddingProvider | None = None) -> None:
     def _repo() -> ProfileRepository:
         if repo is None:
             raise RuntimeError("no database configured (DATABASE_URL)")
@@ -243,15 +268,25 @@ def register_profile_tools(registry: ToolRegistry, *, repo: ProfileRepository | 
         return profile.model_copy(update={"missing_fields": missing_fields(profile)})
 
     @registry.register("generate_embedding", input_schema=GenerateEmbeddingIn, output_schema=GenerateEmbeddingOut)
-    def tool_generate_embedding(section_texts):
-        """Embed profile sections with the currently configured embedding model (EMBEDDING_MODEL)."""
+    def tool_generate_embedding(section_texts, role):
+        """Embed sections with the currently configured embedding model (EMBEDDING_MODEL), as student (query) or
+        job (passage) text."""
         names = [n for n, t in section_texts.items() if t.strip()]
-        vectors = embedder.embed([section_texts[n] for n in names])
+        vectors = embedder.embed([section_texts[n] for n in names], role)
         version, dimension = embedder.describe()
         kept = {n: v for n, v in zip(names, vectors) if v is not None}
-        return {"model_name": embedder.model_name, "model_version": version, "dimension": dimension,
-                "interim": embedder.interim, "vectors": kept,
-                "no_signal_sections": [n for n in names if n not in kept]}
+        out = {"model_name": embedder.model_name, "model_version": version, "dimension": dimension,
+               "interim": embedder.interim, "vectors": kept, "no_signal_sections": [n for n in names if n not in kept]}
+        if fallback_embedder is not None and names:
+            try:  # cheap (TF-IDF); a failure here never costs the primary vectors
+                fb = fallback_embedder.embed([section_texts[n] for n in names], role)
+                fb_version, fb_dimension = fallback_embedder.describe()
+                out["fallback"] = {"model_name": fallback_embedder.model_name, "model_version": fb_version,
+                                   "dimension": fb_dimension, "interim": fallback_embedder.interim,
+                                   "vectors": {n: v for n, v in zip(names, fb) if v is not None}}
+            except Exception as exc:  # noqa: BLE001
+                log_event(logger, "fallback_embedding_failed", logging.WARNING, error=type(exc).__name__)
+        return out
 
     @registry.register("validate_profile", input_schema=ValidateProfileIn, output_schema=ValidateProfileOut)
     def tool_validate_profile(profile):
@@ -272,11 +307,7 @@ def register_profile_tools(registry: ToolRegistry, *, repo: ProfileRepository | 
         profile_obj = StudentProfile.model_validate(profile)
         # the registry hands validated inputs over as plain dicts
         embedding = GenerateEmbeddingOut.model_validate(embedding) if embedding is not None else None
-        rows = [EmbeddingRow(section=s, model_name=embedding.model_name, model_version=embedding.model_version,
-                             dimension=embedding.dimension, values=v.values, indices=v.indices,
-                             interim=embedding.interim)
-                for s, v in (embedding.vectors.items() if embedding else [])]
-        result = _repo().save_profile(profile_obj, rows)
+        result = _repo().save_profile(profile_obj, embedding_rows(embedding))
         log_event(logger, "profile_saved", student_id=profile_obj.student_id, rows=result.rows,
                   embeddings_stored=result.embeddings_stored, level=logging.INFO)
         return {"saved": True, "student_id": profile_obj.student_id, "rows": result.rows,

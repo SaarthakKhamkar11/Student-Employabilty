@@ -12,7 +12,7 @@ Required vs preferred comes from the job's INFERRED split (docs/adr/0008).
 
 from dataclasses import dataclass, field
 
-from app.embeddings.provider import EmbeddingProvider, Vector
+from app.embeddings.provider import QUERY, EmbeddingProvider, Vector
 from app.matching.vectors import cosine
 from app.profile.skills import skill_key
 
@@ -39,7 +39,7 @@ class SkillVectors:
     def get(self, names: list[str]) -> dict[str, Vector | None]:
         todo = sorted({skill_key(n): n for n in names if skill_key(n) and skill_key(n) not in self._cache}.items())
         if todo:
-            vectors = self.provider.embed([n for _, n in todo])
+            vectors = self.provider.embed([n for _, n in todo], QUERY)  # skill names: symmetric, both query
             self._cache.update({k: v for (k, _), v in zip(todo, vectors)})
         return {n: self._cache.get(skill_key(n)) for n in names}
 

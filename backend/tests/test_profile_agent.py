@@ -242,3 +242,26 @@ def test_an_uploaded_student_asked_for_again_keeps_their_profile(agents, repo):
     assert repo.profiles[profile["student_id"]]["source"] == "resume"  # not overwritten by an empty rebuild
     assert again.data["stages"]["load_student_record"] == "success"
     assert again.data["stages"]["extract_profile"] == "skipped"
+
+
+def test_a_profile_embedded_with_e5_also_stores_its_tfidf_fallback_vectors(settings, repo, embedder):
+    # docs/adr/0012: if E5 later becomes unavailable, the TF-IDF fallback must already have this student's vectors
+    import numpy as np
+
+    from app.embeddings.provider import E5Provider
+
+    class Unit:
+        def encode(self, texts, **kwargs):
+            return np.tile(np.eye(1, 768, 0, dtype=np.float32), (len(texts), 1))
+
+    e5 = E5Provider()
+    e5._loaded = lambda: Unit()  # noqa: SLF001 - no model download in unit tests
+    agents = build_agents(settings=settings, profile_repo=repo, embedder=e5, fallback_embedder=embedder)
+    out, _ = run(agents, {"resume_text": SYNTHETIC_RESUME})
+    sid = profile_of(out)["student_id"]
+    models = {}
+    for (s, _section, name, version), _row in repo.embeddings.items():
+        if s == sid:
+            models.setdefault(name, set()).add(version)
+    assert set(models) == {"e5_base_v2", "tfidf_baseline"}
+    assert models["tfidf_baseline"] == {embedder.describe()[0]}

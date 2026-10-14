@@ -20,10 +20,12 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 
 from app import experiments
 from app.agents import SupervisorAgent, build_agents
+from app.auth import init_auth_schema
+from app.auth import router as auth_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, log_event
 from app.db.store import build_store
-from app.embeddings.provider import build_embedding_provider
+from app.embeddings.provider import build_embedding_provider, fallback_provider
 from app.labelling import routes as labelling
 from app.labelling.repository import build_labelling_repository
 from app.llm import build_llm_client
@@ -33,18 +35,26 @@ from app.schemas.agent_io import SupervisorInput, SupervisorResponse
 settings = get_settings()
 configure_logging(settings.log_level)
 
-embedder = build_embedding_provider(settings)
+# E5 when it loads; otherwise the TF-IDF fallback (docs/adr/0012), reported by /health and on every request
+embedder = build_embedding_provider(settings, verify=True)
+fallback_embedder = fallback_provider(embedder, settings)  # TF-IDF vectors stored beside E5's (docs/adr/0012)
 # Fails at startup if an agent declares an unregistered tool.
-agents = build_agents(llm=build_llm_client(settings), store=build_store(settings), embedder=embedder)
+agents = build_agents(llm=build_llm_client(settings), store=build_store(settings), embedder=embedder,
+                      fallback_embedder=fallback_embedder)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    # Auth tables (app_users, student_accounts, recruiter_accounts); idempotent.
+    await asyncio.to_thread(init_auth_schema)
     # Fit the embedding model once at startup, so the first request doesn't pay for it.
     try:
         version, dimension = await asyncio.to_thread(embedder.describe)
         log_event(get_logger("main"), "embedding_model_ready", model_name=embedder.model_name,
-                  model_version=version, dimension=dimension, interim=embedder.interim)
+                  model_version=version, dimension=dimension, interim=embedder.interim,
+                  fallback_reason=getattr(embedder, "fallback_reason", None))
+        if fallback_embedder is not None:
+            await asyncio.to_thread(fallback_embedder.describe)  # fit TF-IDF now, not in the first request
     except Exception as exc:  # the API still serves; profiles are then saved without embeddings
         log_event(get_logger("main"), "embedding_model_unavailable", logging.ERROR, error=type(exc).__name__)
     yield
@@ -56,6 +66,8 @@ labelling.configure(build_labelling_repository(settings))
 experiments.configure(settings.database_url.get_secret_value() if settings.database_url else None)
 app.include_router(labelling.router)
 app.include_router(experiments.router)
+# Email-OTP signup and email/password login (JWT) for students and recruiters
+app.include_router(auth_router)
 
 
 def get_supervisor() -> SupervisorAgent:
@@ -89,6 +101,8 @@ async def health() -> dict:
         # LLM routing is used only when configured; otherwise the deterministic router runs (spec §22)
         "llm_calls_enabled": settings.llm_configured,
         "dependencies": {"postgres": postgres, "redis": redis},
+        "embedding_model": embedder.model_name,
+        "embedding_fallback": getattr(embedder, "fallback_reason", None),  # None: the configured model is in use
     }
 
 

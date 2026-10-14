@@ -35,8 +35,14 @@ def msettings() -> Settings:
                     tool_retry_backoff_seconds=0.0)
 
 
+# The synthetic world tests the pipeline with Baseline 3 (whose behaviour these tests assert), whatever the shipped
+# flag selects; the shipped choice itself is tested in test_matching_models.py.
+BASELINE = "weighted_baseline_v1"
+
+
 def context(world, embedder, msettings, **changes) -> P.MatchingContext:
     repo, cfg, cal = world
+    changes.setdefault("matching_model_override", BASELINE)
     return P.MatchingContext(repo=changes.pop("repo", repo), provider=embedder, cfg=changes.pop("cfg", cfg),
                              processed_dir=str(msettings.processed_data_dir), calibration_loader=lambda *_: cal,
                              **changes)
@@ -46,7 +52,8 @@ def run_agent(world, embedder, msettings, payload, cfg=None):
     repo, wcfg, cal = world
     agents = build_agents(settings=msettings, profile_repo=None, job_repo=None, embedder=embedder,
                           matching_repo=repo, matching_overrides={"cfg": cfg or wcfg,
-                                                                  "calibration_loader": lambda *_: cal})
+                                                                  "calibration_loader": lambda *_: cal,
+                                                                  "matching_model_override": BASELINE})
     state = AgentState(request_id="req-test", task_type="recommend_jobs_for_student")
     return asyncio.run(agents["matching_agent"].run(state, payload)), state
 

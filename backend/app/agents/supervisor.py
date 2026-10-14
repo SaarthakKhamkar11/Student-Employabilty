@@ -240,7 +240,7 @@ class SupervisorAgent(BaseAgent):
                 if not gaps:
                     return None, NOT_NEEDED + "no skill gaps were identified"
                 return LearningAgentInput(student_id=top.student_id, job_id=top.job_id, skill_gaps=gaps,
-                                          skill_gap_report=report), None
+                                          skill_gap_report=report, job_title=top.summary.get("job_title")), None
             if name == "explainability_agent":
                 return ExplainabilityAgentInput(match=top), None
         except ValidationError as exc:

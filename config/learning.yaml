@@ -1,0 +1,36 @@
+# Phase 10 Learning Agent (docs/adr/0018). Resources come only from the course catalogue
+# (data/learning/course_catalog.json -> learning_resources) and the YouTube Data API, never generated.
+version: learning-v1
+
+ranking:
+  top_k: 3                    # resources shown per skill, best relevance first
+  # min_relevance per embedding model family: a resource below it is not recommended, and a skill whose best
+  # candidate is below it gets "No resources found for this skill in the current catalog". Tuned on real output.
+  min_relevance:
+    e5_base_v2: 0.80
+    # Tuned 2026-10-14 on real output: the 300 most frequent job skills not detected in student profiles (Phase 9
+    # pairs) x the 20 catalogue courses, E5 ("query: " skill, "passage: " course title + skills + outcomes).
+    # Best-course relevance quantiles: p5 0.737, median 0.779, p95 0.838 (every pair: median 0.734).
+    # Author's spot check of the best course per skill, 12 random skills per band (is it an appropriate resource?):
+    #   0.70-0.76 0/12   0.76-0.78 ~2/12   0.78-0.80 ~5/12   0.80-0.82 ~9/12   0.82-0.84 ~11/12   0.84+ 11/11
+    # Below 0.80 the "best" course is usually the least-wrong of 20 ("PLC programming" -> Programming in Python
+    # 0.788, "AutoCAD proficiency" -> Excel/VBA 0.786); from 0.80 it is usually right ("Query optimization" -> SQL for
+    # Data Science 0.808, "Customer support" -> AWS Cloud Support Associate 0.809). Tuned on catalogue courses; the
+    # same threshold applies to YouTube results (their relevance is reported in every run).
+    tfidf_baseline: 0.15
+    # Tuned 2026-10-14 the same way, on the same 300 skills x 20 courses, TF-IDF tfidf-953a75d166d8 (the fallback when
+    # E5 is unavailable, ADR 0012). TF-IDF is lexical and sparse, so its scale is
+    # unlike E5's: best-course quantiles p5 0.000, p25 0.024, median 0.046, p75 0.094, p95 0.233 (53 of 300 skills
+    # share no word with any course: relevance 0). Author's spot check, 12 random skills per band (all in the last two):
+    #   0-0.05 0/12   0.05-0.10 ~2/12   0.10-0.15 ~3/12   0.15-0.20 ~10/12   0.20-0.25 ~9/12   0.25+ 9/9
+    # Below 0.15 a shared word decides ("Social security" -> Google Cloud Cybersecurity 0.136, "Usability testing" ->
+    # Programming in Python 0.124); from 0.15 it is usually right ("Containerization" -> Google Cloud Fundamentals
+    # 0.154, "SQL and database querying" -> SQL for Data Analysis 0.155). Misses above: "Inventory control" -> SQL for
+    # Data Analysis 0.243. The same threshold applies to YouTube results.
+
+youtube:
+  enabled: true               # owner decision 2026-10-14: catalogue AND YouTube for every skill
+  query: "{skill} tutorial"   # the search.list q for a skill
+  max_results: 5              # videos per search (search.list maxResults)
+  cache_days: 7               # reuse a cached search for this long (quota: 100 units per search)
+  max_searches_per_request: 10   # quota guard (10,000 units/day = ~99 searches); skills past it: catalogue only

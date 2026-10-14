@@ -1,9 +1,110 @@
 # ADR 0012: Embedding model selection: the rule is fixed before the human labels; the primary model is chosen from them
 
-**Status:** Proposed, 2026-10-09. It becomes Accepted when the engine has run on the team's human labels and the
-result is recorded here with its `experiment_id`. **Until then no embedding model is selected.** The deployed model
-stays the interim TF-IDF baseline ([ADR 0004](0004-interim-tfidf-embeddings.md)), and every `model_versions` row
-stays `candidate`.
+**Status:** Accepted, 2026-10-14. **E5 `e5-base-v2` is the primary embedding model**, selected by the rule below
+(`emb-20261014T100323Z-human`, confirmed by `emb-20261014T145548Z-human`). **TF-IDF is the baseline and the
+fallback only** (owner decision). Proposed 2026-10-09.
+
+**Owner decision, 2026-10-14: E5 primary, TF-IDF strictly baseline and fallback.**
+- **Why:** matching needs semantic similarity. TF-IDF compares shared words only. It has the highest Balanced
+  Overall Score (0.710) only because it is ~300× cheaper, and the rule never treated it as a candidate.
+  - The same day TF-IDF was briefly deployed on a "highest Overall Score" instruction; this decision reverses that.
+- **TF-IDF stays in two roles:**
+  - **the floor** every model must beat (unchanged);
+  - **the automatic fallback.** If E5 can't be loaded (weights or runtime missing),
+    `build_embedding_provider(verify=True)` returns TF-IDF:
+    - `/health` reports `embedding_fallback`, and every response's model versions say TF-IDF;
+    - TF-IDF vectors are stored next to E5's for every profile and job (`fallback_provider`, `generate_embedding`);
+    - TF-IDF has its own calibration, skill-gap tiers, learning threshold (0.15), and matching model
+      (`config/matching_model.yaml` `fallback.tfidf_baseline`: Logistic Regression, selected on TF-IDF features).
+  - **Verified live:** with E5's weights unreachable, a request for S00001 ran on TF-IDF + Logistic Regression and
+    got learning resources for all 6 gaps.
+
+**Improving E5 (2026-10-14).** The owner asked for E5's Overall Score to be raised by improving the model, with the
+fixed weights unchanged.
+- **Cost levers, measured in the backend image (x86 CPU) on 60 students × 120 jobs:**
+
+  | Variant | Latency per pair | Size | Ranking agreement with E5 (median τ / top-5 overlap) |
+  |---|---|---|---|
+  | E5 as is | 233 ms | 418 MB | 1.00 / 100% |
+  | int8 dynamic quantisation | 161 ms | 173 MB | 0.65 / 78% |
+  | int8, per channel | 158 ms | 174 MB | 0.72 / 85% |
+  | int8, feed-forward layers only | 190 ms | 256 MB | 0.75 / 88% |
+  | max 256 or 384 tokens | no faster | 418 MB | ~1.00 / 100% |
+
+  - **Quantisation was rejected.** E5's cosines sit in a narrow band (0.68–0.75), so small numeric errors reorder
+    jobs: it would give up the quality that is E5's reason to exist.
+  - **Shorter input limits change nothing:** texts are short (median 128 tokens, longest 415).
+  - **Cost can't move the score much anyway:** cost is compared on log10 against TF-IDF's ~2 ms, so even a 3× speedup
+    adds about +0.03.
+- **Quality lever: domain adaptation (slot E).**
+  - `src/embeddings/domain_adapt.py` fine-tunes E5 on the train split's weak labels.
+    - 1,830 strong pairs from 173 students, each with one hard negative.
+    - Contrastive loss; one fixed recipe, set before evaluation.
+    - 1 epoch, 71 min on CPU.
+  - The human-labelled students are never seen in training, and the test split stays held back.
+  - Evaluated with `PHASE6_DOMAIN_MODEL=models/embeddings/e5-base-v2-domain-81e7ec962511`. Its cost is E5's measured
+    cost, since the network is identical; complexity gets +1 point for in-house retraining.
+
+  | Model | MRR | NDCG@5 (95% CI) | Recall@5 | Precision@5 | Section-weighted NDCG@5 | Overall (Balanced) |
+  |---|---|---|---|---|---|---|
+  | B. E5 | **0.910** | **0.756** (0.646–0.856) | 0.691 | 0.453 | 0.679 | **0.512** |
+  | E. E5, domain-adapted | 0.765 | 0.745 (0.627–0.844) | **0.741** | **0.507** | **0.747** | 0.466 |
+
+  - **Gains:** domain adaptation raised recall, precision, agreement with the graders (Kendall τ 0.48 → 0.57) and the
+    section-weighted score.
+  - **Loss:** it lowered MRR. The first good job appears later.
+  - **Net:** it is not distinguishable from E5 on NDCG@5 (+0.011, CI −0.085 to +0.112), and **the rule keeps plain E5**
+    (wins 75.6% of random weightings; the adapted model 15.3%).
+  - E5's score reads 0.512 here instead of 0.532 only because a sixth model entered the min-max normalisation.
+  - **Not retried with other settings:** tuning the recipe until it wins on these 180 validation pairs would overfit
+    them. A fair next attempt needs new training signal (more human-labelled train pairs), not another pass over
+    the same validation labels.
+  - The adapted weights are kept locally (`models/embeddings/`, gitignored and dockerignored), not deployed.
+- **Platform caveat (fallback):** the TF-IDF version this Windows/x86 setup fits is `tfidf-953a75d166d8`; a
+  Mac/arm64 fit gives `tfidf-3ec097a5876e` (ADR 0015). The fallback's matching model was trained on the former.
+
+**Human-label result (2026-10-14).**
+- **Labels:** 360 `human_reviewed` pairs (30 students, pool `pool-5c6a5972b32d`).
+  - **One labeller**, so agreement couldn't be measured.
+  - Evaluated on the validation split: 180 pairs, 15 students.
+  - Grades: 0 × 145, 1 × 114, 2 × 75, 3 × 26.
+  - Evaluation validity **OK**. Mean per-student Kendall tau vs the labels is 0.31 to 0.48, far from the 0.9
+    leakage line.
+- **Full-text protocol** (the rule's primary protocol), NDCG@5 (95% CI):
+
+  | Model | NDCG@5 (95% CI) | MRR |
+  |---|---|---|
+  | TF-IDF (floor) | 0.602 (0.466–0.725) | 0.719 |
+  | SBERT | 0.588 | 0.689 |
+  | **E5** | **0.756 (0.646–0.856)** | **0.910** |
+  | BGE | 0.697 | 0.764 |
+  | MiniLM | 0.619 | 0.601 |
+
+  - E5 vs the floor: +0.154, 95% CI **+0.005 to +0.314**, distinguishable, but only just.
+  - E5 vs BGE: +0.059, 95% CI −0.008 to +0.134, not distinguishable.
+- **Decision line:** "Select B. E5 e5-base-v2 as the primary embedding model (Balanced winner, Overall Score 0.532)."
+  - The floor scores higher overall (0.710), because it is far cheaper. But E5's quality gain is distinguishable,
+    so the fixed rule selects E5.
+  - E5 wins 2 of 3 weight scenarios and 87.2% of random weightings (MiniLM wins 12.8%).
+- **⚠ Protocol caveat (recorded when activated).** The Matching Agent retrieves with the **section-weighted**
+  protocol (ADR 0014). Under it, the report's robustness check gives NDCG@5:
+  - BGE 0.748, MiniLM 0.725, SBERT 0.724, **TF-IDF 0.683, E5 0.679**;
+  - E5 sits below the floor there, and the Balanced winner would be MiniLM.
+
+  The rule was fixed on the full-text protocol, so it is applied as written, and the owner chose to activate E5
+  knowing this. Phase 14 must compare the deployed (section-weighted) retrieval with E5 against TF-IDF on the test
+  split, and a future selection should pre-register the protocol the system actually uses.
+- **Consequences carried out on 2026-10-14:**
+  - `model_versions` row `selected`;
+  - `E5Provider` (`app/embeddings/provider.py`): "query: " for student texts and skill names, "passage: " for job
+    and course texts, as in the benchmark;
+  - `EMBEDDING_MODEL` defaults to `e5_base_v2`;
+  - the backend image carries CPU torch and the pinned weights;
+  - re-embedding, recalibration, a rebuilt feature matrix, and Phase 8 retrained and selected on it (ADR 0015).
+
+**Original status (2026-10-09):** Proposed. It was to become Accepted when the engine ran on the team's human
+labels. Until then no embedding model was selected, the interim TF-IDF baseline stayed deployed
+([ADR 0004](0004-interim-tfidf-embeddings.md)), and every `model_versions` row stayed `candidate`.
 
 **Context.**
 - Spec §6 and §9 require the primary embedding model to be chosen from evidence. The choice must use transparent,

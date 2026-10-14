@@ -393,19 +393,46 @@ class LearningAgentInput(Contract):
     job_id: str
     skill_gaps: list[str] = Field(min_length=1)  # missing skill names, most important first
     skill_gap_report: SkillGapReport | None = None  # the full Phase 9 report (Phase 10 consumes it)
+    job_title: str | None = None  # for the explanation; from the match summary
 
 
 class LearningResource(Contract):
-    """Must come from the course catalogue; titles and URLs are never generated (spec §17)."""
+    """One resource for one skill. It must trace back to a stored catalogue row or a YouTube API result (spec §17):
+    titles, URLs and details are never generated (docs/adr/0018)."""
+
+    resource_name: str
+    resource_url: str
+    source: str  # "<resource_id> | <source_reference>": which catalogue row / API call produced it
+    relevance_score: float  # cosine(skill, resource text) under the configured embedding model
+    kind: Literal["course", "video"]
+    provider: str
+    difficulty: str | None  # as the source states it, else "Not available in source data"
+    prerequisites: str | None
+    estimated_effort: str | None
+
+
+class LearningRecommendation(Contract):
+    """The recommendation for one missing skill, prioritised by Phase 9's importance_score."""
 
     skill: str
-    title: str
-    provider: str
-    url: str | None = None
+    requirement: Literal["required", "preferred"]
+    priority: int = Field(ge=1)  # 1 = most important; tied skills share a priority
+    importance_score: float | None
+    tied_with: list[str] = Field(default_factory=list)  # same importance: their order is not a ranking
+    transferable_candidate: str | None = None
+    resources: list[LearningResource]  # ranked by relevance, best first; empty when none qualifies
+    message: str | None = None  # "No resources found for this skill in the current catalog" when empty
+    explanation: str
 
 
 class LearningAgentOutput(Contract):
-    recommendations: list[LearningResource] | Unavailable = NOT_YET_EVALUATED
+    student_id: str | Unavailable = NOT_YET_EVALUATED
+    job_id: str | Unavailable = NOT_YET_EVALUATED
+    recommendations: list[LearningRecommendation] | Unavailable = NOT_YET_EVALUATED
+    sources: dict[str, Any] = Field(default_factory=dict)  # catalogue size, YouTube status per skill
+    ranking: dict[str, Any] = Field(default_factory=dict)  # embedding model, threshold, factor availability
+    saved: bool = False
+    note: str = "Missing = not detected in the profile, which is not proof the student lacks the skill."
 
 
 # --------------------------------------------------------------------------

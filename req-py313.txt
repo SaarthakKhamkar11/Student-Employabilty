@@ -1,0 +1,25 @@
+# Python 3.11. Pinned to the versions verified in Phase 1 (see PROJECT_AUDIT.md).
+# Setup: python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
+
+# Data pipeline (preprocess.py)
+pandas==2.3.3
+openpyxl==3.1.5
+scikit-learn==1.6.1
+
+# Embedding benchmark (embedding_model_benchmark.py)
+sentence-transformers==5.1.2
+transformers==4.57.6
+torch==2.8.0
+psutil==7.2.2
+huggingface-hub==0.36.2  # pinned snapshots: the benchmark records each model's revision
+
+# Phase 6 evaluation (src/evaluation, model_evaluation_engine.py)
+scipy==1.17.1            # Kendall tau
+PyYAML==6.0.3            # config/model_selection_weights.yaml, config/weak_label_rules.yaml
+packaging==26.3          # dependency footprint per model
+psycopg[binary]==3.3.6   # optional: --record-db stores experiments in Postgres
+
+# Phase 8 matching-model experimentation (src/scoring): same pins as backend/requirements.txt
+xgboost-cpu==3.2.0
+lightgbm==4.7.0
+shap==0.51.0

@@ -89,7 +89,7 @@ def build(ctx: P.MatchingContext) -> tuple[pd.DataFrame, dict]:
 
 
 def output_path(feature_version: str, embedding_version: str):
-    return OUT_DIR / f"{feature_version}-{embedding_version}.csv.gz"
+    return OUT_DIR / f"{feature_version}-{embedding_version.replace('/', '_')}.csv.gz"  # HF versions hold a "/"
 
 
 def main() -> None:

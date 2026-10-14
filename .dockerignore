@@ -7,3 +7,5 @@ results/
 **/.pytest_cache
 .DS_Store
 .vscode
+# Phase 6 domain-adapted embedding experiments (~418 MB each): evaluated, not deployed (docs/adr/0012)
+models/embeddings/

@@ -135,7 +135,17 @@ def random_weight_stability(normalised: dict, balanced: dict[str, float], eligib
 def measure_costs(reuse: bool) -> dict:
     if reuse and os.path.exists(COST_CACHE):
         with open(COST_CACHE, encoding="utf-8") as fh:
-            return json.load(fh)
+            costs = json.load(fh)
+        for key in RUNNABLE:  # a model that is the same network as a measured one (cost_as) reuses its cost
+            same = MODEL_CONFIGS[key].get("cost_as")
+            if key not in costs["models"] and same in costs["models"]:
+                encoder = load_encoder(key, "cpu")
+                costs["models"][key] = {**costs["models"][same], "model": key, "version": encoder.version,
+                                        "revision": encoder.revision,
+                                        "cost_basis": f"same network as {same} (fine-tuned weights): its measured "
+                                                      f"cost is reused, not re-measured"}
+                del encoder
+        return costs
     costs = {"measured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "hardware": hardware(),
              "models": {}}
     for key in RUNNABLE:
@@ -356,7 +366,7 @@ def run(labels_path: str | None, device: str, reuse_cost: bool, label_source: st
         "labels": labels_info, "validity": (validity or {}).get("line", NOT_YET_EVALUATED),
         "models": {key: {"slot": MODEL_CONFIGS[key]["spec_slot"], "display": MODEL_CONFIGS[key]["display"],
                          "version": versions[key], "role": "floor" if key == FLOOR else "candidate"} for key in RUNNABLE},
-        "not_run": NOT_RUN_MODELS,
+        "not_run": {k: v for k, v in NOT_RUN_MODELS.items() if not (k == "custom" and "e5_domain" in RUNNABLE)},
         "criteria": criteria, "normalised": normalised, "eligible": eligible,
         "quality": {p: {m: {kk: v for kk, v in r.items() if kk not in ("per_student", "kendall_tau_per_student")}
                         for m, r in quality[p].items()} for p in quality},
@@ -514,7 +524,8 @@ def _main_table(r: dict, k: int) -> list[str]:
                      f" | {c['latency']:.1f} ms | {c['memory']:.0f} MB | {cost['size_mb']:.1f} MB | {dim} | "
                      f"{c['complexity'] - 1} pt | {c['scalability']:.1f} min/100k jobs (extrapolated) | {score} |")
     custom, hybrid = NOT_RUN_MODELS["custom"], NOT_RUN_MODELS["hybrid"]
-    lines.append(f"| E. {custom['display']} | {custom['status']} |" + " — |" * 10)
+    if "e5_domain" not in RUNNABLE:  # slot E ran when a domain-adapted model exists (src/embeddings/domain_adapt.py)
+        lines.append(f"| E. {custom['display']} | {custom['status']} |" + " — |" * 10)
     lines.append(f"| F. {hybrid['display']} | {hybrid['status']} |" + " — |" * 10)
     return lines
 
@@ -683,8 +694,8 @@ def render_markdown(r: dict) -> str:
         out.append(f"- **{label}:** {r['best_models'][key]}")
     out += ["", f"**Decision (rule fixed in ADR 0012): {r['recommendation']['line']}**", ""]
 
-    out += ["## Not run", "",
-            f"- **E. {NOT_RUN_MODELS['custom']['display']}: {NOT_RUN_MODELS['custom']['status']}.** {NOT_RUN_MODELS['custom']['reason']}",
+    out += ["## Not run", ""] + ([] if "e5_domain" in RUNNABLE else [
+            f"- **E. {NOT_RUN_MODELS['custom']['display']}: {NOT_RUN_MODELS['custom']['status']}.** {NOT_RUN_MODELS['custom']['reason']}"]) + [
             f"- **F. {NOT_RUN_MODELS['hybrid']['display']}:** {NOT_RUN_MODELS['hybrid']['reason']} This is a separate "
             "architecture, not a gap in this comparison.", ""]
     out += ["## Limitations", "",

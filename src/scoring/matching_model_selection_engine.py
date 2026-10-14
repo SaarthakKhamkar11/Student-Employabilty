@@ -734,9 +734,22 @@ def activate(report: dict) -> None:
     if rec["decision"] != "select":
         raise SystemExit(f"--activate refused: the decision is {rec['decision']!r}, not 'select'")
     text = ACTIVE_CONFIG.read_text(encoding="utf-8")
-    for key, value in (("active", rec["model"]), ("artifacts_experiment", report["artifacts_experiment"]),
-                       ("selection_experiment", report["experiment_id"])):
-        text = _set(text, key, value)
+    primary = (yaml.safe_load(text) or {}).get("embedding_model")
+    values = (("active", rec["model"]), ("artifacts_experiment", report["artifacts_experiment"]),
+              ("selection_experiment", report["experiment_id"]))
+    if primary in (None, report.get("embedding_model", primary)):
+        for key, value in values:
+            text = _set(text, key, value)
+    else:  # a run on another embedding model sets that model's fallback entry, never the primary choice
+        head, sep, block = text.partition(f"\n  {report['embedding_model']}:\n")
+        if not sep:
+            raise SystemExit(f"--activate refused: {ACTIVE_CONFIG} has no fallback entry for "
+                             f"{report['embedding_model']!r}")
+        for key, value in values:
+            block, n = re.subn(rf"(?m)^(    {key}: ).*$", rf"\g<1>{value}", block, count=1)
+            if n != 1:
+                raise RuntimeError(f"{ACTIVE_CONFIG}: no `{key}:` line under fallback.{report['embedding_model']}")
+        text = head + sep + block
     ACTIVE_CONFIG.write_text(text, encoding="utf-8")
 
 

@@ -54,16 +54,23 @@ def test_shell_terminates_honestly_without_network(agents, state, name, monkeypa
 
 
 def test_no_model_is_hard_coded_as_the_winner():
-    """Embedding and matching models are chosen from evidence in Phases 6 and 8 (spec rules 8, 9)."""
+    """Embedding and matching models are chosen from evidence in Phases 6 and 8 (spec rules 8, 9). Since ADR 0012
+    selected E5 on the human labels (2026-10-14), the selected embedding model may be named in one place only, its
+    provider; matching models are never named in the app (config/matching_model.yaml picks them)."""
     app_dir = Path(__file__).resolve().parents[1] / "app"
+    provider = app_dir / "embeddings" / "provider.py"
     pattern = re.compile(r"sbert|xgboost|mpnet|minilm|e5-|bge-|lightgbm|random.?forest", re.I)
-    hits = [f"{p.name}: {m.group(0)}" for p in app_dir.rglob("*.py") for m in pattern.finditer(p.read_text())]
+    hits = [f"{p.name}: {m.group(0)}" for p in app_dir.rglob("*.py") if p != provider
+            for m in pattern.finditer(p.read_text(encoding="utf-8"))]
     assert hits == []
+    named = {m.group(0).lower() for m in pattern.finditer(provider.read_text(encoding="utf-8"))}
+    assert named == {"e5-"}  # only the model ADR 0012 selected
 
 
 def test_implemented_agents_and_delegation_rights():
     implemented = {cls.name for cls in AGENT_CLASSES if cls.implemented}
-    assert implemented == {"supervisor", "profile_agent", "job_intelligence_agent", "matching_agent"}  # Phases 3-5, 7
+    assert implemented == {"supervisor", "profile_agent", "job_intelligence_agent", "matching_agent",
+                           "learning_agent"}  # Phases 3-5, 7, 10
     supervisor = next(cls for cls in AGENT_CLASSES if cls.name == "supervisor")
     assert set(supervisor.allowed_delegates) == SPEC_AGENTS - {"supervisor"}
     assert all(not cls.allowed_delegates for cls in SPECIALIST_CLASSES)

@@ -1,0 +1,8 @@
+# The selected embedding model (E5 e5-base-v2, ADR 0012, selected 2026-10-14) runs in the backend.
+# CPU-only torch from the PyTorch index (the PyPI torch wheel for Linux bundles CUDA, ~2 GB). Same versions as
+# the root requirements.txt used for the Phase 6 benchmark.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.8.0+cpu
+sentence-transformers==5.1.2
+transformers==4.57.6
+huggingface-hub==0.36.2

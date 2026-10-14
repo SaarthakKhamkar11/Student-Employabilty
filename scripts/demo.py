@@ -369,6 +369,32 @@ def demo_skill_gap_report() -> None:
     print(f"  {g['note']}")
 
 
+def demo_learning_recommendations(student_ids=("S00001",)) -> None:
+    title(15, "Phase 10: learning resources for the top job's skill gaps (catalogue + YouTube, never invented)")
+    for sid in student_ids:
+        resp = call("POST", "/requests", {"actor": "student", "request_kind": "question",
+                                          "request_text": "What should I learn?",
+                                          "task_type": "recommend_jobs_for_student", "student_id": sid})
+        la = resp["results"]["learning_agent"]
+        if la["status"] != "success":
+            print(f"  {sid}: Learning Agent {la['status']} ({la['termination_reason'] or la.get('skip_reason')})")
+            continue
+        d, top = la["data"], resp["results"]["matching_agent"]["data"]["matches"][0]
+        print(f"  {sid} -> {top['job_id']} {top['summary']['job_title']} | catalogue {d['sources']['catalog_courses']} "
+              f"courses | {d['ranking']['embedding']}, min relevance {d['ranking']['min_relevance']}")
+        for rec in d["recommendations"]:
+            tied = f" (tied with {len(rec['tied_with'])})" if rec["tied_with"] else ""
+            print(f"  #{rec['priority']} {rec['skill']} [{rec['requirement']}, importance {rec['importance_score']}]{tied}"
+                  f" | YouTube: {d['sources']['youtube'].get(rec['skill'])}")
+            for r in rec["resources"]:
+                print(f"      {r['relevance_score']:.3f} {r['kind']:6s} {r['resource_name'][:70]}\n"
+                      f"            {r['resource_url']} | difficulty: {r['difficulty']} | effort: {r['estimated_effort']}")
+            if rec["message"]:
+                print(f"      {rec['message']}")
+        print(f"  factor availability: {d['ranking']['factor_availability']}")
+        print(f"  saved: {d['saved']} | {d['note']}")
+
+
 if __name__ == "__main__":
     only = int(sys.argv[1]) if len(sys.argv) > 1 else None
     rid = None
@@ -391,4 +417,6 @@ if __name__ == "__main__":
         demo_matching_model_selection()
     if only in (None, 14):
         demo_skill_gap_report()
+    if only in (None, 15):
+        demo_learning_recommendations(tuple(sys.argv[2:]) or ("S00001",))
     print()

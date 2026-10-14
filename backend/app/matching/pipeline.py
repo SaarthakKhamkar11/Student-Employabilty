@@ -48,7 +48,8 @@ class MatchingContext:
 
     def __post_init__(self):
         if self.predictor is None:
-            self.predictor = build_predictor(self.cfg, self.matching_model_override)
+            self.predictor = build_predictor(self.cfg, self.matching_model_override,
+                                             embedding_model=self.provider.model_name)
 
     def calibration(self) -> Calibration:
         version, _ = self.provider.describe()

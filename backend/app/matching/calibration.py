@@ -24,7 +24,7 @@ import numpy as np
 from scipy import sparse
 
 from app.core.config import REPO_ROOT
-from app.embeddings.provider import EmbeddingProvider, Vector
+from app.embeddings.provider import PASSAGE, QUERY, EmbeddingProvider, Role, Vector
 from app.matching.entities import JobView, StudentView
 from app.matching.similarity import RETRIEVAL_PAIRS, SIGNALS
 from app.profile.skills import skill_key
@@ -55,7 +55,8 @@ class Calibration:
 
 
 def path_for(model_name: str, model_version: str) -> Path:
-    return CALIBRATION_DIR / f"{model_name}-{model_version}.json"
+    # Hugging Face versions hold a "/" ("<org>/<model>@<revision>"): keep the file in this folder
+    return CALIBRATION_DIR / f"{model_name}-{model_version.replace('/', '_')}.json"
 
 
 def load_calibration(model_name: str, model_version: str) -> Calibration:
@@ -75,10 +76,10 @@ def cached_calibration(model_name: str, model_version: str) -> Calibration:
     return load_calibration(model_name, model_version)
 
 
-def _matrix(provider: EmbeddingProvider, texts: list[str], dimension: int):
+def _matrix(provider: EmbeddingProvider, texts: list[str], dimension: int, role: Role):
     """Rows of L2-normalised vectors (sparse for sparse models); all-zero rows mark "no text / no signal"."""
     keep = [i for i, t in enumerate(texts) if t and t.strip()]
-    vectors = provider.embed([texts[i] for i in keep]) if keep else []
+    vectors = provider.embed([texts[i] for i in keep], role) if keep else []
     rows, cols, vals, present = [], [], [], np.zeros(len(texts), dtype=bool)
     dense = None
     for i, v in zip(keep, vectors):
@@ -107,8 +108,8 @@ def build_calibration(students: list[StudentView], jobs: list[JobView], provider
     version, dimension = provider.describe()
     s_keys = {s for s, _, _ in RETRIEVAL_PAIRS} | {s for s, _ in SIGNALS.values()}
     j_keys = {j for _, j, _ in RETRIEVAL_PAIRS} | {j for _, j in SIGNALS.values()}
-    sm = {k: _matrix(provider, [s.texts.get(k, "") for s in students], dimension) for k in s_keys}
-    jm = {k: _matrix(provider, [j.texts.get(k, "") for j in jobs], dimension) for k in j_keys}
+    sm = {k: _matrix(provider, [s.texts.get(k, "") for s in students], dimension, QUERY) for k in s_keys}
+    jm = {k: _matrix(provider, [j.texts.get(k, "") for j in jobs], dimension, PASSAGE) for k in j_keys}
 
     values: dict[str, np.ndarray] = {}
     num = np.zeros((len(students), len(jobs)))
@@ -129,7 +130,7 @@ def build_calibration(students: list[StudentView], jobs: list[JobView], provider
 
     # transferable threshold over all pairs of distinct skill names in the data
     names = sorted({skill_key(n): n for n in skill_names if skill_key(n)}.values())
-    mat, present = _matrix(provider, names, dimension)
+    mat, present = _matrix(provider, names, dimension, QUERY)  # skill names: symmetric
     iu = np.triu_indices(len(names), k=1)
     pair_sims = _cos(mat, mat)[iu]
     mask = present[iu[0]] & present[iu[1]]

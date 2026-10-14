@@ -1,9 +1,61 @@
 # ADR 0015: Matching model: binary suitability target, weak-label training, and a selection rule fixed before the human labels
 
 **Status:** Accepted, 2026-10-11 (Phase 8): the target formulation, the training design, the candidates and the
-selection rule. **The model choice itself is pending the team's human labels.** Until the engine runs on them,
-no trained model is selected, and Stage 4 keeps Baseline 3 (`weighted_baseline_v1`,
-[ADR 0014](0014-matching-pipeline-and-weighted-baseline.md)) as the active model.
+selection rule. **Models selected 2026-10-14 on the human labels, one per embedding model** (a trained model refuses
+other embeddings; `config/matching_model.yaml` holds both):
+- **E5, the primary model: LightGBM.** Selection `mms-20261014T151058Z-human`, artifacts
+  `mms-20261014T150744Z-nolabels`, features `features-v1-intfloat_e5-base-v2@f52bf8ec8c71`.
+- **TF-IDF, the fallback: Logistic Regression.** Selection `mms-20261014T132323Z-human`, artifacts
+  `mms-20261011T104041Z-nolabels`.
+
+Both replaced Baseline 3 (`weighted_baseline_v1`, [ADR 0014](0014-matching-pipeline-and-weighted-baseline.md)).
+
+**Human-label result on E5 features (2026-10-14): LightGBM.**
+- **Labels:** the same 180 validation pairs (15 students, 50 suitable).
+- **Decision line:** "Select LightGBM as the matching model (Balanced winner, Overall Score 0.615)."
+
+  | Model | NDCG@10 | F1 | MRR | Overall (Balanced) |
+  |---|---|---|---|---|
+  | **LightGBM** | **0.844 (0.762–0.908)** | **0.630** | 0.739 | **0.615** |
+  | Random Forest | 0.838 | 0.590 | 0.819 | 0.460 |
+  | Logistic Regression | 0.817 | 0.555 | 0.743 | 0.518 |
+  | XGBoost | 0.817 | 0.612 | 0.712 | 0.353 |
+  | Gradient Boosting | 0.815 | 0.610 | 0.714 | 0.474 |
+  | Decision Tree | 0.783 | 0.553 | 0.710 | 0.428 |
+  | Baseline 3 | 0.778 | 0.587 | 0.654 | 0.523 |
+
+- **Stability:** LightGBM wins all three weight scenarios and 76.2% of random weightings (Logistic Regression 17.2%).
+- **Caveat:** LightGBM vs Baseline 3 is +0.066 NDCG@10, 95% CI −0.015 to +0.156, **not distinguishable** at 15
+  students.
+- **Effect on Phase 9:** a tree model's score moves in steps, so counterfactual skill importances are tiny
+  (around 0.0001–0.0004) and some are negative. Phase 11 must explain this rather than present the importances as
+  precise.
+
+**Human-label result on TF-IDF features (2026-10-14), now the fallback's model.**
+- **Labels:** 180 validation pairs, 15 students, 50 suitable (grade ≥ 2). One labeller.
+- **Decision line:** "Select Logistic Regression as the matching model (Balanced winner, Overall Score 0.699)."
+- **Quality, NDCG@10 (95% CI):**
+
+  | Model | NDCG@10 | F1 |
+  |---|---|---|
+  | **Logistic Regression** | **0.813 (0.729–0.881)** | 0.606 |
+  | LightGBM | 0.821 | 0.683 |
+  | Gradient Boosting | 0.819 | 0.637 |
+  | XGBoost | 0.800 | 0.646 |
+  | Random Forest | 0.798 | 0.642 |
+  | Decision Tree | 0.792 | 0.621 |
+  | Baseline 3 | 0.774 | 0.522 |
+
+  - **No candidate is distinguishable from Baseline 3** on NDCG@10. Logistic Regression: +0.039, CI −0.001 to
+    +0.096.
+  - **No candidate is distinguishable from Logistic Regression** either (LightGBM: +0.008, CI −0.038 to +0.052).
+    The simpler-model check prefers it.
+- **The winner changes with the weights:** Quality-prioritised and Low-resource pick LightGBM. Over random
+  weightings, Logistic Regression wins 58.5% and LightGBM 33.6%.
+- **Known effect on Phase 9:** under Logistic Regression, some counterfactual importances are **negative**.
+  Detecting the skill lowers the score slightly; for example −0.003 for "SQL and database querying". The model's
+  coefficients on the correlated skill-count features cause this, not the skill itself. Phase 10 sorts these
+  gaps last.
 
 **Context.**
 - Spec §10 and §13 and the Phase 8 prompt require:

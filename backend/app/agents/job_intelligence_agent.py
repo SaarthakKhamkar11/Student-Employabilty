@@ -220,7 +220,7 @@ class JobIntelligenceAgent(BaseAgent):
         if posting is None:
             return None
         if stage == "generate_embedding":
-            return {"section_texts": job_section_texts(posting.model_dump())}
+            return {"section_texts": job_section_texts(posting.model_dump()), "role": "passage"}
         if stage == "validate_job_posting":
             return {"posting": posting.model_dump(mode="json")}
         if stage == "save_job":

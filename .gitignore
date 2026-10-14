@@ -16,3 +16,9 @@ data/raw/
 
 # Test caches
 .pytest_cache/
+
+# Embedding weights staged for the backend image (scripts/stage_embedding_model.py)
+.model_cache/
+
+# Phase 6 domain-adapted embedding weights (~418 MB): rebuilt by python -m src.embeddings.domain_adapt
+models/embeddings/

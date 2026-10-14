@@ -25,6 +25,7 @@ def world(embedder):
 
 def ctx_for(world, embedder, **changes):
     repo, cfg, cal = world
+    changes.setdefault("matching_model_override", "weighted_baseline_v1")  # the synthetic world is scored by Baseline 3
     return P.MatchingContext(repo=repo, provider=embedder, cfg=cfg, processed_dir=str(Settings(_env_file=None).processed_data_dir),
                              calibration_loader=lambda *_: cal, **changes)
 

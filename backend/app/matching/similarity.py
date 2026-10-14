@@ -17,7 +17,7 @@ similarity is also turned into a calibrated percentile by app/matching/calibrati
 
 from dataclasses import dataclass, field
 
-from app.embeddings.provider import EmbeddingProvider, Vector
+from app.embeddings.provider import PASSAGE, QUERY, EmbeddingProvider, Role, Vector
 from app.matching.eligibility import SAME
 from app.matching.vectors import VectorIndex, VectorIndexError, cosine
 from src.embeddings.embedding_model_benchmark import SECTION_PAIRS, SECTION_WEIGHTS
@@ -52,9 +52,14 @@ class RetrievalResult:
     query_sections: list[str] = field(default_factory=list)
 
 
-def embed_texts(provider: EmbeddingProvider, texts: dict[str, str]) -> dict[str, Vector | None]:
+def role_of(kind: str) -> Role:
+    """Student texts are queries, job texts passages, whichever side is being matched (provider.py)."""
+    return QUERY if kind == "student" else PASSAGE
+
+
+def embed_texts(provider: EmbeddingProvider, texts: dict[str, str], role: Role) -> dict[str, Vector | None]:
     keys = [k for k, t in texts.items() if t and t.strip()]
-    vectors = provider.embed([texts[k] for k in keys]) if keys else []
+    vectors = provider.embed([texts[k] for k in keys], role) if keys else []
     return dict(zip(keys, vectors))
 
 
@@ -67,7 +72,7 @@ def retrieve(query_kind: str, query_texts: dict[str, str], eligible: list[str], 
         raise VectorIndexError(f"no stored {target} embeddings for {provider.model_name} {version}: "
                                "re-embed (seed --process) after changing EMBEDDING_MODEL")
     wanted = {(s if query_kind == "student" else j) for s, j, _ in RETRIEVAL_PAIRS}
-    query = embed_texts(provider, {k: v for k, v in query_texts.items() if k in wanted})
+    query = embed_texts(provider, {k: v for k, v in query_texts.items() if k in wanted}, role_of(query_kind))
     num: dict[str, float] = {}
     den: dict[str, float] = {}
     sections: dict[str, dict[str, float]] = {}
@@ -98,7 +103,7 @@ def compute_signals(query_kind: str, query_texts: dict[str, str], candidate_text
     ids = sorted(candidate_texts)
     target, stored = ("job", STORED_JOB) if query_kind == "student" else ("student", STORED_STUDENT)
     query_keys = {(s if query_kind == "student" else j) for s, j in SIGNALS.values()}
-    query = embed_texts(provider, {k: v for k, v in query_texts.items() if k in query_keys})
+    query = embed_texts(provider, {k: v for k, v in query_texts.items() if k in query_keys}, role_of(query_kind))
     out: dict[str, dict[str, float | None]] = {i: {} for i in ids}
     for name, (s_key, j_key) in SIGNALS.items():
         q_key, c_key = (s_key, j_key) if query_kind == "student" else (j_key, s_key)
@@ -111,7 +116,7 @@ def compute_signals(query_kind: str, query_texts: dict[str, str], candidate_text
             sims = index.similarities(target, c_key, qvec, provider.model_name, version, dimension, ids=ids)
         else:
             texts = {i: candidate_texts[i].get(c_key, "") for i in ids}
-            vecs = embed_texts(provider, texts)
+            vecs = embed_texts(provider, texts, role_of(target))
             sims = {i: cosine(qvec, v, dimension) for i, v in vecs.items()}
         for i in ids:
             out[i][name] = sims.get(i)

@@ -225,7 +225,7 @@ class ProfileAgent(BaseAgent):
                     "pii": pii.report.model_dump() if pii is not None else NOT_YET_EVALUATED}
         if stage == "generate_embedding":
             profile = self._profile(ctx)
-            return {"section_texts": section_texts(profile)} if profile else None
+            return {"section_texts": section_texts(profile), "role": "query"} if profile else None
         if stage == "validate_profile":
             profile = self._profile(ctx)
             return {"profile": profile} if profile else None

@@ -19,7 +19,6 @@ from pydantic import BaseModel, ConfigDict
 from app.core.config import Settings
 from app.core.logging import get_logger, log_event
 from app.db.job_repository import JobRepository
-from app.db.profile_repository import EmbeddingRow
 from app.jobs import dedup
 from app.jobs.requirements import (
     HEURISTIC_VERSION, INFERRED_NOTE, classify_requirements, parse_degree, parse_experience,
@@ -31,7 +30,7 @@ from app.profile.text_extraction import ResumeRejected, extract_text
 from app.schemas.agent_state import NOT_DETECTED, NOT_YET_EVALUATED, SKILL_NOT_DETECTED
 from app.schemas.job import DuplicateCheck, JobPosting, JobSkill, JobVisibility, SkillSplitInfo
 from app.schemas.student import NormalizedSkill, PIIReport
-from app.tools.profile_tools import GenerateEmbeddingOut
+from app.tools.profile_tools import GenerateEmbeddingOut, embedding_rows
 from app.tools.registry import ToolInputRejected, ToolRegistry
 from src.parsing.section_parser import parse_job_sections
 
@@ -329,10 +328,7 @@ def register_job_tools(registry: ToolRegistry, *, repo: JobRepository | None, se
         """Write the posting, skills, responsibilities and embeddings (model name and version) in one transaction."""
         p = JobPosting.model_validate(posting)
         embedding = GenerateEmbeddingOut.model_validate(embedding) if embedding is not None else None
-        rows = [EmbeddingRow(section=k, model_name=embedding.model_name, model_version=embedding.model_version,
-                             dimension=embedding.dimension, values=v.values, indices=v.indices,
-                             interim=embedding.interim)
-                for k, v in (embedding.vectors.items() if embedding else [])]
+        rows = embedding_rows(embedding)
         result = _repo().save_posting(p, rows, is_new)
         log_event(logger, "job_saved", job_id=p.job_id, rows=result.rows, embeddings_stored=result.embeddings_stored,
                   level=logging.INFO)

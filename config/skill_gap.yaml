@@ -28,3 +28,18 @@ thresholds:
     #   "AWS, Azure, etc" <- "AWS" 0.424). Known misses: "Proficiency in HTML" <- "HTML" scores 0.542 and
     #   "AutoCAD proficiency" <- "AutoCAD" 0.567, so they are partially related, not transferable: a lexical model
     #   can't tell wording from substance. A semantic model (ADR 0012) needs its own entry, tuned the same way.
+  e5_base_v2:
+    transferable: 0.90
+    partial: 0.85
+    tuned_on: intfloat/e5-base-v2@f52bf8ec8c71
+    # Tuned 2026-10-14 the same way, on the same real pairs: 2,825 pairs, 12,022 not-detected job skills, E5 with
+    # "query: " on both skill names (symmetric). E5 compresses cosine: best-match quantiles p5 0.77, median 0.84,
+    # p90 0.95 (so the TF-IDF numbers would call everything transferable).
+    # Author's spot check, 15 random distinct (job skill, student skill) pairs per band (13 in the last):
+    #   0.75-0.80 0/15   0.80-0.825 4/15   0.825-0.85 9/15   0.85-0.875 13/15   0.875-0.90 12/15
+    #   0.90-0.925 13/15   0.925-0.95 15/15   0.95+ 13/13
+    # partial = 0.85: precision jumps from ~60% to ~87% ("Sales strategy development" <- "Sales" 0.851; below,
+    #   "Java programming" <- "MySQL" 0.837). transferable = 0.90: the same skill in other words dominates ("CAD
+    #   software" <- "CAD" 0.912, "Java frameworks" <- "Java" 0.901, "Docker, Kubernetes" <- "Docker" 0.917), and
+    #   E5 fixes the TF-IDF misses ("Human resources" <- "Human resource" 0.992). Known misses: "Database integration"
+    #   <- "AI Integration" 0.909.

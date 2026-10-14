@@ -2,7 +2,7 @@
 
 **Rule:** update this file at the end of every phase. That means the status table, the "Pick up here" block, and a new entry in the Phase log. **From Phase 6 on, also extend `scripts/demo.py`** with a live demo of the phase's new capability, and run it once against the backend, and refresh the owner's progress dashboard (a private claude.ai artifact: aggregates only, real measured numbers, with the same caveats as the reports). Anyone taking over should be able to read only this file and know exactly where to start.
 
-Last updated: **2026-10-11** · Last completed phase: **Phase 9 (Skill-gap analysis)** · Next phase: **Phase 10 (Learning Agent)**. The team's labelling (below) is still open and now finishes TWO choices: the embedding model (ADR 0012) and the matching model (ADR 0015).
+Last updated: **2026-10-14** · Last completed phase: **Phase 10 (Learning Agent)** · Next: **Phase 11 (Explainability Agent + SHAP)**. Both human-label selections are made. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **LightGBM** on E5, Logistic Regression for the fallback (ADR 0015).
 
 **Latest code: `main`** holds Phases 1–8 (Phase 8 committed directly on `main` as `7e680b6`). Phase 9 is also committed. Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
 
@@ -10,69 +10,83 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
 
 ---
 
-## ▶ Pick up here: Phase 10 (Learning Agent), plus one team task that finishes Phases 6 AND 8
+## ▶ Pick up here: Phase 11 (Explainability Agent + SHAP)
 
-**Team task (still open).** Grade the relevance pairs on the labelling page:
-1. Start the stack (`docker compose up -d --wait`) and open **http://127.0.0.1:8000/labelling**. Enter your initials, or open `/labelling?labeller=AB`.
-2. There are 30 students × 12 jobs = **360 pairs**, about 2 hours in total if split between people. The rubric is on the page. Grades save as you click, and you can come back later.
-   - 4 students are deliberately given to a second person, to measure agreement.
-   - Grade the fit between the student and the job. The page hides salary, company, location, gender and CGPA, plus the posting's randomly assigned degree and experience fields.
-3. When everyone is done:
-   ```bash
-   .venv/bin/python scripts/export_labels.py      # -> data/benchmark/human_labels.csv + .manifest.json
-   export EXPERIMENTS_DATABASE_URL=postgresql://<user>:<password>@127.0.0.1:55433/<db>
-   # Phase 6: the embedding model
-   .venv/bin/python -m src.embeddings.model_evaluation_engine --labels data/benchmark/human_labels.csv --reuse-cost --record-db
-   # Phase 8: the matching model. It evaluates the SAME trained artifacts (no retraining), applies the ADR 0015
-   # rule and, only on a "select" decision, writes the winner into config/matching_model.yaml
-   python -m src.scoring.matching_model_selection_engine --labels data/benchmark/human_labels.csv \
-       --reuse-models mms-20261011T104041Z-nolabels --record-db --activate
-   ```
-4. Copy each report's **Decision** line into its ADR ([0012](docs/adr/0012-embedding-model-selection.md) embeddings,
-   [0015](docs/adr/0015-matching-model-target-training-and-selection.md) matching). The rules were fixed in advance,
-   so don't change the weights after seeing the results.
-   - If ADR 0012 selects a new embedding model, the features change: re-embed, rebuild the calibration
-     (`python -m app.matching.calibration`) and the feature matrix (`python -m app.matching.training_data`), then
-     retrain with the Phase 8 engine (no `--reuse-models`) and select again. A trained matching model refuses to
-     run on other embeddings.
-   - Rebuild the backend image after `--activate` (the image copies `config/` and `models/`).
+**Done by the team since Phase 9 (2026-10-12 to 2026-10-14):**
+- **Labelling finished.** `scripts/export_labels.py` wrote `data/benchmark/human_labels.csv` and its `.manifest.json`
+  (uncommitted when this was written).
+  - 360 pairs from 30 students, `human_reviewed`, rubric-v1, pool `pool-5c6a5972b32d`.
+  - **One labeller**, so inter-annotator agreement couldn't be measured (`agreement` is null in the manifest). The
+    4 double-assigned students were graded once.
+  - Grades (0 / 1 / 2 / 3): validation 74 / 56 / 38 / 12, test 71 / 58 / 37 / 14. Grade 2 is used, unlike the weak
+    labels. Under ADR 0015's target (≥ 2 = suitable), 50 of 180 validation pairs are suitable.
+- **Database setup (commit `277b171`, rheasanghvi24).** Migration `0009_core_tables_before_phase_10.sql` and
+  [ADR 0017](docs/adr/0017-core-schema-before-phase-10.md).
+  - Adds `users`, `companies`, `match_results`, `skill_gaps`, `learning_resources`, `learning_recommendations`,
+    `feedback_events`, `agent_messages`, `audit_logs`, and the `relevance_labels` view.
+  - Postgres is now published on host port **55433**.
+  - The rebuilt database holds 292 profiles, 4,990 jobs, `tfidf-953a75d166d8` embeddings and the 360 judgments.
+  - Recorded experiments: only the Phase 8 runs. Baseline 3's registration experiment
+    (`match-20261009T155859Z-weakly`) is not in this database, and `match_results` rows need it (ADR 0017).
+- **Auth (uncommitted, `backend/app/auth/`).** Email-OTP signup and email + password login with JWT, for students
+  and recruiters (see `backend/app/auth/README.md`). It is wired into `main.py` and adds PyJWT, bcrypt, redis and
+  email-validator to `backend/requirements.txt`.
+  - ⚠ It creates its own tables (`app_users`, `student_accounts`, `recruiter_accounts`) at startup, separate from
+    migration 0009's `users` table. **Two user stores:** reconcile them before Phase 16 (security).
+  - Stray untracked files in the repo root: `0` (3 bytes) and `req-py313.txt`. Delete or commit them deliberately.
+- **Secrets in `.env`** (gitignored): `JWT_SECRET`, `GEMINI_API_KEY` (the Supervisor can now route with the LLM),
+  `YOUTUBE_API_KEY` (Phase 10 course search), and `SMTP_*` and `OTP_*` (auth).
+- **Phase 10 course data, from the owner (2026-10-14):** 20 Coursera courses with their URLs, supplied by hand
+  (option (c), a manually curated seed list), **plus the YouTube Data API** (option (b)) for every skill. The
+  catalogue rows come from the course pages themselves, never invented (spec §17).
 
-**Phase 10 needs:**
-1. The Phase 10 prompt.
-2. **The input contract is fixed:** `SkillGapReport` (`app/schemas/agent_io.py`, ADR
-   [0016](docs/adr/0016-skill-gap-analysis.md)). It holds:
-   - `matched_skills`;
-   - `missing_required` and `missing_preferred`: lists of `SkillGap` (`skill`, `importance_score`,
-     `transferable_candidate`, `transferable_similarity`), ordered by importance;
-   - `partially_related`;
-   - provenance: `importance_model`, `similarity_model`, `thresholds`, `method`, `note`.
+**Done on 2026-10-14:**
+- **Embeddings (ADR 0012).** **E5 is primary:** the fixed rule selected it on the human labels, and the owner
+  confirmed it. TF-IDF is strictly the floor and the automatic fallback.
+  - A brief switch to TF-IDF ("highest Overall Score") was reversed the same day.
+  - **Fallback:** if E5 can't load, the backend runs on TF-IDF, says so in `/health` (`embedding_fallback`) and in
+    every response's model versions. It also stores TF-IDF vectors beside E5's for every new profile and job.
+    Verified live with E5's weights made unreachable.
+- **Improving E5:**
+  - **Quantisation:** rejected. It reorders jobs (top-5 overlap 78–88%).
+  - **Domain adaptation (fine-tuning on train-split weak labels):** raised recall, precision and τ, but lowered MRR.
+    Overall 0.466 vs 0.512, so **plain E5 stays**. Not retried, to avoid fitting the validation labels.
+    Details in ADR 0012.
+- **Matching (ADR 0015):** retrained on E5 features and selected on the human labels: **LightGBM** (NDCG@10 0.844,
+  F1 0.630; vs Baseline 3 +0.066, CI −0.015 to +0.156, not distinguishable). The TF-IDF fallback keeps **Logistic
+  Regression**. `config/matching_model.yaml` now holds one choice per embedding model.
+- **Phase 10 done** on E5 (`min_relevance` 0.80), with a TF-IDF threshold (0.15) for the fallback.
 
-   The Supervisor already passes it as `LearningAgentInput.skill_gap_report`, plus `skill_gaps`: the names, most
-   important first. Don't change the shape without updating ADR 0016.
-3. **What the report can and can't say:**
-   - **Importance ties within a requirement class.** `features-v1` sees skills as counts, so every model scores
-     every required gap of a job the same; ties are broken alphabetically. The Learning Agent must not present a tie
-     as a ranking.
-   - **A missing skill is "not detected"**, never "lacking" (keep the report's `note`).
-   - **Transferable candidates are lexical with TF-IDF** (ADR 0016's evidence).
-4. **Spec §17:** learning resources must come from a course catalogue, never generated. No catalogue exists in the
-   repo yet; that is Phase 10's first data question.
-5. **Owner decisions pending:**
-   - the hard degree/experience filters (ADR 0013: all 18 diploma students get no eligible job on this dataset);
+**Next:** Phase 11 (Explainability Agent + SHAP).
+
+**Phase 11 inputs:**
+1. **Per-pair results:** `MatchResult` (with its `SkillGapReport`) and `LearningAgentOutput` (one
+   `LearningRecommendation` per missing skill, each with an evidence-only `explanation`). Both are in
+   `app/schemas/agent_io.py`.
+2. **SHAP for the active model, LightGBM** (exact TreeSHAP is built in; Phase 8 verified it per candidate). The
+   fallback's Logistic Regression is linear: contributions are coefficient × (feature − mean).
+   - **Skill importances under LightGBM are tiny and sometimes negative** (a tree's score moves in steps;
+     ADR 0015). Explain this; don't present them as precise.
+3. **Wording rules carried over:** a missing skill is "not detected", never "lacking"; tied importances are not a
+   ranking; any field a source doesn't state is "Not available in source data".
+4. **Owner decisions still pending:**
+   - the hard degree/experience filters (ADR 0013);
    - the gender visibility filter (ADR 0009);
-   - whether to make the TF-IDF version hash platform-stable (ADR 0015).
+   - whether to make the TF-IDF version hash platform-stable (ADR 0015);
+   - **new (Phase 10):** a minimum video length for YouTube results. Relevance scores the title and description
+     only, so clips of 5–19 s pass the threshold (see the Phase 10 findings).
 
 Decisions already made (do not re-ask):
 - **LLM provider: Gemini.** Wherever the spec or a prompt says "Claude / Anthropic", use Gemini (`GEMINI_API_KEY`).
 - **Code layout:** the pipeline was split into `config/` + `src/` in Phase 2. `preprocess.py` is now a thin entry point.
-- **Interim embeddings:** the TF-IDF baseline until Phase 6 selects a model ([ADR 0004](docs/adr/0004-interim-tfidf-embeddings.md); supersedes 0002).
+- **Embeddings: E5 primary; TF-IDF only the floor and the automatic fallback** (owner, 2026-10-14, [ADR 0012](docs/adr/0012-embedding-model-selection.md)). Build on one platform: the TF-IDF version (the fallback's) differs on Mac.
 - **Missing values:** sentinels only ([ADR 0007](docs/adr/0007-missing-value-sentinels.md)).
 - **Employer gender preference:** a visibility filter only, never a feature ([ADR 0009](docs/adr/0009-gender-preference-visibility-filter.md)). A concern and recommendation are recorded there for the owner to review.
 - **Required/preferred job skills:** INFERRED by heuristic v2, never ground truth ([ADR 0008](docs/adr/0008-job-skill-phrases-and-required-preferred.md)).
 
 Open items owned by the project owner:
 - **The GitHub repo is public** (checked 2026-10-08) and contains 120 real students' records in `data/processed/students_unified.csv`. Switch it to private.
-- **Relevance labels**: the team grades 360 pairs on `/labelling` (see Pick up here). This finalises the embedding choice (ADR 0012) and the matching-model choice (ADR 0015).
+- **Relevance labels**: done 2026-10-14 (360 pairs, one labeller). Both selections made: E5 + LightGBM, and Logistic Regression for the TF-IDF fallback.
 - **Gender visibility filter**: decide whether to keep it on (ADR 0009 recommends off).
 - 🔴 **Real PII in the committed processed data.** `data/processed/students_unified.csv` (public since the first commit, produced by the original preprocessing, which never masked PII) holds 3 Kaggle rows whose experience text contains an email, a phone number, a LinkedIn URL, an address and at least one personal name. Options: make the repo private; mask PII inside `src/pipeline` and regenerate the data (changes the data hash); and, if needed, rewrite git history. History rewrite is destructive and is the owner's call.
 - The original `docs/ADR.md` was never found. ADRs now live in `docs/adr/`. The TF-IDF baseline was **re-implemented** in Phase 4.
@@ -88,12 +102,12 @@ Open items owned by the project owner:
 | 3 | Supervisor Agent | ✅ Done (2026-10-08). LLM path verified with a fake client only; no real Gemini call yet |
 | 4 | Profile Agent | ✅ Done (2026-10-08) |
 | 5 | Job Intelligence Agent | ✅ Done (2026-10-08) |
-| 6 | Embedding experimentation framework | ✅ Done (2026-10-09): framework, labelling page, cost and weak-label results. The model choice waits for the team's human labels (ADR 0012) |
+| 6 | Embedding experimentation framework | ✅ Done (2026-10-09): framework, labelling page, cost and weak-label results. **E5 selected on the human labels 2026-10-14; TF-IDF is the fallback; domain-adapted E5 evaluated, not selected** (ADR 0012) |
 | 7 | Matching Agent | ✅ Done (2026-10-09): Stages 1-6 as separate tools, interim weighted baseline (placeholder weights pending Phase 8) |
-| 8 | Matching model experimentation | ✅ Done (2026-10-11): 6 candidates trained, measured and wired behind a config flag; quality "Not yet evaluated" and Baseline 3 stays active until the human labels (ADR 0015) |
+| 8 | Matching model experimentation | ✅ Done (2026-10-11): 6 candidates trained, measured and wired behind a config flag; **LightGBM selected on E5 features, Logistic Regression for the TF-IDF fallback (2026-10-14)** (ADR 0015) |
 | 9 | Skill-gap analysis | ✅ Done (2026-10-11): `src/scoring/skill_gap_analysis.py`, counterfactual importance, tuned relation tiers, the `SkillGapReport` contract (ADR 0016) |
-| 10 | Learning Agent | ⏭ Next |
-| 11 | Explainability Agent + SHAP | Not started |
+| 10 | Learning Agent | ✅ Done (2026-10-14): 20-course curated catalogue + YouTube Data API, E5 relevance ranking, threshold 0.80, "No resources found" instead of fillers (ADR 0018) |
+| 11 | Explainability Agent + SHAP | ⏭ Next |
 | 12 | Agent state/tracing | Not started |
 | 13 | Research dashboard | Not started |
 | 14 | Evaluation framework | Not started |
@@ -108,7 +122,7 @@ Open items owned by the project owner:
 
 ---
 
-## Repository layout (after Phase 9)
+## Repository layout (after Phase 10)
 
 ```
 preprocess.py                 thin entry point → src/pipeline/build_unified_dataset.py
@@ -121,22 +135,29 @@ config/matching_model.yaml    Phase 8 THE FLAG: which model Stage 4 uses (active
 config/matching_model_candidates.yaml  Phase 8 candidates: fixed hyperparameters (a reason each), training settings, rubrics
 config/matching_model_selection_weights.yaml  Phase 8 selection weights: 3 scenarios, gate, sensitivity, "close enough"
 config/skill_gap.yaml         Phase 9 relation-tier thresholds per embedding model family, with the tuning evidence
+config/learning.yaml          Phase 10: top_k, min_relevance per embedding model (tuning evidence), YouTube query/quota/cache
 src/parsing/                  section_parser.py (+ parse_job_sections, P5), resume_text_parser.py
 src/pipeline/                 ingest_placement_cell.py, ingest_kaggle_resumes.py, ingest_real_jobs.py,
                               validate_and_report.py, build_unified_dataset.py
 src/embeddings/               embedding_model_benchmark.py (5 models: texts, scoring, isolated cost measurement),
                               model_evaluation_engine.py (Phase 6 table, weights, sensitivity, best-model lines),
                               tfidf_baseline.py (re-implemented in Phase 4; corpus texts frozen in Phase 6)
+                              domain_adapt.py (slot E: E5 fine-tuned on train-split weak labels; evaluated, not selected)
 src/evaluation/               splits.py (fixed per-student splits), relevance_labels.py (loader + hard rules),
                               retrieval_metrics.py (P/R/MRR/NDCG/Hit@K, bootstrap CIs), labelling_pool.py, weak_labels.py
 src/scoring/                  Phase 8: matching_models.py (build/train/save/load/score/SHAP per candidate; isolated
                               measurement worker), matching_model_selection_engine.py (the Phase 8 table, scenarios,
                               sensitivity, simpler-model check, ADR 0015 decision, --activate, --record-db),
                               skill_gap_analysis.py (P9: the SkillGapReport; Stage 6 wraps it; CLI per pair)
-backend/app/agents/           base.py, supervisor.py + routing.py (P3), profile_agent.py (P4), job_intelligence_agent.py (P5), 3 shells
+backend/app/agents/           base.py, supervisor.py + routing.py (P3), profile_agent.py (P4), job_intelligence_agent.py (P5),
+                              matching_agent.py (P7), learning_agent.py (P10), explainability_agent.py (shell)
 backend/app/schemas/          agent_state.py, agent_io.py, student.py, job.py
 backend/app/tools/            registry.py, profile_tools.py (11 tools), job_tools.py (12 tools, incl. check_job_visibility),
-                              matching_tools.py (10 tools: Stages 1-6 + evaluate_model + benchmark_matching)
+                              matching_tools.py (10 tools: Stages 1-6 + evaluate_model + benchmark_matching),
+                              learning_tools.py (P10, 6 tools: prioritize_gaps -> ... -> save_learning_recommendations)
+backend/app/learning/         P10: catalog.py (build the catalogue from the course pages; load), youtube.py (Data API v3),
+                              ranking.py (prioritise, relevance, rank, explain), repository.py (Postgres / in-memory)
+backend/app/auth/             email-OTP signup + JWT login (students, recruiters); see its README
 backend/app/profile/          text_extraction.py, pii.py, sections.py (wraps src/parsing), skills.py,
                               data/skill_aliases.csv (+ build_skill_aliases.py that regenerates it with evidence counts)
 backend/app/jobs/             skills_split.py, requirements.py (inferred required/preferred), dedup.py, visibility.py
@@ -147,7 +168,8 @@ backend/app/matching/         features.py (spec §11 contract + protected-attrib
                               predictor.py (P8: Stage 4 model from the config flag), training_data.py (P8 feature matrix)
 models/matching/<experiment>/ Phase 8 trained artifacts (joblib / XGBoost JSON / LightGBM text) + manifest.json (SHA-256 of
                               each, checked before loading) + measurements.json
-backend/app/embeddings/       provider.py (configured embedding model; interim TF-IDF, sparse vectors)
+backend/app/embeddings/       provider.py (EMBEDDING_MODEL: e5_base_v2, selected by Phase 6, dense, query/passage roles;
+                              tfidf_baseline, the floor, sparse vectors)
 backend/app/core/             config.py (.env loading), logging.py (JSON, PII-redacting), sanitize.py (prompt-injection defence)
 backend/app/llm/client.py     Gemini client (structured JSON output, validated locally)
 backend/app/db/               migrate.py, store.py, seed.py (students), seed_jobs.py (jobs + dedup + --process),
@@ -156,11 +178,13 @@ backend/app/labelling/        Phase 6 labelling page (page.html), API (routes.py
 backend/app/experiments.py    GET /experiments, GET /experiments/{id} (recorded model-selection runs)
 backend/migrations/           0001 agent_runs · 0002 student tables · 0003 embeddings + model_versions · 0004 profile columns ·
                               0005/0006 student_skills unique-key fix · 0007 jobs tables + sparse embeddings ·
-                              0008 relevance_pool, relevance_judgments, experiment_runs, experiment_metrics
-docs/adr/                     architecture decision records 0001–0016 (index: docs/adr/README.md)
+                              0008 relevance_pool, relevance_judgments, experiment_runs, experiment_metrics ·
+                              0009 core tables (users, learning_resources, learning_recommendations, ...; ADR 0017) ·
+                              0010 youtube_searches (P10 search cache)
+docs/adr/                     architecture decision records 0001–0018 (index: docs/adr/README.md)
 backend/app/main.py           FastAPI: GET /health, GET /agents, POST /requests, POST /requests/resume-file, GET /requests/{id},
                               /labelling (page + API), /experiments
-backend/tests/                327 tests (310 run by default; 17 skipped: 14 need TEST_DATABASE_URL, 1 live Gemini, 2 others)
+backend/tests/                346 tests (19 skipped by default: most need TEST_DATABASE_URL, 1 live Gemini)
 backend/db/init/              01_enable_pgvector.sql (runs on first postgres start)
 docker-compose.yml            postgres+pgvector, redis, backend
 .env.example                  template; copy to .env (gitignored)
@@ -169,7 +193,9 @@ data/processed/               286 students, 4,990 jobs (committed)
 data/benchmark/               student_splits.csv, labelling_pool*.csv/.json, weak_labels.csv/.json, human_labels.csv/.json (once exported),
                               matching_calibration/<model>-<version>.json (Phase 7),
                               matching_features/<feature_version>-<embedding_version>.csv.gz + .manifest.json (Phase 8)
-scripts/                      demo.py (live demo, extended every phase), export_labels.py (labelling page -> data/benchmark)
+scripts/                      demo.py (live demo, extended every phase), export_labels.py (labelling page -> data/benchmark),
+                              stage_embedding_model.py (copies the pinned E5 snapshot into .model_cache/hf for the image)
+data/learning/                P10: curated_courses.csv (the owner's 20 courses + URLs), course_catalog.json (fields from each page)
 data/raw/                     raw sources (gitignored; see setup)
 results/                      data-quality report; embedding_evaluation/<experiment_id>.{md,json} (every engine run),
                               embedding_model_evaluation[_<label source>].{md,json} (latest), embedding_cost_measurements.json,
@@ -259,6 +285,28 @@ MATCHING_MODEL=decision_tree ...                     # force a trained model for
 python -m src.scoring.skill_gap_analysis --student S00001 --job J0974289 [--model lightgbm]   # one pair's report
 .venv/bin/python scripts/demo.py 14                  # the top match's report through the live API
 ```
+**Phase 10 learning resources** (inside the backend image: `docker compose exec backend ...`):
+```bash
+python -m app.learning.catalog build    # fetches each course page in data/learning/curated_courses.csv -> course_catalog.json
+python -m app.learning.catalog load     # upserts it into learning_resources (needs DATABASE_URL)
+python scripts/demo.py 15 S00001 S00210 # host: recommendations for each student's top job through the live API
+```
+**Phase 6 slot E (domain-adapted E5), on request only:**
+```bash
+python -m src.embeddings.domain_adapt     # ~70 min on CPU; -> models/embeddings/e5-base-v2-domain-<hash>/ (gitignored)
+PHASE6_DOMAIN_MODEL=models/embeddings/e5-base-v2-domain-81e7ec962511   python -m src.embeddings.model_evaluation_engine --labels data/benchmark/human_labels.csv --reuse-cost --record-db
+```
+Pause the backend while training (`docker compose stop backend`): the Docker VM has 7.6 GB.
+
+YouTube needs `YOUTUBE_API_KEY` in `.env`. A search costs 100 of the 10,000 daily units, so searches are cached for
+7 days (`youtube_searches`) and capped at 10 per request (`config/learning.yaml`).
+
+**Running host-side scripts in the image.** Mount the repo and run from it, so `REPO_ROOT` is the repo: the compose
+service mounts `data/benchmark` read-only, so writes there (calibration, feature matrix) fail otherwise.
+```bash
+docker compose run --rm --no-deps -v "$PWD:/srv/work" -w /srv/work -e PYTHONPATH=/srv/work/backend:/srv/work backend   sh -c 'python -m app.matching.calibration && python -m app.matching.training_data'
+```
+
 The project's postgres is published on host port 55433, because a native PostgreSQL service often holds 5432 on
 Windows. Inside Docker it is still `postgres:5432`.
 
@@ -271,6 +319,83 @@ Windows. Inside Docker it is still `postgres:5432`.
 ---
 
 ## Phase log
+
+### Phase 10: Learning Agent (2026-10-14) ✅
+
+**Data sources** (owner decision, ADR [0018](docs/adr/0018-learning-agent-resources.md)):
+
+| Source | What it is | Size |
+|---|---|---|
+| **(c) curated catalogue** | 20 Coursera courses and URLs listed by the owner (`data/learning/curated_courses.csv`) | **20 courses**, all 20 pages fetched and parsed, 0 failures |
+| **(b) live API** | YouTube Data API v3 (`search.list` + `videos.list`), 5 videos per skill | 65 videos, 13 searches cached after the demo runs |
+
+**Catalogue fields per course:**
+- Each field is taken from the course's own page, by fixed patterns, never by a model.
+- Rows are in `learning_resources`, with the page SHA-256 in `source_reference`.
+- **Difficulty:** stated on 20 of 20 pages (14 Beginner, 5 Intermediate, 1 Advanced).
+- **Effort:** stated on 20 of 20 pages.
+- **Prerequisites:** stated on 7 of 20 pages. The other 13 show "Not available in source data".
+- **YouTube videos:** no difficulty or prerequisites (the API has none). Their length comes from `contentDetails`.
+
+**What was built:**
+
+| Piece | Where | Notes |
+|---|---|---|
+| Agent | `app/agents/learning_agent.py` | Six tool stages through the BaseAgent loop. Consumes Phase 9's `SkillGapReport` as is; never recomputes gaps |
+| Tools | `app/tools/learning_tools.py` | `prioritize_gaps` (by `importance_score`, ties share a priority) → `retrieve_courses` → `compute_course_similarity` → `rank_courses` → `explain_recommendations` → `save_learning_recommendations` |
+| Ranking | `app/learning/ranking.py` | E5 cosine, "query: " skill vs "passage: " title + source skills + description. Threshold 0.80, top 3 per skill. Below the threshold: "No resources found for this skill in the current catalog" |
+| Contract | `app/schemas/agent_io.py` | `LearningResource` (`resource_name`, `resource_url`, `source` = `<resource_id> \| <source_reference>`, `relevance_score`, `difficulty`, `prerequisites`, `estimated_effort`, `kind`, `provider`), `LearningRecommendation` per skill, `LearningAgentOutput` (adds `sources`, `ranking.factor_availability`, `saved`) |
+| Storage | migration 0010 `youtube_searches`; 0009 `learning_resources`, `learning_recommendations` | 39 recommendation rows saved by the 2 demo runs |
+| Tests | `backend/tests/test_learning_agent.py` (13) | Includes a skill absent from the catalogue → the explicit "No resources found" message; every resource traces to a catalogue row or API result; ranking follows computed relevance; YouTube failure falls back and says why; cache and quota guard |
+| Demo | `scripts/demo.py 15 [student ids]` | Live API |
+
+**Bug fixed on the way:**
+- **What broke:** Hugging Face versions contain a `/` (`intfloat/e5-base-v2@…`). `calibration.path_for` and
+  `training_data.output_path` built filenames from them, so the E5 calibration couldn't be written and matching
+  failed.
+- **The fix:** both now replace `/` with `_`. TF-IDF filenames are unchanged.
+- **Also:** the earlier re-embedding run mounted `data/benchmark` read-only, so its calibration step failed too.
+  See Setup, "Running host-side scripts in the image".
+
+**Real runs** (live API, E5, active matching model `weighted_baseline_v1+545cea3bb767`):
+- **S00001 → J0963130 Marketing Analyst.** 9 gaps, all with resources. Examples:
+  - #1 Communication of data insights (required, +0.069): 3 YouTube videos, 0.832–0.859.
+  - Data Modeling: catalogue course "DeepLearning.AI Data Engineering" 0.834 (Intermediate, 3 months at 10 hours a
+    week), between two videos.
+  - Data analysis tools: "Microsoft Data Analysis with SQL, Excel & Power BI" 0.839.
+- **S00210 → J0435863 HR Manager.** 5 gaps, YouTube only: Leadership skills 0.806–0.831, Talent management
+  0.857–0.879, Strategic HR planning 0.892–0.901.
+- **The "no resources" path on real data:** S00210 again, catalogue only (YouTube disabled). **All 5 HR skills** get
+  "No resources found for this skill in the current catalog". The best course relevance was 0.746–0.782, below
+  0.80, and none was filled in.
+
+**Findings:**
+- **The catalogue is data/cloud/CS heavy.** Non-tech gaps (HR, leadership) rely entirely on YouTube.
+- **Very short videos pass the threshold.** Clips of 5 s, 8 s, 18 s and 19 s were recommended, because relevance
+  scores text, not length. A minimum length is an owner decision (Pick up here).
+- **Language is only a hint.** Some Hindi/Hinglish titles pass `relevanceLanguage=en`.
+- **Phase 5 skill-phrase artefacts reach the output.** Example: "Problem-solving Attention to detail" as one skill.
+- **Quota used today:** 13 searches ≈ 1,300 of the 10,000 daily units.
+
+**Fallback check (TF-IDF, `min_relevance` 0.15, Logistic Regression).** TF-IDF was briefly the deployed model the
+same day; it is now only the fallback. These runs show what the fallback produces:
+- **S00001 → J0016561 Data Analyst.** 7 gaps, all with resources, for example:
+  - Business intelligence concepts: a Telugu video 0.797, then "What is Business Intelligence?" videos 0.428 and 0.403.
+  - SQL and database querying: a 3 h SQL course video 0.170, then the catalogue course "SQL for Data Analysis and
+    Business Insights" 0.155.
+- **S00210 → J0186219 HR Generalist.** 6 gaps, YouTube only. HR Information Systems: 0.389–0.428.
+- **Catalogue only:** all 6 of S00210's skills give "No resources found" (best course relevance 0.000–0.085).
+- **TF-IDF is lexical.** A title that repeats the skill's words ranks first, whatever its language or length (an
+  8-second clip scored 0.591). E5 ranks by meaning.
+
+**Final configuration (E5 + LightGBM, live API).**
+- S00001 → J0918392 Data Analyst: 6 gaps.
+- S00210 → J0104433 Human Resources Manager: 3 gaps.
+- All recommendations saved.
+- Matching model `lightgbm+7b0926d22cea`.
+
+**Tests:** 331 passed, 19 skipped, 1 failed, in the Python 3.11 backend image (the host's Python 3.13 can't install
+the pinned numpy 2.0.2). The failure is the platform-dependent TF-IDF version pin, unchanged since Phase 8.
 
 ### Phase 9: Skill-gap analysis (2026-10-11) ✅
 

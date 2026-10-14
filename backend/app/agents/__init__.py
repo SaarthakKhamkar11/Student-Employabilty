@@ -12,9 +12,10 @@ from app.db.job_repository import JobRepository, build_job_repository
 from app.db.matching_repository import MatchingRepository, build_matching_repository
 from app.db.profile_repository import ProfileRepository, build_profile_repository
 from app.db.store import AgentRunStore
-from app.embeddings.provider import EmbeddingProvider, build_embedding_provider
+from app.embeddings.provider import EmbeddingProvider, build_embedding_provider, fallback_provider
 from app.llm import LLMClient
 from app.tools.job_tools import register_job_tools
+from app.tools.learning_tools import register_learning_tools
 from app.tools.matching_tools import register_matching_tools
 from app.tools.profile_tools import register_profile_tools
 from app.tools.registry import ToolRegistry
@@ -33,7 +34,9 @@ def build_agents(registry: ToolRegistry | None = None, settings: Settings | None
                  job_repo: JobRepository | None | object = _UNSET,
                  embedder: EmbeddingProvider | None = None,
                  matching_repo: MatchingRepository | None | object = _UNSET,
-                 matching_overrides: dict | None = None) -> dict[str, BaseAgent]:
+                 matching_overrides: dict | None = None,
+                 learning_repo: object = _UNSET, youtube_search=None,
+                 fallback_embedder: EmbeddingProvider | None | object = _UNSET) -> dict[str, BaseAgent]:
     """Instantiate all six agents and register their tools. Fails fast if any declared tool is missing.
 
     profile_repo / job_repo / matching_repo default to Postgres when DATABASE_URL is set; pass None for
@@ -48,6 +51,7 @@ def build_agents(registry: ToolRegistry | None = None, settings: Settings | None
             registry,
             repo=build_profile_repository(settings) if profile_repo is _UNSET else profile_repo,
             embedder=embedder,
+            fallback_embedder=fallback_provider(embedder, settings) if fallback_embedder is _UNSET else fallback_embedder,
         )
     if not registry.has("extract_job_text"):
         register_job_tools(registry, repo=build_job_repository(settings) if job_repo is _UNSET else job_repo,
@@ -56,6 +60,13 @@ def build_agents(registry: ToolRegistry | None = None, settings: Settings | None
         register_matching_tools(
             registry, repo=build_matching_repository(settings) if matching_repo is _UNSET else matching_repo,
             embedder=embedder, settings=settings, **(matching_overrides or {}))
+    if not registry.has("prioritize_gaps"):
+        from app.learning.repository import build_learning_repository
+        from app.learning.youtube import search_videos
+
+        register_learning_tools(
+            registry, repo=build_learning_repository(settings) if learning_repo is _UNSET else learning_repo,
+            embedder=embedder, settings=settings, youtube_search=youtube_search or search_videos)
     specialists = {cls.name: cls(registry=registry, settings=settings) for cls in SPECIALIST_CLASSES}
     supervisor = SupervisorAgent(agents=specialists, llm=llm, store=store, registry=registry, settings=settings)
     return {"supervisor": supervisor, **specialists}

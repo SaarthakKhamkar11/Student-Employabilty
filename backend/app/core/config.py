@@ -33,13 +33,17 @@ class Settings(BaseSettings):
     llm_max_retries: int = Field(1, ge=0, le=1)  # Phase 3 rule: at most one retry
     supervisor_timeout_seconds: float = Field(300.0, gt=0)
 
-    # Embeddings: the interim TF-IDF baseline until Phase 6 selects a model from evidence (docs/adr/0004).
-    embedding_model: Literal["tfidf_baseline"] = "tfidf_baseline"
+    # Embeddings: E5, the semantic model Phase 6 selected (docs/adr/0012). TF-IDF is the baseline and the fallback
+    # only (owner decision 2026-10-14): EMBEDDING_MODEL=tfidf_baseline forces it, e.g. for tests.
+    embedding_model: Literal["e5_base_v2", "tfidf_baseline"] = "e5_base_v2"
     processed_data_dir: Path = REPO_ROOT / "data" / "processed"
 
     # Matching model (Stage 4): config/matching_model.yaml `active` is the flag (docs/adr/0015). MATCHING_MODEL
     # overrides it for one process (demos, tests); unset = the config.
     matching_model: str | None = None
+
+    # Phase 10: YouTube Data API v3 key for learning-resource search (docs/adr/0018). Unset: catalogue only.
+    youtube_api_key: SecretStr | None = None
 
     # Owner decision (docs/adr/0009): hide postings whose stated gender preference excludes the student.
     # Unknown student gender is never hidden. Set JOB_GENDER_VISIBILITY_FILTER=false to show every posting.

@@ -40,14 +40,25 @@ class ActiveChoice:
     artifacts_experiment: str
     selection_experiment: str
     source: str  # "config" or "MATCHING_MODEL"
+    embedding_model: str | None = None  # the embedding model this choice was trained and selected on
 
 
-def active_choice(override: str | None = None, path: Path = ACTIVE_PATH) -> ActiveChoice:
+def active_choice(override: str | None = None, path: Path = ACTIVE_PATH,
+                  embedding_model: str | None = None) -> ActiveChoice:
+    """The top-level entry is for the primary embedding model (`embedding_model`); `fallback.<embedding model>`
+    names the matching model to use when the backend runs on another one (docs/adr/0012: TF-IDF fallback)."""
     with open(path, encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
-    return ActiveChoice(active=override or raw["active"], artifacts_experiment=str(raw["artifacts_experiment"]),
-                        selection_experiment=str(raw["selection_experiment"]),
-                        source="MATCHING_MODEL" if override else "config")
+    entry, primary = raw, raw.get("embedding_model")
+    if embedding_model and primary and embedding_model != primary:
+        entry = (raw.get("fallback") or {}).get(embedding_model)
+        if entry is None:
+            raise PredictorUnavailable(f"no matching model is configured for embedding model {embedding_model!r} "
+                                       f"(config/matching_model.yaml covers {primary!r} and fallback "
+                                       f"{sorted(raw.get('fallback') or {})})")
+    return ActiveChoice(active=override or entry["active"], artifacts_experiment=str(entry["artifacts_experiment"]),
+                        selection_experiment=str(entry["selection_experiment"]),
+                        source="MATCHING_MODEL" if override else "config", embedding_model=embedding_model or primary)
 
 
 class BaselinePredictor:
@@ -147,8 +158,8 @@ def _manifest(folder: str) -> dict:
 
 
 def build_predictor(cfg: MatchingConfig, override: str | None = None, active_path: Path = ACTIVE_PATH,
-                    models_dir: Path = MODELS_DIR):
-    choice = active_choice(override, active_path)
+                    models_dir: Path = MODELS_DIR, embedding_model: str | None = None):
+    choice = active_choice(override, active_path, embedding_model)
     if choice.active == BASELINE:
         return BaselinePredictor(cfg)
     if choice.artifacts_experiment in ("", NONE):

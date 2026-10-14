@@ -12,7 +12,7 @@ from app.agents import build_agents
 from app.core.config import REPO_ROOT, Settings
 from app.matching.config import load_matching_config
 from app.matching.features import FEATURE_NAMES, PROTECTED_ATTRIBUTES, ProtectedFeatureError
-from app.matching.predictor import BaselinePredictor, PredictorUnavailable, TrainedPredictor, active_choice, build_predictor
+from app.matching.predictor import PredictorUnavailable, TrainedPredictor, active_choice, build_predictor
 from app.schemas.agent_io import MatchingAgentOutput
 from app.schemas.agent_state import AgentState
 from src.scoring import matching_model_selection_engine as E
@@ -219,10 +219,16 @@ def test_activation_needs_a_select_decision(tmp_path, monkeypatch):
 
 
 # -- wiring: the config flag, metadata, refusals ------------------------------------------------------------------
-def test_the_shipped_flag_keeps_baseline_3_until_a_human_label_selection():
-    choice = active_choice()
-    assert choice.active == "weighted_baseline_v1" and choice.selection_experiment == "none"
-    assert isinstance(build_predictor(load_matching_config()), BaselinePredictor)
+def test_the_shipped_flag_is_the_human_label_selection():
+    # docs/adr/0015 and 0012: one human-label selection per embedding model. The TF-IDF fallback runs the model
+    # selected on TF-IDF features.
+    primary = active_choice()
+    assert primary.embedding_model == "e5_base_v2"
+    assert primary.active == "lightgbm" and primary.selection_experiment == "mms-20261014T151058Z-human"
+    assert isinstance(build_predictor(load_matching_config(), embedding_model="e5_base_v2"), TrainedPredictor)
+    fb = active_choice(embedding_model="tfidf_baseline")
+    assert fb.active == "logistic_regression" and fb.selection_experiment == "mms-20261014T132323Z-human"
+    assert isinstance(build_predictor(load_matching_config(), embedding_model="tfidf_baseline"), TrainedPredictor)
 
 
 def manifest_folder(tmp_path, trained, key="decision_tree", embedding_version=None, feature_version="features-v1"):
@@ -277,3 +283,18 @@ def test_the_agent_returns_trained_model_metadata_end_to_end(tmp_path, trained, 
         assert 0 <= m.suitability_score <= 1 and m.employability.overall == round(m.suitability_score * 100, 1)
         assert "trained Phase 8 model" in m.employability.method
     assert data.notes[0].startswith("decision_tree: trained Phase 8 model")
+
+
+def test_each_embedding_model_gets_its_own_matching_model(tmp_path):
+    # docs/adr/0012: a trained model refuses other embeddings, so the TF-IDF fallback has its own entry
+    path = tmp_path / "matching_model.yaml"
+    path.write_text("embedding_model: e5_base_v2\nactive: lightgbm\nartifacts_experiment: mms-e5\n"
+                    "selection_experiment: sel-e5\nfallback:\n  tfidf_baseline:\n    active: logistic_regression\n"
+                    "    artifacts_experiment: mms-tfidf\n    selection_experiment: sel-tfidf\n", encoding="utf-8")
+    primary = active_choice(path=path, embedding_model="e5_base_v2")
+    fallback = active_choice(path=path, embedding_model="tfidf_baseline")
+    assert (primary.active, primary.artifacts_experiment) == ("lightgbm", "mms-e5")
+    assert (fallback.active, fallback.artifacts_experiment, fallback.selection_experiment) == \
+        ("logistic_regression", "mms-tfidf", "sel-tfidf")
+    with pytest.raises(PredictorUnavailable, match="no matching model is configured"):
+        active_choice(path=path, embedding_model="bge")

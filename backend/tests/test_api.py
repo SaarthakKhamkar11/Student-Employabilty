@@ -25,7 +25,7 @@ def test_agents_endpoint_reports_implementation_status():
     agents = {a["name"]: a for a in client.get("/agents").json()}
     assert len(agents) == 6
     assert {n for n, a in agents.items() if a["implemented"]} == {"supervisor", "profile_agent", "job_intelligence_agent",
-                                                                  "matching_agent"}
+                                                                  "matching_agent", "learning_agent"}
     assert len(agents["profile_agent"]["allowed_tools"]) == 11
 
 

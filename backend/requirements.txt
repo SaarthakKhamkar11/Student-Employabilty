@@ -17,3 +17,7 @@ scipy==1.17.1          # Phase 7: matching calibration (already pulled in by sci
 xgboost-cpu==3.2.0    # Phase 8: matching-model candidates (CPU-only build of xgboost: same API, no bundled CUDA); the backend loads whichever model the selection engine picks
 lightgbm==4.7.0       # Phase 8: matching-model candidate (needs libgomp1, installed in backend/Dockerfile)
 shap==0.51.0          # Phase 8: per-model SHAP compatibility checks; Phase 11 explanations
+PyJWT==2.14.0               # Auth: JWT access + signup tokens
+bcrypt==5.0.0                # Auth: password hashing
+redis==8.1.0                 # Auth: OTP storage, rate limits
+email-validator==2.3.0       # Auth: EmailStr validation
