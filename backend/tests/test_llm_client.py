@@ -25,7 +25,12 @@ def test_client_is_built_only_when_key_and_model_are_set():
     assert build_llm_client(Settings(_env_file=None)) is None
     assert build_llm_client(Settings(_env_file=None, gemini_api_key=FAKE_KEY)) is None
     client = build_llm_client(Settings(_env_file=None, gemini_api_key=FAKE_KEY, gemini_model="some-model"))
-    assert isinstance(client, GeminiClient) and client.model_name == "some-model"
+    assert client.model_name == "some-model" and [c.inner.model_name for c in client.clients] == ["some-model"]
+    assert all(isinstance(c.inner, GeminiClient) for c in client.clients)
+    # the quota fallback chain: the primary first, then each fallback once, in order
+    chain = build_llm_client(Settings(_env_file=None, gemini_api_key=FAKE_KEY, gemini_model="some-model",
+                                      gemini_fallback_models="lite-a, some-model ,lite-b"))
+    assert [c.inner.model_name for c in chain.clients] == ["some-model", "lite-a", "lite-b"]
 
 
 def _client(monkeypatch, fake_generate):

@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     llm_provider: Literal["gemini"] = "gemini"
     gemini_api_key: SecretStr | None = None
     gemini_model: str | None = None
+    # Free-tier quotas are per model: comma-separated models tried in order when the primary returns HTTP 429
+    # (app/llm/client.py FallbackLLMClient). An exhausted model is skipped until its reset (or this cooldown).
+    gemini_fallback_models: str | None = None
+    llm_quota_cooldown_seconds: float = Field(3600.0, gt=0)
+    # When the UI sends an explicit task_type there is nothing left to classify: route deterministically and keep
+    # the LLM budget for requests that need it (a free-text question). Set true to route those by LLM too.
+    llm_route_explicit_tasks: bool = False
     llm_timeout_seconds: float = Field(10.0, gt=0, le=60)
     llm_max_retries: int = Field(1, ge=0, le=1)  # Phase 3 rule: at most one retry
     supervisor_timeout_seconds: float = Field(300.0, gt=0)

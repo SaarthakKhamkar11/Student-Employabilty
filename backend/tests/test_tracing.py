@@ -249,6 +249,16 @@ def test_the_trace_round_trips_through_postgres(embedder, learning_cfg):
 
     resp = asyncio.run(full_chain(embedder, Both(), llm=FakeLLM(ROUTE)).handle(
         {"actor": "student", "request_kind": "resume_upload", "resume_text": RESUME}))
+    try:
+        _check_round_trip(resp, memory, pg)
+    finally:  # a test request never stays in the database (its children and messages cascade)
+        import psycopg
+
+        with psycopg.connect(dsn) as conn:
+            conn.execute("DELETE FROM agent_runs WHERE request_id = %s", (resp.request_id,))
+
+
+def _check_round_trip(resp, memory, pg):
     assert resp.persisted
     from_pg = asyncio.run(get_agent_trace(resp.request_id, pg))
     from_memory = asyncio.run(get_agent_trace(resp.request_id, memory))

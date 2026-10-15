@@ -20,7 +20,10 @@ from collections.abc import Iterable
 from app.core.config import Settings
 from app.core.logging import get_logger, log_event
 from app.core.sanitize import INJECTION_GUARD, mask_pii, wrap_untrusted
-from app.llm import LLMClient, LLMError, LLMInvalidOutputError, LLMTimeoutError, traced
+from app.llm import (
+    LLMClient, LLMError, LLMInvalidOutputError, LLMQuotaError, LLMTimeoutError, capture_served_model, served_model,
+    traced,
+)
 from app.schemas.agent_io import LLMRoutingDecision, RoutingDecision, SupervisorInput, TaskType
 
 logger = get_logger("agents.supervisor.routing")
@@ -155,6 +158,9 @@ def build_router_prompt(req: SupervisorInput) -> str:
     return "\n\n".join(parts)
 
 
+NOT_NEEDED_EXPLICIT_TASK = "llm_not_needed: explicit task_type"  # a skip, not a failure
+
+
 class Router:
     def __init__(self, llm: LLMClient | None, settings: Settings):
         self.llm = traced(llm)  # each routing call is a trace span (Phase 12)
@@ -164,26 +170,34 @@ class Router:
         start = time.perf_counter()
         if self.llm is None:
             return self._fallback(req, "llm_not_configured", attempts=0, start=start)
+        if req.task_type and not self.settings.llm_route_explicit_tasks:
+            # the UI already named the task: nothing to classify, so no LLM call is spent (quota, latency)
+            return self._fallback(req, NOT_NEEDED_EXPLICIT_TASK, attempts=0, start=start)
 
-        decision, last_error, attempts = None, None, 0
+        decision, last_error, attempts, info = None, None, 0, {}
         for _ in range(1 + self.settings.llm_max_retries):
             attempts += 1
             try:
-                decision = await asyncio.wait_for(
-                    self.llm.generate_structured(system=ROUTER_SYSTEM_PROMPT, prompt=build_router_prompt(req),
-                                                 schema=LLMRoutingDecision,
-                                                 timeout_s=self.settings.llm_timeout_seconds),
-                    self.settings.llm_timeout_seconds,
-                )
+                with capture_served_model() as info:
+                    decision = await asyncio.wait_for(
+                        self.llm.generate_structured(system=ROUTER_SYSTEM_PROMPT, prompt=build_router_prompt(req),
+                                                     schema=LLMRoutingDecision,
+                                                     timeout_s=self.settings.llm_timeout_seconds),
+                        self.settings.llm_timeout_seconds,
+                    )
                 break
             except TimeoutError:
                 last_error = LLMTimeoutError("timeout")
+            except LLMQuotaError as exc:  # retrying can't help before the quota resets
+                last_error = exc
+                break
             except LLMError as exc:
                 last_error = exc
             except Exception as exc:  # a misbehaving client must not break routing
                 last_error = LLMError(type(exc).__name__)
         if decision is None:
             reason = ("llm_timeout" if isinstance(last_error, LLMTimeoutError)
+                      else "llm_quota_exhausted" if isinstance(last_error, LLMQuotaError)
                       else "llm_invalid_output" if isinstance(last_error, LLMInvalidOutputError) else "llm_error")
             return self._fallback(req, reason, attempts, start, error_type=type(last_error).__name__)
 
@@ -193,7 +207,7 @@ class Router:
 
         routing = RoutingDecision(
             task_type=decision.task_type, agents=order_plan(decision.agents), source="llm",
-            model_used=self.llm.model_name, llm_attempts=attempts,
+            model_used=served_model(self.llm, info), llm_attempts=attempts,
             rationale=mask_pii(decision.rationale), duration_ms=_ms(start),
         )
         self._log(routing)

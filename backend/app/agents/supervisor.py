@@ -161,7 +161,8 @@ class SupervisorAgent(BaseAgent):
             ctx.state.task_type = routing.task_type
             if routing.source == "llm":
                 ctx.model_used = routing.model_used
-            elif routing.fallback_reason != "llm_not_configured":
+            elif routing.fallback_reason != "llm_not_configured" and not (routing.fallback_reason or "").startswith(
+                    "llm_not_needed"):
                 ctx.state.errors.append(_error("llm_routing_fallback", routing.fallback_reason or ""))
         if ctx.extras["pending_waves"]:
             wave = ctx.extras["pending_waves"].pop(0)

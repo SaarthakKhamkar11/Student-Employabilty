@@ -9,7 +9,10 @@ is validated locally with Pydantic, whatever the provider claims to enforce.
 import asyncio
 import logging
 import re
-from typing import Protocol, TypeVar
+import time
+from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import Iterator, Protocol, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -30,6 +33,15 @@ class LLMTimeoutError(LLMError):
 
 class LLMInvalidOutputError(LLMError):
     """The LLM answered, but not with JSON matching the requested schema."""
+
+
+class LLMQuotaError(LLMError):
+    """HTTP 429: the model's quota is used up. retry_after_s is the provider's own reset delay, when it gives one."""
+
+    def __init__(self, message: str, retry_after_s: float | None = None, model: str | None = None):
+        super().__init__(message)
+        self.retry_after_s = retry_after_s
+        self.model = model
 
 
 class LLMClient(Protocol):
@@ -107,10 +119,19 @@ class GeminiClient:
             message = str(exc).replace(self._api_key, "[REDACTED]")
             code = getattr(exc, "code", None)  # the HTTP status survives the redaction of a long message
             status = f" {code} {getattr(exc, 'status', '') or ''}".rstrip() if isinstance(code, int) else ""
+            if code == 429:  # read the quota details before the long message is redacted
+                delay = _RETRY_DELAY.search(message)
+                quota = _QUOTA_ID.search(message)
+                raise LLMQuotaError(
+                    f"{type(exc).__name__}{status}: {self.model_name} quota exhausted"
+                    + (f" ({quota.group(1)})" if quota else "") + (f", resets in {delay.group(1)}s" if delay else ""),
+                    retry_after_s=float(delay.group(1)) if delay else None, model=self.model_name) from exc
             raise LLMError(f"{type(exc).__name__}{status}: {redact_text(message, 200)}") from exc
         return parse_structured(response.text, schema)
 
 
+_RETRY_DELAY = re.compile(r"retryDelay['\"]?\s*:\s*['\"]?(\d+(?:\.\d+)?)s")
+_QUOTA_ID = re.compile(r"quotaId['\"]?\s*:\s*['\"]?([A-Za-z-]+)")
 _HTTP_STATUS = re.compile(r"(?<![\d.])([45]\d\d)(?![\d.])")  # "ClientError 429 RESOURCE_EXHAUSTED: ..."
 _logger = get_logger("llm")
 
@@ -151,13 +172,86 @@ class TracedLLMClient:
 
 
 def traced(llm: LLMClient | None) -> LLMClient | None:
-    if llm is None or isinstance(llm, TracedLLMClient):
+    if llm is None or isinstance(llm, TracedLLMClient) or getattr(llm, "traces_itself", False):
         return llm
     return TracedLLMClient(llm)
+
+
+_served: ContextVar[dict | None] = ContextVar("llm_served", default=None)
+
+
+@contextmanager
+def capture_served_model() -> Iterator[dict]:
+    """Collects which model actually answered the calls made inside the block ({"model": name}). A dict, not a
+    value, so a call run as its own task (asyncio.wait_for) still reports back."""
+    info: dict = {}
+    token = _served.set(info)
+    try:
+        yield info
+    finally:
+        _served.reset(token)
+
+
+class FallbackLLMClient:
+    """Quota-aware model chain (free-tier limits are per model, e.g. 20 requests/day for gemini-3.8-flash).
+
+    Each call goes to the first model whose quota isn't known to be exhausted. On HTTP 429 that model is put in
+    cooldown until the provider's own reset delay (else cooldown_s) and the next model is tried at once. When every
+    model is in cooldown the call fails immediately with LLMQuotaError, without a network call, so callers fall back
+    to their deterministic paths without waiting or wasting retries. Every real provider call is still its own trace
+    span, under the model that served (or refused) it."""
+
+    traces_itself = True
+
+    def __init__(self, clients: list[LLMClient], cooldown_s: float = 3600.0, clock=time.monotonic):
+        if not clients:
+            raise ValueError("FallbackLLMClient needs at least one client")
+        self.clients = [traced(c) for c in clients]
+        self.model_name = clients[0].model_name  # the primary; capture_served_model() says who answered
+        self.cooldown_s = cooldown_s
+        self._clock = clock
+        self._until: dict[str, float] = {}
+
+    def status(self) -> list[dict]:
+        now = self._clock()
+        return [{"model": c.model_name, "available": self._until.get(c.model_name, 0.0) <= now,
+                 "cooldown_remaining_s": max(0, round(self._until.get(c.model_name, 0.0) - now))}
+                for c in self.clients]
+
+    async def generate_structured(self, *, system: str, prompt: str, schema: type[T], timeout_s: float,
+                                  max_output_tokens: int = 1024) -> T:
+        now = self._clock()
+        ready = [c for c in self.clients if self._until.get(c.model_name, 0.0) <= now]
+        if not ready:
+            wait = min(self._until.values()) - now
+            raise LLMQuotaError(f"every configured model's quota is exhausted; the first resets in {wait:.0f}s",
+                                retry_after_s=wait)
+        last: LLMQuotaError | None = None
+        for client in ready:
+            try:
+                result = await client.generate_structured(system=system, prompt=prompt, schema=schema,
+                                                          timeout_s=timeout_s, max_output_tokens=max_output_tokens)
+            except LLMQuotaError as exc:
+                self._until[client.model_name] = self._clock() + (exc.retry_after_s or self.cooldown_s)
+                log_event(_logger, "llm_quota_cooldown", logging.WARNING, model=client.model_name,
+                          cooldown_s=round(exc.retry_after_s or self.cooldown_s))
+                last = exc
+                continue
+            if (info := _served.get()) is not None:
+                info["model"] = client.model_name
+            return result
+        raise last
+
+
+def served_model(llm: LLMClient, info: dict) -> str:
+    return info.get("model") or llm.model_name
 
 
 def build_llm_client(settings: Settings) -> LLMClient | None:
     """A configured client, or None, in which case callers use their deterministic path."""
     if not settings.llm_configured:
         return None
-    return GeminiClient(settings.gemini_api_key.get_secret_value(), settings.gemini_model)
+    key = settings.gemini_api_key.get_secret_value()
+    models = [settings.gemini_model] + [m.strip() for m in (settings.gemini_fallback_models or "").split(",")
+                                        if m.strip() and m.strip() != settings.gemini_model]
+    return FallbackLLMClient([GeminiClient(key, m) for m in models], cooldown_s=settings.llm_quota_cooldown_seconds)

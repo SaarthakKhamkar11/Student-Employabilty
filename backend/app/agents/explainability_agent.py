@@ -102,10 +102,12 @@ class ExplainabilityAgent(BaseAgent):
         if not drafts:
             return CallTool(tool_name="generate_explanation", arguments={"evidence": evidence.model_dump()})
         last = drafts[-1]
-        if last.draft is not None and len(checks) < len(drafts):
+        # each draft is validated once; an attempt that returned no draft has nothing to validate
+        checked = bool(checks) and checks[-1].attempt == len(drafts)
+        if last.draft is not None and not checked:
             return CallTool(tool_name="validate_explanation", arguments={
                 "evidence": evidence.model_dump(), "draft": last.draft.model_dump(), "attempt": len(drafts)})
-        valid = last.draft is not None and checks and checks[-1].valid and len(checks) == len(drafts)
+        valid = last.draft is not None and checked and checks[-1].valid
         if not valid and last.llm is not None and len(drafts) < MAX_GENERATIONS:
             errors = checks[-1].errors if last.draft is not None else [last.reason or "no draft"]
             return CallTool(tool_name="generate_explanation", arguments={

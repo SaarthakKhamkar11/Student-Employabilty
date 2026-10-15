@@ -22,7 +22,7 @@ from app.core.config import Settings
 from app.explainability import prose
 from app.explainability.evidence import build_evidence
 from app.explainability.validation import validate
-from app.llm import LLMClient, traced
+from app.llm import LLMClient, capture_served_model, served_model, traced
 from app.llm.client import LLMError
 from app.matching.features import FEATURE_NAMES
 from app.schemas.agent_io import (
@@ -233,14 +233,15 @@ def register_explainability_tools(registry: ToolRegistry, *, repo, settings: Set
         bundle = EvidenceBundle.model_validate(evidence)
         cfg = S.explainability_config()["individual"]
         try:
-            draft = await llm.generate_structured(
-                system=prose.system_prompt(), prompt=prose.build_prompt(bundle, strict, list(previous_errors)),
-                schema=ProseDraft, timeout_s=max(1.0, min(settings.tool_timeout_seconds - 2, 25.0)),
-                max_output_tokens=int(cfg["max_output_tokens"]))
+            with capture_served_model() as info:
+                draft = await llm.generate_structured(
+                    system=prose.system_prompt(), prompt=prose.build_prompt(bundle, strict, list(previous_errors)),
+                    schema=ProseDraft, timeout_s=max(1.0, min(settings.tool_timeout_seconds - 2, 25.0)),
+                    max_output_tokens=int(cfg["max_output_tokens"]))
         except LLMError as exc:  # short: logged agent errors longer than 120 characters are redacted
             first = str(exc).split(". {", 1)[0].split("\n", 1)[0]  # "ClientError: 429 RESOURCE_EXHAUSTED"
             return {"draft": None, "llm": llm.model_name, "reason": f"{type(exc).__name__}: {first}"[:70]}
-        return {"draft": draft.model_dump(), "llm": llm.model_name, "reason": None}
+        return {"draft": draft.model_dump(), "llm": served_model(llm, info), "reason": None}
 
     @registry.register("validate_explanation", input_schema=ValidateIn, output_schema=ExplanationValidation)
     def tool_validate_explanation(evidence, draft, attempt):

@@ -409,3 +409,17 @@ def test_the_schema_sent_to_gemini_is_inlined_but_replies_are_still_validated_in
     with pytest.raises(LLMInvalidOutputError):  # the limits Gemini isn't sent still apply to its reply
         parse_structured(json.dumps({"positive_evidence": [{"text": "x", "evidence_ids": []}], "potential_gaps": [],
                                      "model_evidence": [], "how_to_improve": []}), ProseDraft)
+
+
+def test_a_failed_first_attempt_then_a_good_draft_is_validated_exactly_once():
+    """Seen live (Phase 12 trace): attempt 1 returned no draft (invalid JSON), attempt 2 a good one. That draft
+    used to be validated twice."""
+    from app.llm import LLMInvalidOutputError
+
+    out, result = run(llm=FakeLLM(LLMInvalidOutputError("response failed ProseDraft validation"), GOOD),
+                      model=KnownModel())
+    assert out.status == "success", out.errors
+    g = result.match_explanation.generation
+    assert result.match_explanation.source == "llm_validated" and g["llm_attempts"] == 2
+    assert [(v["attempt"], v["valid"]) for v in g["validations"]] == [(2, True)]
+    assert [c.tool_name for c in out.tool_calls].count("validate_explanation") == 1

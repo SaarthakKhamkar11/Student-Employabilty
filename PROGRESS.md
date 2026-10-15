@@ -76,6 +76,25 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
   job; Profile Agent: task `cohort_benchmark`). Aggregates only; checked against all 286 real ids.
 - The Gemini quota was still exhausted: every live LLM call returned **429**, now visible per agent in the trace.
 
+**Done on 2026-10-15, after Phase 12:**
+- **Gemini quota fixed:**
+  - **Cause:** the free tier allows `gemini-3.8-flash` **20 requests per day per model** (quota
+    `GenerateRequestsPerDayPerProjectPerModel-FreeTier`), and that limit was hit.
+  - **Model chain:** `FallbackLLMClient` (`app/llm/client.py`) tries `GEMINI_MODEL`, then `GEMINI_FALLBACK_MODELS`
+    (now `gemini-3.5-flash-lite`). A model that returns 429 sleeps until Gemini's own `retryDelay`; once every model is
+    exhausted, calls fail at once, with no network call.
+  - **No routing call when the UI names the task:** a request with an explicit `task_type` is routed
+    deterministically (`LLM_ROUTE_EXPLICIT_TASKS=true` restores LLM routing for those).
+  - **Quota state:** `/health` shows it per model (`llm_models`).
+  - **Live result:** all 3 Phase 9 pairs now return `llm_validated` prose (gemini-3.5-flash-lite). This is the first
+    live Gemini explanation.
+  - **Phase 11 bug fixed:** a draft that followed a failed attempt was validated twice.
+  - Tests: `test_llm_quota.py` (8).
+- **Docs:** `README.md` (the GitHub overview) and [`docs/MODEL_EVALUATION.md`](docs/MODEL_EVALUATION.md) (every model
+  comparison, the final choices and why).
+- A test request that the Postgres round-trip test had written into the live database was deleted. That test now
+  removes its own rows.
+
 **Next:** Phase 13 (Research dashboard, spec §30, §31, §39).
 
 **Phase 13 inputs:**

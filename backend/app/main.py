@@ -40,7 +40,8 @@ configure_logging(settings.log_level)
 embedder = build_embedding_provider(settings, verify=True)
 fallback_embedder = fallback_provider(embedder, settings)  # TF-IDF vectors stored beside E5's (docs/adr/0012)
 # Fails at startup if an agent declares an unregistered tool.
-agents = build_agents(llm=build_llm_client(settings), store=build_store(settings), embedder=embedder,
+llm = build_llm_client(settings)  # a quota-aware model chain (GEMINI_MODEL, then GEMINI_FALLBACK_MODELS)
+agents = build_agents(llm=llm, store=build_store(settings), embedder=embedder,
                       fallback_embedder=fallback_embedder)
 
 
@@ -101,6 +102,8 @@ async def health() -> dict:
         "llm_key_configured": settings.llm_configured,
         # LLM routing is used only when configured; otherwise the deterministic router runs (spec §22)
         "llm_calls_enabled": settings.llm_configured,
+        # the model chain and, per model, whether its quota is in cooldown after an HTTP 429 (Phase 12)
+        "llm_models": llm.status() if hasattr(llm, "status") else None,
         "dependencies": {"postgres": postgres, "redis": redis},
         "embedding_model": embedder.model_name,
         "embedding_fallback": getattr(embedder, "fallback_reason", None),  # None: the configured model is in use
