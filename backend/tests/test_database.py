@@ -171,7 +171,7 @@ def test_profile_repository_writes_profile_children_and_versioned_embeddings(dsn
                            "ORDER BY section").fetchall()
         registry = conn.execute("SELECT status, metadata->>'role' FROM model_versions "
                                 "WHERE model_name = 'tfidf_baseline'").fetchall()
-    assert profile["source"] == "stored_record" and version == "profile-v1" and "detected" in flags
+    assert profile["source"] == "stored_record" and version == "profile-v2" and "detected" in flags
     assert skills == len(out.data["profile"]["skills"])  # one row per normalised skill, none duplicated or lost
     assert emb and all(m == "tfidf_baseline" and v.startswith("tfidf-") and d == 4096 and no_dense and sparse
                        for _, m, v, d, no_dense, sparse in emb)  # stored sparse (ADR 0011)

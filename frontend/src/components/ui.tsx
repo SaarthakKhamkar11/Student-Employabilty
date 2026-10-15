@@ -138,18 +138,14 @@ export function KpiCard({
   spark?: number[];
   sparkKind?: "line" | "bars";
 }) {
+  // color, spark and sparkKind are accepted for callers but no longer drawn: one quiet accent, and the label is
+  // never squeezed by a sparkline
+  void color, void spark, void sparkKind;
   return (
     <div className="card kpi">
       <div className="kpi-top">
-        <div className="kpi-icon" style={{ background: color }}>
-          {icon}
-        </div>
+        <div className="kpi-icon">{icon}</div>
         <div className="kpi-label">{label}</div>
-        {spark && (
-          <div className="kpi-spark">
-            <Sparkline values={spark} color={color} kind={sparkKind} />
-          </div>
-        )}
       </div>
       <div className="kpi-value">{value}</div>
       {foot && <div className="kpi-foot">{foot}</div>}
@@ -248,7 +244,7 @@ export function ListRow({
 }) {
   return (
     <div className={`list-row ${selected ? "selected" : ""}`} onClick={onClick} style={onClick ? { cursor: "pointer" } : undefined}>
-      <div className="list-thumb" style={{ background: thumbColor }}>
+      <div className="list-thumb" data-color={thumbColor}>
         {thumb}
       </div>
       <div className="list-main">

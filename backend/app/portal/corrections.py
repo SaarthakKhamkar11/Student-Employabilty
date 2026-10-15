@@ -59,6 +59,8 @@ class JobCorrection(BaseModel):
     location: str | None = Field(None, max_length=200)
     country: str | None = Field(None, max_length=100)
     work_type: str | None = Field(None, max_length=50)
+    company_name: str | None = Field(None, max_length=200)
+    salary_range: str | None = Field(None, max_length=150)
     job_description: str | None = Field(None, max_length=20_000)
     responsibilities: list[str] | None = Field(None, max_length=60)
     required_skills: list[str] | None = Field(None, max_length=80)
@@ -134,7 +136,8 @@ def _job_skill(s: dict, requirement: str) -> dict:
 async def correct_posting(registry: ToolRegistry, posting: dict[str, Any], c: JobCorrection) -> tuple[dict, list[str], dict]:
     p = dict(posting)
     changed: list[str] = []
-    for field in ("job_title", "role", "location", "country", "work_type", "job_description"):
+    for field in ("job_title", "role", "location", "country", "work_type", "company_name", "salary_range",
+                  "job_description"):
         value = getattr(c, field)
         if value is not None and _text(value) != p.get(field):
             p[field], changed = _text(value), changed + [field]

@@ -15,7 +15,7 @@ from app.core.logging import get_logger, log_event, register_sensitive_values
 from app.db.profile_repository import EmbeddingRow, ProfileRepository
 from app.embeddings.provider import EmbeddingProvider, Vector
 from app.profile import pii as pii_detector
-from app.profile.sections import NOT_EXTRACTED_FOR_SOURCE, record_sections, resume_sections
+from app.profile.sections import NOT_EXTRACTED_FOR_SOURCE, record_sections, resume_sections, resume_skill_items
 from app.profile.skills import alias_table_version, normalize_skills
 from app.profile.text_extraction import ResumeRejected, extract_text
 from app.schemas.agent_state import NOT_DETECTED, NOT_YET_EVALUATED
@@ -26,7 +26,8 @@ from src.parsing.section_parser import _clean
 
 logger = get_logger("tools.profile")
 
-EXTRACTOR_VERSION = "profile-v1"
+# v2 (2026-10-15): PDF word gaps by font size, heading-based resume sections and skills (app/profile/sections.py)
+EXTRACTOR_VERSION = "profile-v2"
 # Free-text fields of a stored record that the PII detector scans.
 RECORD_TEXT_FIELDS = ("degree", "branch", "achievements", "career_interests", "domain", "internship_raw",
                       "technical_projects", "skills_raw", "certifications")
@@ -81,6 +82,12 @@ class SectionsOut(_Model):
 
 class RecordIn(_Model):
     record: dict[str, Any]
+
+
+class ExtractSkillsIn(_Model):
+    text: str
+    # "resume": an uploaded resume (heading-aware extractor); "record": a stored record's skills_raw
+    source: Literal["resume", "record"] = "record"
 
 
 class ExtractSkillsOut(_Model):
@@ -232,12 +239,16 @@ def register_profile_tools(registry: ToolRegistry, *, repo: ProfileRepository | 
         """Section extraction from a stored record's columns."""
         return {"sections": record_sections(record)}
 
-    @registry.register("extract_skills", input_schema=TextIn, output_schema=ExtractSkillsOut)
-    def tool_extract_skills(text):
-        """The existing src/parsing extract_skills(), unchanged apart from the documented .NET fix.
-
-        Runs on _clean(text) exactly as the existing parse_resume() does (line endings, bullet noise).
+    @registry.register("extract_skills", input_schema=ExtractSkillsIn, output_schema=ExtractSkillsOut)
+    def tool_extract_skills(text, source="record"):
+        """Uploaded resumes: the heading-aware resume_skill_items() (category prefixes, grouped skills in
+        parentheses, wrapped lines), falling back to src/parsing's extract_skills() when it finds no skills section.
+        Stored records: src/parsing's extract_skills() unchanged, on _clean(text) as parse_resume() does.
         """
+        if source == "resume":
+            items = resume_skill_items(text)
+            if items:
+                return {"skills": items}
         return {"skills": extract_skills(_clean(text))}
 
     @registry.register("normalize_skills", input_schema=NormalizeSkillsIn, output_schema=NormalizeSkillsOut)

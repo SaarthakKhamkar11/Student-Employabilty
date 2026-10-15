@@ -1,71 +1,57 @@
 import { useState } from "react";
 import { BookOpen, CheckCircle2, CircleDashed, ExternalLink, PlayCircle, RefreshCw, Shuffle, XCircle } from "lucide-react";
 import { api } from "../lib/api";
-import { fmtDate, isNum, isSentinel, ms, num, pct } from "../lib/format";
-import type { AiSummary, LearningOutput, MatchExplanation, Run, SkillGapReport } from "../lib/types";
-import { Card, EmptyState, InsightPanel, ModelBadge, NotEvaluated, StatusTag } from "./ui";
+import { isNum, isSentinel, pct } from "../lib/format";
+import type { AiSummary, LearningOutput, MatchExplanation, MatchResult, Run, SkillGapReport } from "../lib/types";
+import { Card, EmptyState, InsightPanel, StatusTag } from "./ui";
 
-/** When and how a result was produced: stored or fresh, the request id (its trace), and a refresh action. */
+/** A refresh action for a result. Run status and timing are internal details and are not shown. */
 export function RunMeta({ run, onRefresh, refreshing }: { run: Run | null; onRefresh?: () => void; refreshing?: boolean }) {
-  if (!run) return null;
+  if (!run || !onRefresh) return null;
   return (
-    <div className="row tiny muted" style={{ gap: 8 }}>
-      <StatusTag tone={run.status === "success" ? "good" : run.status === "partial" ? "warn" : "bad"}>{run.status}</StatusTag>
-      <span title={`request ${run.request_id}`}>
-        {run.stored ? "Stored result" : "Computed now"} · {fmtDate(run.finished_at)} · {ms(run.duration_ms)}
-      </span>
-      {onRefresh && (
-        <button className="btn btn-sm" onClick={onRefresh} disabled={refreshing} title="Run the agents again">
-          {refreshing ? <span className="spinner" /> : <RefreshCw size={13} />} Refresh
-        </button>
-      )}
-    </div>
+    <button className="btn btn-sm" onClick={onRefresh} disabled={refreshing} title="Recalculate with your latest profile">
+      {refreshing ? <span className="spinner" /> : <RefreshCw size={13} />} Refresh
+    </button>
   );
 }
 
-/** Agent outcomes that were not successes, said out loud instead of hidden. */
+/** A plain notice when part of a result could not be computed. */
 export function RunProblems({ run, agents }: { run: Run | null; agents: string[] }) {
   if (!run) return null;
-  const problems = agents
-    .map((a) => [a, run.agents[a]] as const)
-    .filter(([, r]) => r && r.status !== "success");
-  if (!problems.length) return null;
-  return (
-    <div className="alert alert-warn">
-      <div>
-        {problems.map(([a, r]) => (
-          <div key={a}>
-            <b>{a.replace(/_/g, " ")}</b>: {r!.status}
-            {r!.skip_reason ? ` (${r!.skip_reason})` : ""}
-            {r!.error_codes?.length ? ` [${r!.error_codes.join(", ")}]` : ""}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  const failed = agents.some((a) => run.agents[a]?.status === "failed");
+  if (!failed) return null;
+  return <div className="alert alert-warn">Some details could not be computed for this result. Try Refresh in a minute.</div>;
 }
 
-function gapLine(s: { skill: string; importance_score: number | null }) {
+export function joinNames(names: string[], max = 4): string {
+  const xs = names.slice(0, max);
+  const more = names.length - xs.length;
+  if (more > 0) return `${xs.join(", ")} and ${more} more`;
+  if (xs.length <= 1) return xs.join("");
+  return `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
+}
+
+function gapChip(s: { skill: string }) {
   return (
-    <span className="chip" key={s.skill} title={isNum(s.importance_score) ? `model importance ${num(s.importance_score)}` : "importance not scored"}>
+    <span className="chip" key={s.skill}>
       <XCircle size={12} color="var(--bad)" /> {s.skill}
     </span>
   );
 }
 
-/** Phase 9's SkillGapReport as matched / missing / transferable. */
+/** Matched / to develop / carry-over skills for one job. */
 export function SkillGapView({ report, perspective = "student" }: { report: SkillGapReport | string | null | undefined; perspective?: "student" | "company" }) {
   if (!report || isSentinel(report) || typeof report === "string") {
-    return <EmptyState title="Skill gap report not available">{typeof report === "string" ? report : "Insufficient evidence"}</EmptyState>;
+    return <EmptyState title="Skill comparison not available">Try Refresh in a minute.</EmptyState>;
   }
-  const missing = [...report.missing_required.map((g) => ({ ...g, req: "required" })), ...report.missing_preferred.map((g) => ({ ...g, req: "preferred" }))];
+  const missing = [...report.missing_required, ...report.missing_preferred];
   const transferable = missing.filter((g) => g.transferable_candidate);
   const who = perspective === "student" ? "your profile" : "the candidate's profile";
   return (
     <div className="stack" style={{ gap: 14 }}>
       <div>
         <div className="insight-section" style={{ marginTop: 0 }}>
-          <CheckCircle2 size={12} color="var(--good)" style={{ verticalAlign: -1 }} /> Matched ({report.matched_skills.length})
+          <CheckCircle2 size={12} color="var(--good)" style={{ verticalAlign: -1 }} /> Skills already in {who} ({report.matched_skills.length})
         </div>
         {report.matched_skills.length ? (
           <div className="chips">
@@ -76,29 +62,28 @@ export function SkillGapView({ report, perspective = "student" }: { report: Skil
             ))}
           </div>
         ) : (
-          <div className="small muted">No job skill was detected in {who}.</div>
+          <div className="small muted">None of the job's listed skills are in {who} yet.</div>
         )}
       </div>
       <div>
-        <div className="insight-section">Missing: required ({report.missing_required.length})</div>
-        {report.missing_required.length ? <div className="chips">{report.missing_required.map(gapLine)}</div> : <div className="small muted">None.</div>}
+        <div className="insight-section">To develop: required ({report.missing_required.length})</div>
+        {report.missing_required.length ? <div className="chips">{report.missing_required.map(gapChip)}</div> : <div className="small muted">None.</div>}
       </div>
       <div>
-        <div className="insight-section">Missing: preferred ({report.missing_preferred.length})</div>
-        {report.missing_preferred.length ? <div className="chips">{report.missing_preferred.map(gapLine)}</div> : <div className="small muted">None.</div>}
+        <div className="insight-section">To develop: preferred ({report.missing_preferred.length})</div>
+        {report.missing_preferred.length ? <div className="chips">{report.missing_preferred.map(gapChip)}</div> : <div className="small muted">None.</div>}
       </div>
-      <div>
-        <div className="insight-section">
-          <Shuffle size={12} style={{ verticalAlign: -1 }} /> Transferable ({transferable.length + report.partially_related.length})
-        </div>
-        {transferable.length || report.partially_related.length ? (
+      {(transferable.length > 0 || report.partially_related.length > 0) && (
+        <div>
+          <div className="insight-section">
+            <Shuffle size={12} style={{ verticalAlign: -1 }} /> Skills that carry over
+          </div>
           <table className="data">
             <thead>
               <tr>
                 <th>Job skill</th>
                 <th>Closest skill in {who}</th>
-                <th className="num">Name similarity</th>
-                <th>Strength</th>
+                <th>Overlap</th>
               </tr>
             </thead>
             <tbody>
@@ -106,76 +91,64 @@ export function SkillGapView({ report, perspective = "student" }: { report: Skil
                 <tr key={`t-${g.skill}`}>
                   <td>{g.skill}</td>
                   <td>{g.transferable_candidate}</td>
-                  <td className="num">{isNum(g.transferable_similarity) ? num(g.transferable_similarity, 2) : <NotEvaluated />}</td>
-                  <td><StatusTag tone="info">transferable</StatusTag></td>
+                  <td><StatusTag tone="info">strong</StatusTag></td>
                 </tr>
               ))}
               {report.partially_related.map((g) => (
                 <tr key={`p-${g.skill}`}>
                   <td>{g.skill}</td>
                   <td>{g.related_student_skill}</td>
-                  <td className="num">{num(g.similarity, 2)}</td>
-                  <td><StatusTag tone="neutral">partially related</StatusTag></td>
+                  <td><StatusTag tone="neutral">partial</StatusTag></td>
                 </tr>
               ))}
             </tbody>
           </table>
-        ) : (
-          <div className="small muted">No missing skill is close to a skill in {who}.</div>
-        )}
-      </div>
-      <div className="tiny muted">
-        {report.note} Required vs preferred is inferred from the job text. Importance: <code>{report.importance_model || "—"}</code> · similarity:{" "}
-        <code>{report.similarity_model || "—"}</code>
-        {Object.keys(report.thresholds || {}).length ? ` · thresholds ${Object.entries(report.thresholds).map(([k, v]) => `${k} ${v}`).join(", ")}` : ""}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
-/** Phase 10 learning recommendations, including the honest empty case per skill. */
+/** Courses and videos per skill to develop: name, where it is, relevance, and the effort for courses. */
 export function LearningList({ output, compact }: { output: LearningOutput | null; compact?: boolean }) {
-  if (!output) return <EmptyState title="No learning recommendations">The Learning Agent did not run for this job.</EmptyState>;
-  if (typeof output.recommendations === "string") return <EmptyState title="Learning recommendations">{output.recommendations}</EmptyState>;
-  if (!output.recommendations.length) return <EmptyState title="No skill gaps to learn for">Every job skill was detected in your profile.</EmptyState>;
+  if (!output || typeof output.recommendations === "string")
+    return <EmptyState title="No learning suggestions yet">Try Refresh in a minute.</EmptyState>;
+  if (!output.recommendations.length) return <EmptyState title="Nothing to learn for this job">Your profile already covers its listed skills.</EmptyState>;
   return (
     <div className="list">
       {output.recommendations.map((r) => (
         <div className="feed-item" key={r.skill}>
-          <div className="feed-icon" style={{ background: r.requirement === "required" ? "var(--bad-bg)" : "var(--warn-bg)" }}>
-            <BookOpen size={15} color={r.requirement === "required" ? "var(--bad)" : "var(--warn)"} />
+          <div className="feed-icon" style={{ background: "var(--accent-soft)" }}>
+            <BookOpen size={15} color="var(--accent)" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="row" style={{ gap: 6 }}>
               <b>{r.skill}</b>
-              <StatusTag tone={r.requirement === "required" ? "bad" : "warn"}>{r.requirement}</StatusTag>
-              <span className="tiny muted">priority {r.priority}{r.tied_with.length ? ` (tied with ${r.tied_with.length})` : ""}</span>
+              <StatusTag tone={r.requirement === "required" ? "bad" : "warn"} dot={false}>{r.requirement}</StatusTag>
             </div>
             {r.resources.length ? (
               <div style={{ marginTop: 4 }}>
-                {r.resources.slice(0, compact ? 2 : 5).map((res) => (
-                  <div key={res.resource_url} className="small" style={{ marginTop: 5 }}>
-                    <a href={res.resource_url} target="_blank" rel="noreferrer" style={{ display: "inline", overflowWrap: "break-word" }}>
-                      {res.kind === "video" ? <PlayCircle size={12} style={{ verticalAlign: -2 }} /> : <BookOpen size={12} style={{ verticalAlign: -2 }} />}{" "}
+                {r.resources.slice(0, compact ? 2 : 4).map((res) => (
+                  <div key={res.resource_url} className="resource">
+                    <a href={res.resource_url} target="_blank" rel="noreferrer">
+                      {res.kind === "video" ? <PlayCircle size={13} style={{ verticalAlign: -2 }} /> : <BookOpen size={13} style={{ verticalAlign: -2 }} />}{" "}
                       {res.resource_name} <ExternalLink size={10} />
                     </a>
                     <div className="tiny muted">
-                      {res.kind} · {res.provider} · relevance {num(res.relevance_score, 2)}
-                      {res.estimated_effort && !isSentinel(res.estimated_effort) ? ` · ${res.estimated_effort}` : ""}
+                      {res.kind === "video" ? `YouTube · ${res.provider.replace(/^YouTube:\s*/, "")}` : res.provider} · relevance {Math.round(res.relevance_score * 100)}%
+                      {res.kind === "course" && res.estimated_effort && !isSentinel(res.estimated_effort) ? ` · ${res.estimated_effort}` : ""}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="small" style={{ marginTop: 4 }}>
-                <CircleDashed size={12} style={{ verticalAlign: -1 }} /> <i>{r.message ?? "No resources found for this skill in the current catalog."}</i>
+                <CircleDashed size={12} style={{ verticalAlign: -1 }} /> <i>No course found for this skill yet.</i>
               </div>
             )}
-            {!compact && <div className="tiny muted" style={{ marginTop: 4 }}>{r.explanation}</div>}
           </div>
         </div>
       ))}
-      {!compact && <div className="tiny muted" style={{ marginTop: 8 }}>{output.note}</div>}
     </div>
   );
 }
@@ -202,7 +175,7 @@ export function ExplanationPanel({
   if (!explanation) {
     return (
       <Card title={title}>
-        <EmptyState title="No explanation">Insufficient evidence: the Explainability Agent did not produce one for this match.</EmptyState>
+        <EmptyState title="No explanation yet">Try Refresh in a minute.</EmptyState>
       </Card>
     );
   }
@@ -229,30 +202,105 @@ export function ExplanationPanel({
       title={title}
       sub={
         <>
-          {explanation.job_title ?? explanation.job_id} · suitability {pct(explanation.suitability_score)}
+          {explanation.job_title ?? explanation.job_id} · {pct(explanation.suitability_score, 0)} match
         </>
       }
-      badge={isAi ? <StatusTag tone="ai">AI summary · {ai?.llm_model ?? "Gemini"}{ai?.cached ? " · cached" : ""}</StatusTag> : <StatusTag tone="neutral">Stored explanation</StatusTag>}
+      badge={isAi ? <StatusTag tone="ai">AI summary</StatusTag> : undefined}
       notice={notice ? <div className="alert alert-warn">{notice}</div> : null}
       sections={[
         { heading: "Positive evidence", items: shown.positive_evidence, empty: "Insufficient evidence" },
         { heading: "Potential gaps", items: shown.potential_gaps, empty: "No gaps detected" },
-        { heading: "Model evidence", items: shown.model_evidence, empty: "Insufficient evidence" },
         { heading: "How to improve", items: shown.how_to_improve, empty: "Nothing to suggest from this evidence" },
       ]}
       onAskAI={askPath && !isAi ? ask : undefined}
-      askLabel="Ask AI (Gemini) to rephrase"
+      askLabel="Rephrase with AI"
       asking={asking}
-      footer={
-        <div className="tiny muted" style={{ marginTop: 10 }}>
-          {isAi
-            ? "Gemini rephrased the evidence; every line was validated against the evidence items before display."
-            : "Built deterministically from the model's SHAP values, the skill-gap report and similarity percentiles; every line cites its evidence."}
-          <div style={{ marginTop: 6 }}>
-            <ModelBadge versions={shown.model_versions} />
-          </div>
-        </div>
-      }
+    />
+  );
+}
+
+export interface CareerPath {
+  role: string;
+  jobs: number;
+  best_rank: number;
+  mean_suitability: number;
+  example_titles: string[];
+}
+
+const DIM_WORDS: Record<string, string> = {
+  experience_match: "experience",
+  education_match: "education",
+  project_relevance: "projects",
+  certification_relevance: "certifications",
+};
+
+/**
+ * The student's explanation in plain sentences: why the job was recommended (up to 4 lines), the gaps (up to 3),
+ * why the role suits them (up to 4) and how to improve. Built from the match's own structured results (skills
+ * found and missing, employability dimensions, the role's place among the student's matches); no model terms or
+ * scores are shown.
+ */
+export function MatchSummary({
+  match,
+  explanation,
+  careerPaths,
+  title = "Why this job?",
+}: {
+  match: MatchResult;
+  explanation: MatchExplanation | null;
+  careerPaths?: CareerPath[];
+  title?: string;
+}) {
+  const report = typeof match.skill_gap === "object" && match.skill_gap ? match.skill_gap : null;
+  const emp = typeof match.employability === "object" ? match.employability : null;
+  const dim = (k: string) => (emp && isNum(emp.dimensions[k]) ? (emp.dimensions[k] as number) : null);
+  const jobTitle = match.summary.job_title ?? "this job";
+  const role = match.summary.role ?? jobTitle;
+
+  const why: string[] = [];
+  if (report?.matched_skills.length) why.push(`Your profile already shows ${joinNames(report.matched_skills)}, which this role asks for.`);
+  const carry = report ? [...report.missing_required, ...report.missing_preferred].filter((g) => g.transferable_candidate) : [];
+  // a carry-over skill is still listed as "to develop": say it's a head start, not that the gap is closed
+  if (carry.length) why.push(`Your ${carry[0]!.transferable_candidate} gives you a head start on ${carry[0]!.skill.toLowerCase()}.`);
+  const strong = Object.keys(DIM_WORDS).filter((k) => (dim(k) ?? 0) >= 75).map((k) => DIM_WORDS[k]!);
+  if (strong.length) why.push(`Your ${joinNames(strong)} line up well with what the role involves.`);
+  if ((dim("education_match") ?? 0) >= 80 && why.length < 4) why.push("Your degree meets the job's education requirement.");
+  if (!why.length) why.push("Your overall profile is a close fit for the work this role describes.");
+
+  const gaps: string[] = [];
+  const req = report?.missing_required.map((g) => g.skill) ?? [];
+  const pref = report?.missing_preferred.map((g) => g.skill) ?? [];
+  if (req.length) gaps.push(`The role asks for ${joinNames(req, 3)}, which your profile doesn't show yet.`);
+  if (pref.length) gaps.push(`${joinNames(pref, 3)} would strengthen your application.`);
+  const weak = Object.keys(DIM_WORDS).filter((k) => { const v = dim(k); return v !== null && v < 50; }).map((k) => DIM_WORDS[k]!)
+    .filter((w) => !strong.includes(w));
+  if (weak.length) gaps.push(`Your ${joinNames(weak)} ${weak.length > 1 ? "are" : "is"} less closely related to this role than the rest of your profile.`);
+  if (!gaps.length) gaps.push("No gaps found: your profile covers every skill this job lists.");
+
+  const career: string[] = [];
+  const path = careerPaths?.find((c) => c.role === role);
+  if (path && careerPaths) {
+    const pos = careerPaths.indexOf(path);
+    career.push(pos === 0 ? `${role} is your strongest direction: it leads your recommendations.` : `${role} is one of the ${careerPaths.length} directions your recommendations point to.`);
+    if (path.jobs > 1) career.push(`${path.jobs} of your recommended jobs are in this role, so the fit isn't a one-off.`);
+  }
+  if ((dim("career_interest_alignment") ?? 0) >= 70) career.push("It matches the career interests and domain in your profile.");
+  if (isNum(match.semantic_similarity) && match.semantic_similarity >= 0.75) career.push("Your projects and experience read close to the day-to-day work of this role.");
+  if (strong.includes("projects")) career.push("Your project work is directly relevant, which is often what recruiters for this role look for first.");
+  if (!career.length) career.push(`${role} builds on the skills and education already in your profile.`);
+
+  const improve = explanation?.how_to_improve.length ? explanation.how_to_improve : req.length ? [`Develop ${joinNames(req, 3)} first: they are required for this role.`] : [];
+
+  return (
+    <InsightPanel
+      title={title}
+      sub={<>{jobTitle}{isNum(match.suitability_score) ? <> · {pct(match.suitability_score, 0)} match</> : null}</>}
+      sections={[
+        { heading: "Why this job is recommended", items: why.slice(0, 4) },
+        { heading: "Gaps", items: gaps.slice(0, 3) },
+        { heading: "Why this role suits you", items: career.slice(0, 4) },
+        { heading: "How to improve", items: improve, empty: "Nothing to add: keep your profile up to date." },
+      ]}
     />
   );
 }

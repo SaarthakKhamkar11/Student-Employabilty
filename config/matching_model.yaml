@@ -7,14 +7,17 @@
 # the top level is for the primary model; `fallback` covers the TF-IDF fallback (docs/adr/0012).
 embedding_model: e5_base_v2
 # Baseline 3 until the Phase 8 candidates are retrained on E5 features and selected on the human labels.
-active: lightgbm
+active: logistic_regression
 # The training run whose artifacts (hash-checked manifest) a trained model is loaded from.
-artifacts_experiment: mms-20261014T150744Z-nolabels
+artifacts_experiment: mms-20261015T123632Z-nolabels
 # The human-label selection run that chose `active`; "none" until one exists.
-selection_experiment: mms-20261014T151058Z-human
+selection_experiment: mms-20261015T124013Z-human
 fallback:
   tfidf_baseline:
-    # Selected on the human labels with TF-IDF features (2026-10-14, docs/adr/0015)
-    active: logistic_regression
-    artifacts_experiment: mms-20261011T104041Z-nolabels
-    selection_experiment: mms-20261014T132323Z-human
+    # 2026-10-15, features-v2: the human-label run decided "keep Baseline 3" (Logistic Regression led the candidates,
+    # NDCG@10 +0.023 not distinguishable, Overall 0.697 vs Baseline 3's 0.711; docs/adr/0015). --activate writes only
+    # "select" decisions, and the previous fallback (logistic_regression, features-v1) can't score features-v2, so
+    # the rule's decision is written here by hand.
+    active: weighted_baseline_v1
+    artifacts_experiment: mms-20261015T124629Z-nolabels
+    selection_experiment: mms-20261015T124901Z-human

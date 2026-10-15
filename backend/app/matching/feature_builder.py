@@ -35,7 +35,7 @@ from app.matching.entities import JobView, StudentView, degree_family
 from app.matching.features import FEATURE_NAMES, validate_feature_names
 from app.matching.skill_gap import SkillComparison
 
-FEATURE_VERSION = "features-v1"
+FEATURE_VERSION = "features-v2"  # v2: a job skill stated in the profile text counts as matched
 SIMILARITY_FEATURES = ("semantic_similarity", "project_relevance", "certification_relevance",
                        "career_interest_alignment", "role_similarity", "domain_similarity")
 

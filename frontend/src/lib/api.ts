@@ -1,5 +1,7 @@
 // The one HTTP client. Every page goes through it to the real FastAPI backend (vite proxy -> 127.0.0.1:8000).
 // Errors are never swallowed: the backend's own `detail` message is raised so the page can show it.
+// The session token is kept in localStorage, so a login survives closing the tab (it expires server-side after
+// ACCESS_TOKEN_EXPIRE_MINUTES); logging out removes it.
 
 const TOKEN_KEY = "cc.token";
 
@@ -13,7 +15,7 @@ export class ApiError extends Error {
 
 export function getToken(): string | null {
   try {
-    return sessionStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -21,8 +23,8 @@ export function getToken(): string | null {
 
 export function setToken(token: string | null) {
   try {
-    if (token) sessionStorage.setItem(TOKEN_KEY, token);
-    else sessionStorage.removeItem(TOKEN_KEY);
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
   } catch {
     /* storage blocked: the session lasts until reload */
   }

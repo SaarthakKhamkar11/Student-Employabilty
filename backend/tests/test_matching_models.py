@@ -11,6 +11,7 @@ import pytest
 from app.agents import build_agents
 from app.core.config import REPO_ROOT, Settings
 from app.matching.config import load_matching_config
+from app.matching.feature_builder import FEATURE_VERSION
 from app.matching.features import FEATURE_NAMES, PROTECTED_ATTRIBUTES, ProtectedFeatureError
 from app.matching.predictor import PredictorUnavailable, TrainedPredictor, active_choice, build_predictor
 from app.schemas.agent_io import MatchingAgentOutput
@@ -224,14 +225,15 @@ def test_the_shipped_flag_is_the_human_label_selection():
     # selected on TF-IDF features.
     primary = active_choice()
     assert primary.embedding_model == "e5_base_v2"
-    assert primary.active == "lightgbm" and primary.selection_experiment == "mms-20261014T151058Z-human"
+    assert primary.active == "logistic_regression" and primary.selection_experiment == "mms-20261015T124013Z-human"
     assert isinstance(build_predictor(load_matching_config(), embedding_model="e5_base_v2"), TrainedPredictor)
     fb = active_choice(embedding_model="tfidf_baseline")
-    assert fb.active == "logistic_regression" and fb.selection_experiment == "mms-20261014T132323Z-human"
-    assert isinstance(build_predictor(load_matching_config(), embedding_model="tfidf_baseline"), TrainedPredictor)
+    # features-v2 human-label run (2026-10-15): the rule kept Baseline 3 for the fallback
+    assert fb.active == "weighted_baseline_v1" and fb.selection_experiment == "mms-20261015T124901Z-human"
+    assert not isinstance(build_predictor(load_matching_config(), embedding_model="tfidf_baseline"), TrainedPredictor)
 
 
-def manifest_folder(tmp_path, trained, key="decision_tree", embedding_version=None, feature_version="features-v1"):
+def manifest_folder(tmp_path, trained, key="decision_tree", embedding_version=None, feature_version=FEATURE_VERSION):
     folder, _, out = trained
     _, path, fmt, digest = out[key]
     target = tmp_path / "mms-test"
@@ -279,7 +281,7 @@ def test_the_agent_returns_trained_model_metadata_end_to_end(tmp_path, trained, 
     for m in data.matches:
         v = m.model_versions
         assert v.matching_model == "decision_tree" and v.matching_model_version == predictor.version
-        assert v.experiment_id == "mms-test" and v.feature_version == "features-v1"
+        assert v.experiment_id == "mms-test" and v.feature_version == FEATURE_VERSION
         assert 0 <= m.suitability_score <= 1 and m.employability.overall == round(m.suitability_score * 100, 1)
         assert "trained Phase 8 model" in m.employability.method
     assert data.notes[0].startswith("decision_tree: trained Phase 8 model")

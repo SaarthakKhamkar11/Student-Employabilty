@@ -25,7 +25,7 @@ function Tip({ active, payload, unit }: { active?: boolean; payload?: { payload:
 }
 
 /** One smooth area series (the reference style's main visual). Single series: no legend, the card title names it. */
-export function AreaSeries({ points, unit = "%", color = "#16a34a", domain }: { points: Point[]; unit?: string; color?: string; domain?: [number, number] }) {
+export function AreaSeries({ points, unit = "%", color = "#3d5a7a", domain }: { points: Point[]; unit?: string; color?: string; domain?: [number, number] }) {
   const id = `g${color.replace("#", "")}`;
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -50,7 +50,7 @@ export function AreaSeries({ points, unit = "%", color = "#16a34a", domain }: { 
 export function HBars({
   points,
   unit = "",
-  color = "#2a78d6",
+  color = "#3d5a7a",
   highlight,
   domain,
   digits = 3,

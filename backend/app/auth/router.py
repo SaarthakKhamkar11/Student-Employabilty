@@ -30,7 +30,7 @@ from .email_sender import EmailSendError, send_otp_email
 from .otp_store import OtpResult
 from .schemas import (LoginIn, OtpRequestIn, OtpRequestOut, OtpVerifyIn, SignupCompleteIn,
                       SignupTokenOut, TokenOut, UserOut)
-from .security import (PURPOSE_SIGNUP, burn_password_check, create_access_token,
+from .security import (PURPOSE_SIGNUP, create_access_token,
                        create_signup_token, decode_token, generate_otp, hash_otp, hash_password,
                        verify_password)
 
@@ -162,12 +162,13 @@ def login(body: LoginIn):
             "SELECT user_id, password_hash, role, is_active FROM users WHERE lower(email) = %s", (email,),
         ).fetchone()
     if user is None:
-        burn_password_check(body.password)
+        # Product decision (2026-10-15): tell a new user plainly that there is no account, so they sign up instead
+        # of retrying. This reveals whether an email is registered; the per-email lockout below still applies.
         otp_store.record_login_failure(email)
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Account not found. Try signing up instead.")
     if not verify_password(body.password, user["password_hash"]):
         otp_store.record_login_failure(email)
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Incorrect password. Please try again.")
     if not user["is_active"]:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="This account has been disabled")
     # Admins may sign in from either side of the toggle; students and companies only from their own.

@@ -132,7 +132,6 @@ export default function Signup() {
   return (
     <AuthLayout>
       <h2>Create your account</h2>
-      <div className="muted">We'll email you a code to verify the address.</div>
       <RoleToggle role={role} onChange={(r) => (setRole(r), setTouched(false), setError(null))} />
       {error && <ErrorBox error={error} />}
       <form onSubmit={requestOtp} noValidate>
@@ -158,7 +157,7 @@ export default function Signup() {
                 <input type="number" min={1990} max={2035} placeholder={String(THIS_YEAR + 1)} value={f.graduation_year} onChange={set("graduation_year")} />
               </Field>
             </div>
-            <Field label="Branch / major" error={show("branch")} hint="Used for matching: resumes rarely state it clearly">
+            <Field label="Branch / major" error={show("branch")}>
               <input placeholder="e.g. Computer Engineering" value={f.branch} onChange={set("branch")} />
             </Field>
           </>

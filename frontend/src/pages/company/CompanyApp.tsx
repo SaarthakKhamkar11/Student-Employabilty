@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import { Route, Routes, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Briefcase, ChevronDown, ChevronRight, LayoutDashboard, PlusCircle, Star, Target, UserCheck, Users } from "lucide-react";
 import { api } from "../../lib/api";
+import { useAuth } from "../../lib/auth";
 import { useApi } from "../../lib/useApi";
 import { fmtDate, isNum, pct } from "../../lib/format";
 import { data, type AiSummary, type MatchExplanation, type MatchingOutput, type MatchResult, type Run } from "../../lib/types";
 import { PageHead, Shell, type NavEntry } from "../../components/Shell";
-import { Card, ChartCard, EmptyState, ErrorBox, KpiCard, ListRow, Loading, ModelBadge, NotEvaluated, StatusTag, Val } from "../../components/ui";
+import { Card, ChartCard, EmptyState, ErrorBox, KpiCard, ListRow, Loading, NotEvaluated, StatusTag, Val } from "../../components/ui";
 import { ExplanationPanel, RunMeta, RunProblems, SkillGapView } from "../../components/matchViews";
 import { AreaSeries } from "../../components/charts";
 import { ConfirmJob, PostJob, type Posting } from "./JobEditor";
@@ -107,28 +108,27 @@ function JobsPage() {
 
 function JobDetail() {
   const { jobId } = useParams();
-  const job = useApi<{ posting: Posting; confirmed_at: string | null; embeddings: { model_name: string; model_version: string; section: string }[] }>(`/company/jobs/${jobId}`);
+  const job = useApi<{ posting: Posting; confirmed_at: string | null }>(`/company/jobs/${jobId}`);
   const navigate = useNavigate();
   if (job.loading) return <Loading />;
   if (job.error || !job.data) return <ErrorBox error={job.error ?? "Not found"} />;
-  const emb = job.data.embeddings.find((e) => e.model_name !== "tfidf_baseline");
   return (
     <>
-      <PageHead title={job.data.posting.job_title} sub={job.data.confirmed_at ? `Confirmed ${fmtDate(job.data.confirmed_at)}` : "Parsed, not confirmed yet"}
-        actions={emb && <ModelBadge versions={{ embedding_model: emb.model_name, embedding_version: emb.model_version }} />} />
+      <PageHead title={job.data.posting.job_title} sub={job.data.confirmed_at ? `Confirmed ${fmtDate(job.data.confirmed_at)}` : "Not confirmed yet"} />
       <ConfirmJob posting={job.data.posting} label={job.data.confirmed_at ? "Save corrections" : "Confirm job"} onConfirmed={() => navigate(`/company/candidates?job=${jobId}`)} />
     </>
   );
 }
 
 function PostPage() {
+  const { me } = useAuth();
   const [posting, setPosting] = useState<Posting | null>(null);
   const [hints, setHints] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   return (
     <>
-      <PageHead title="Post a job" sub="Fill in the form or upload a JD. You review the parsed result before anything is ranked." />
-      {posting ? <ConfirmJob posting={posting} hints={hints} onConfirmed={() => navigate(`/company/candidates?job=${posting.job_id}`)} /> : <PostJob onParsed={(p, h) => (setPosting(p), setHints(h))} />}
+      <PageHead title="Post a job" sub="Add your company name and the job description. You review the details we pick out before candidates are ranked." />
+      {posting ? <ConfirmJob posting={posting} hints={hints} onConfirmed={() => navigate(`/company/candidates?job=${posting.job_id}`)} /> : <PostJob defaultCompany={me?.company?.name ?? ""} onParsed={(p, h) => (setPosting(p), setHints(h))} />}
     </>
   );
 }
@@ -138,7 +138,7 @@ interface Filters { minScore: number; maxMissing: string; branch: string; degree
 
 function CandidateDetail({ jobId, studentId }: { jobId: string; studentId: string }) {
   const d = useApi<{ run: Run; ai_summary: AiSummary | null }>(`/company/jobs/${jobId}/candidates/${studentId}`);
-  if (d.loading) return <Card title="Match explanation"><Loading label="The agents are explaining this candidate…" /></Card>;
+  if (d.loading) return <Card title="Match explanation"><Loading label="Loading this candidate…" /></Card>;
   if (d.error || !d.data) return <ErrorBox error={d.error ?? "No data"} />;
   const expl = data<{ match_explanation: MatchExplanation | string }>(d.data.run, "explainability_agent")?.match_explanation;
   return <ExplanationPanel key={studentId} title={`Why ${studentId}?`} explanation={typeof expl === "object" ? expl : null} initialAi={d.data.ai_summary} askPath={`/company/jobs/${jobId}/candidates/${studentId}/ask-ai`} />;
@@ -200,7 +200,7 @@ function CandidatesPage() {
         </>} />
       {jobs.data && !confirmed.length && <EmptyState title="No confirmed job">Post a job and confirm its parsed structure to rank candidates.</EmptyState>}
       {cands.error && <ErrorBox error={cands.error} onRetry={cands.reload} />}
-      {cands.loading && !run && <Loading label="The Matching Agent is ranking candidates…" />}
+      {cands.loading && !run && <Loading label="Ranking candidates…" />}
       {notice && <div className={`alert ${notice.tone === "ok" ? "alert-ok" : "alert-error"}`}>{notice.text}</div>}
       {run && (
         <div className="stack">
@@ -221,7 +221,7 @@ function CandidatesPage() {
           </Card>
           <div className="grid split-main">
             <Card title="Ranked candidates" sub={out && typeof out.funnel === "object" ? `${String((out.funnel as Record<string, unknown>).eligible)} eligible of ${String((out.funnel as Record<string, unknown>).checked)} students · top ${all.length} returned` : undefined}
-              right={all[0] && <ModelBadge versions={all[0].model_versions} compact />}>
+>
               {list.length ? (
                 <div className="list">
                   {list.map((m) => {
@@ -274,7 +274,7 @@ function ShortlistPage() {
       <Card>
         {sl.loading ? <Loading /> : sl.error ? <ErrorBox error={sl.error} /> : sl.data?.length ? (
           <table className="data">
-            <thead><tr><th>Candidate</th><th>Job</th><th className="num">Rank when shortlisted</th><th className="num">Suitability then</th><th>Model then</th><th>Shortlisted</th><th>Event</th><th></th></tr></thead>
+            <thead><tr><th>Candidate</th><th>Job</th><th className="num">Rank when shortlisted</th><th className="num">Match then</th><th>Shortlisted</th><th>Event</th><th></th></tr></thead>
             <tbody>
               {sl.data.map((r) => (
                 <tr key={`${r.job_id}-${r.student_id}`}>
@@ -282,7 +282,6 @@ function ShortlistPage() {
                   <td>{r.job_title}<div className="tiny muted mono">{r.job_id}</div></td>
                   <td className="num"><Val v={r.payload.rank} /></td>
                   <td className="num"><Val v={r.payload.suitability_score} fmt={(v) => pct(v)} /></td>
-                  <td><ModelBadge versions={r.payload.model_versions as Record<string, unknown>} compact /></td>
                   <td className="small">{fmtDate(r.shortlisted_at)}</td>
                   <td className="mono">#{r.event_id}</td>
                   <td className="row" style={{ flexWrap: "nowrap" }}>

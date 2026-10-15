@@ -38,7 +38,7 @@ from pathlib import Path
 import yaml
 
 from app.matching.feature_builder import build_features
-from app.matching.skill_gap import SkillVectors, compare_skills
+from app.matching.skill_gap import SkillVectors, compare_skills, evidenced
 from app.matching.vectors import cosine
 from app.profile.skills import normalize_skills, skill_key
 
@@ -79,10 +79,14 @@ def from_raw_skills(raw: list[str]) -> tuple[str, ...]:
     return tuple(s.canonical for s in normalize_skills(raw))
 
 
-def split_skills(student_skills: tuple[str, ...], job_skills: tuple[tuple[str, str], ...]):
+def split_skills(student_skills: tuple[str, ...], job_skills: tuple[tuple[str, str], ...],
+                 terms: frozenset[str] | None = None):
+    """Matched = the same rule as the features (app/matching/skill_gap.compare_skills): the skill name, or every
+    word of the job skill stated in the profile text."""
     have = {skill_key(s) for s in student_skills}
-    matched = [n for n, _ in job_skills if skill_key(n) in have]
-    missing = [(n, r) for n, r in job_skills if skill_key(n) not in have]
+    ok = {n for n, _ in job_skills if skill_key(n) in have or evidenced(n, terms)}
+    matched = [n for n, _ in job_skills if n in ok]
+    missing = [(n, r) for n, r in job_skills if n not in ok]
     return matched, missing
 
 
@@ -116,7 +120,8 @@ def pipeline_rescorer(student, job, percentiles: dict[str, float | None], cfg, p
         vectors_by_variant = {}
         for key, skills in variants.items():
             variant = replace(student, skills=skills)
-            comparison = compare_skills(variant.skills, job.skills, vectors, related_threshold)
+            # a counterfactual skill is in the skill list only: the profile text (terms) stays as it is
+            comparison = compare_skills(variant.skills, job.skills, vectors, related_threshold, student.terms)
             vectors_by_variant[key] = build_features(variant, job, comparison, percentiles, cfg)
         return {k: p["suitability"] for k, p in predictor.predict_many(vectors_by_variant).items()}
 
@@ -138,7 +143,7 @@ def _ranked(gaps: list[dict]) -> list[dict]:
 def analyse(student, job, *, rescore: Rescorer, vectors: SkillVectors | None, thresholds: Thresholds | None,
             importance_model: str, similarity_model: str) -> dict:
     """The SkillGapReport for one pair (a dict; validate with app.schemas.agent_io.SkillGapReport)."""
-    matched, missing = split_skills(student.skills, job.skills)
+    matched, missing = split_skills(student.skills, job.skills, student.terms)
     names = [n for n, _ in missing]
     importance = counterfactual_importance(student.skills, names, rescore) if names else {}
     closest = closest_skills(names, student.skills, vectors if thresholds is not None else None)

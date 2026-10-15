@@ -1,0 +1,83 @@
+{
+ "experiment_id": "mms-20261015T123632Z-nolabels",
+ "created_at": "2026-10-15T12:39:39+00:00",
+ "feature_version": "features-v2",
+ "features": [
+  "skill_match_score",
+  "required_skill_match_score",
+  "preferred_skill_match_score",
+  "semantic_similarity",
+  "education_match",
+  "degree_match",
+  "branch_match",
+  "experience_match",
+  "experience_gap",
+  "project_relevance",
+  "certification_relevance",
+  "career_interest_alignment",
+  "transferable_skill_score",
+  "matched_skill_count",
+  "missing_skill_count",
+  "required_skill_count",
+  "matched_skill_ratio",
+  "preferred_skill_ratio",
+  "role_similarity",
+  "domain_similarity"
+ ],
+ "embedding_model": "e5_base_v2",
+ "embedding_version": "intfloat/e5-base-v2@f52bf8ec8c71",
+ "dataset_version": "students:636d394f399c jobs:42c7d78b48c1",
+ "feature_matrix": {
+  "file": "features-v2-intfloat_e5-base-v2@f52bf8ec8c71.csv.gz",
+  "sha256": "11b4624a6716fcc3702720f50c32ab58177078a52c01f6893433b8ad19c0fa52"
+ },
+ "training": {
+  "target": "relevance_label >= 2",
+  "label_source": "weakly_labelled",
+  "split": "train",
+  "seed": 42,
+  "class_balance": "balanced",
+  "threads": 1,
+  "decision_threshold": 0.5
+ },
+ "candidates_sha256": "8156f7634b685a39fc5c28037f33d950f4480e8c8b3d6527455e950520f01669",
+ "weak_labels_sha256": "085a07c100d380c5b8a23c8384d0af173b30ff43a6ce57ab65b4171908217937",
+ "models": {
+  "logistic_regression": {
+   "file": "logistic_regression.joblib",
+   "format": "joblib",
+   "sha256": "a13440424c1f35c8b279ae1155f4c1e9708c6a3071e1b16ef7cf89034cf3a096",
+   "size_bytes": 2320
+  },
+  "decision_tree": {
+   "file": "decision_tree.joblib",
+   "format": "joblib",
+   "sha256": "5c47923b037cda2a9e39b971262a827bdec361934daeb7d62779bbe0282f4b2f",
+   "size_bytes": 3565
+  },
+  "random_forest": {
+   "file": "random_forest.joblib",
+   "format": "joblib",
+   "sha256": "6aaaab4160fa2302271524e280a569f981b6eb15ed990b6c367bf93ec96cad3b",
+   "size_bytes": 2867227
+  },
+  "gradient_boosting": {
+   "file": "gradient_boosting.joblib",
+   "format": "joblib",
+   "sha256": "029abab71d491cf8a76b13c18157198da2db14a75678cdc353de66b1b86da0c8",
+   "size_bytes": 94740
+  },
+  "xgboost": {
+   "file": "xgboost.json",
+   "format": "xgboost-json",
+   "sha256": "20c8ff376e556218cf5345fc481a93bcc649dee87ee624caf75e22a023456ff8",
+   "size_bytes": 335605
+  },
+  "lightgbm": {
+   "file": "lightgbm.txt",
+   "format": "lightgbm-text",
+   "sha256": "d6006d57f6b016feb64a9cc3f7c608608c63f163f62c90d366f1cbe50640dc1c",
+   "size_bytes": 354541
+  }
+ }
+}

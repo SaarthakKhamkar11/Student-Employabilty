@@ -20,6 +20,7 @@ from app.core.config import Settings
 from app.core.logging import get_logger, log_event
 from app.db.job_repository import JobRepository
 from app.jobs import dedup
+from app.jobs.header_fields import extract_header_fields
 from app.jobs.requirements import (
     HEURISTIC_VERSION, INFERRED_NOTE, classify_requirements, parse_degree, parse_experience,
 )
@@ -83,6 +84,9 @@ class JobSections(_Model):
     qualification_text: str | None
     experience_text: str | None
     headers_found: list[str]
+    # labelled facts of a free-text JD (app/jobs/header_fields.py): job_title, role, company_name, location,
+    # work_type, salary_range
+    fields: dict[str, str] = {}
 
 
 class ParseJobOut(_Model):
@@ -231,7 +235,8 @@ def register_job_tools(registry: ToolRegistry, *, repo: JobRepository | None, se
             skills_text=_text(found.get("skills")), required_text=_text(found.get("required")),
             preferred_text=_text(found.get("preferred")),
             qualification_text=_text(found.get("education")) or _text(found.get("required")),
-            experience_text=_text(found.get("experience")) or _text(found.get("required")), headers_found=headers)}
+            experience_text=_text(found.get("experience")) or _text(found.get("required")), headers_found=headers,
+            fields=extract_header_fields(text or ""))}
 
     @registry.register("extract_job_skills", input_schema=ExtractJobSkillsIn, output_schema=ExtractJobSkillsOut)
     def tool_extract_job_skills(sections):
@@ -276,6 +281,7 @@ def register_job_tools(registry: ToolRegistry, *, repo: JobRepository | None, se
                                  record=None):
         """Assemble the structured JobPosting. Missing values become sentinels, never defaults."""
         record, s = record or {}, JobSections.model_validate(sections)
+        f = s.fields if not record else {}
 
         def field(name: str, fallback: str | None = None, extracted: bool = False) -> Any:
             """A stored row's blank is "Not detected". For free text, only extracted fields can be "Not
@@ -298,10 +304,13 @@ def register_job_tools(registry: ToolRegistry, *, repo: JobRepository | None, se
 
         posting = JobPosting(
             job_id=job_id, source=source,
-            job_title=field("job_title", s.title, extracted=True), role=field("role"),
-            company_name=field("company_name"),
-            location=field("location"), country=field("country"), work_type=field("work_type"),
-            salary_range=field("salary_range"), job_portal=field("job_portal"),
+            job_title=field("job_title", f.get("job_title") or s.title, extracted=True),
+            # a JD that names no role: its title is the role (role families are matched on both)
+            role=field("role", f.get("role") or f.get("job_title") or s.title, extracted=True),
+            company_name=field("company_name", f.get("company_name"), extracted=True),
+            location=field("location", f.get("location"), extracted=True), country=field("country"),
+            work_type=field("work_type", f.get("work_type"), extracted=True),
+            salary_range=field("salary_range", f.get("salary_range"), extracted=True), job_portal=field("job_portal"),
             job_description=s.description or NOT_DETECTED,
             qualification_required=field("qualification_required", s.qualification_text, extracted=True),
             experience_required=field("experience_required", s.experience_text, extracted=True),

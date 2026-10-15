@@ -224,7 +224,9 @@ class ProfileAgent(BaseAgent):
             return {"record": self._masked_record(ctx)}
         if stage == "extract_skills":
             masked = self._masked(ctx)
-            return {"text": masked["resume"] if "resume" in masked else record_skills_text(self._masked_record(ctx))}
+            if "resume" in masked:
+                return {"text": masked["resume"], "source": "resume"}
+            return {"text": record_skills_text(self._masked_record(ctx)), "source": "record"}
         if stage == "normalize_skills":
             extracted = self._out(ctx, "extract_skills")
             return {"skills": extracted.skills} if extracted is not None and extracted.skills else None

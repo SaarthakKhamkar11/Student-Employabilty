@@ -10,11 +10,12 @@ import { useApi } from "../../lib/useApi";
 import { dims, isNum, isSentinel, pct } from "../../lib/format";
 import { data, type AiSummary, type CohortBenchmark, type LearningOutput, type MatchExplanation, type MatchingOutput, type MatchResult, type Run } from "../../lib/types";
 import { PageHead, Shell, type NavEntry } from "../../components/Shell";
-import { Card, ChartCard, EmptyState, ErrorBox, KpiCard, ListRow, Loading, ModelBadge, NotEvaluated, ScoreBar, StatusTag, Val } from "../../components/ui";
-import { ExplanationPanel, LearningList, RunMeta, RunProblems, SkillGapView } from "../../components/matchViews";
+import { Card, ChartCard, EmptyState, ErrorBox, KpiCard, ListRow, Loading, NotEvaluated, ScoreBar, StatusTag, Val } from "../../components/ui";
+import { LearningList, MatchSummary, RunMeta, SkillGapView } from "../../components/matchViews";
+import { JobCardList, skillCounts, useJobDetails } from "../../components/jobCards";
 import { AreaSeries, HBars } from "../../components/charts";
 import { ConfirmProfile, ResumeUpload } from "./Onboarding";
-import { ProfileFacts, type StudentProfileData } from "./ProfileEditor";
+import { type StudentProfileData } from "./ProfileEditor";
 
 const NAV: NavEntry[] = [
   { to: "/student", label: "Overview", icon: <LayoutDashboard size={16} />, end: true },
@@ -54,14 +55,14 @@ function title(m: MatchResult) {
 }
 
 function missingRequired(m: MatchResult): number | null {
-  return typeof m.skill_gap === "object" && m.skill_gap ? m.skill_gap.missing_required.length : null;
+  return skillCounts(m)?.req ?? null;
 }
 
-/** Loading / error / "agents are running" states for the overview, shared by every page. */
+/** Loading / error states for the overview, shared by every page. */
 function WithOverview({ children }: { children: (o: Overview) => JSX.Element }) {
   const { overview } = useOverview();
   if (overview.loading && !overview.data)
-    return <Loading label="Loading your results. If nothing is stored yet, the agents run now (up to a minute or two)…" />;
+    return <Loading label="Loading your results (the first time can take a minute or two)…" />;
   if (overview.error) return <ErrorBox error={overview.error} onRetry={overview.reload} />;
   if (!overview.data) return null;
   return children(overview.data);
@@ -69,7 +70,6 @@ function WithOverview({ children }: { children: (o: Overview) => JSX.Element }) 
 
 // ------------------------------------------------------------------------------------------------- Overview
 function OverviewPage() {
-  const navigate = useNavigate();
   const { refresh, refreshing } = useOverview();
   const [chart, setChart] = useState<"jobs" | "dims">("jobs");
   return (
@@ -80,7 +80,6 @@ function OverviewPage() {
         const emp = top && typeof top.employability === "object" ? top.employability : null;
         const expl = data<{ match_explanation: MatchExplanation | string }>(o.run, "explainability_agent")?.match_explanation;
         const learning = data<LearningOutput>(o.run, "learning_agent");
-        const series = (key: string) => matches.map((m) => (typeof m.employability === "object" ? m.employability.dimensions[key] : null)).filter(isNum);
         return (
           <>
             <PageHead
@@ -88,66 +87,53 @@ function OverviewPage() {
               sub={top ? <>Your employability against your best-matching job, <b>{title(top)}</b>, and your ranked recommendations.</> : "Your employability and ranked job recommendations."}
               actions={<RunMeta run={o.run} onRefresh={refresh} refreshing={refreshing} />}
             />
-            <RunProblems run={o.run} agents={["profile_agent", "matching_agent", "learning_agent", "explainability_agent"]} />
             {!top ? (
-              <EmptyState title="No job recommendations">{typeof data<MatchingOutput>(o.run, "matching_agent")?.matches === "string" ? String(data<MatchingOutput>(o.run, "matching_agent")?.matches) : "The Matching Agent returned no eligible job."}</EmptyState>
+              <EmptyState title="No job recommendations yet">Try Refresh in a minute, or add more detail to your profile.</EmptyState>
             ) : (
               <div className="stack">
                 <div className="grid kpis">
-                  <KpiCard icon={<BarChart3 size={16} />} color="#0f4c51" label="Overall" value={<Val v={emp?.overall} fmt={(v) => `${v.toFixed(1)}`} />}
-                    foot={<>out of 100 · for {title(top)}</>} spark={matches.map((m) => (typeof m.employability === "object" && isNum(m.employability.overall) ? m.employability.overall : 0))} sparkKind="bars" />
+                  <KpiCard icon={<BarChart3 size={16} />} color="" label="Overall" value={<Val v={emp?.overall} fmt={(v) => `${v.toFixed(0)}`} />}
+                    foot={<>out of 100 · for {title(top)}</>} />
                   {DIMENSIONS.map((d) => (
-                    <KpiCard key={d.key} icon={d.icon} color={d.color} label={d.label} value={<Val v={emp?.dimensions[d.key]} fmt={(v) => v.toFixed(1)} />}
-                      foot="out of 100 · top match" spark={series(d.key)} />
+                    <KpiCard key={d.key} icon={d.icon} color="" label={d.label} value={<Val v={emp?.dimensions[d.key]} fmt={(v) => v.toFixed(0)} />}
+                      foot="out of 100" />
                   ))}
                 </div>
                 <div className="grid split-main">
+                  <Card title="Recommended jobs" sub="Your best matches first. Click a job for its details.">
+                    <JobCardList matches={matches} />
+                  </Card>
+                  <MatchSummary match={top} explanation={typeof expl === "object" ? expl : null} careerPaths={o.career_paths} title={`Why ${title(top)}?`} />
+                </div>
+                {emp && Object.entries(emp.dimensions).some(([, v]) => isSentinel(v)) && (
+                  <div className="alert alert-info">
+                    Not scored for this match yet:{" "}
+                    {Object.entries(emp.dimensions).filter(([, v]) => isSentinel(v)).map(([k]) => dims(k)).join(", ")}. Adding these to your profile gives a fuller picture.
+                  </div>
+                )}
+                <div className="grid split-main">
                   <ChartCard
-                    title={chart === "jobs" ? "Suitability of your top recommended jobs" : `Score breakdown for ${title(top)}`}
-                    sub={chart === "jobs" ? "Matching model's suitability score per job, in rank order" : "Employability dimensions, 0-100"}
+                    title={chart === "jobs" ? "How well your top jobs fit" : `Score breakdown for ${title(top)}`}
+                    sub={chart === "jobs" ? "Match per job, in rank order" : "Out of 100"}
                     right={
                       <select className="btn btn-sm" value={chart} onChange={(e) => setChart(e.target.value as "jobs" | "dims")}>
                         <option value="jobs">Top jobs</option>
                         <option value="dims">Score breakdown</option>
                       </select>
                     }
-                    height={300}
+                    height={280}
                   >
                     {chart === "jobs" ? (
                       <AreaSeries points={matches.filter((m) => isNum(m.suitability_score)).map((m) => ({ label: `#${m.rank}`, value: (m.suitability_score as number) * 100, hint: `${title(m)} · ${m.summary.role ?? ""}` }))} />
                     ) : (
-                      <HBars unit="" digits={1} domain={[0, 100]}
+                      <HBars unit="" digits={0} domain={[0, 100]}
                         points={Object.entries(emp?.dimensions ?? {}).filter(([, v]) => isNum(v)).map(([k, v]) => ({ label: dims(k), value: v as number }))} />
                     )}
                   </ChartCard>
-                  <ExplanationPanel explanation={typeof expl === "object" ? expl : null} askPath={`/student/match/${top.job_id}/ask-ai`} title={`Why ${title(top)}?`} />
-                </div>
-                {emp && Object.entries(emp.dimensions).some(([, v]) => isSentinel(v)) && (
-                  <div className="alert alert-info">
-                    Not scored for this match:{" "}
-                    {Object.entries(emp.dimensions).filter(([, v]) => isSentinel(v)).map(([k, v]) => `${dims(k)} (${v})`).join(", ")}.
-                  </div>
-                )}
-                <div className="grid split-main">
-                  <Card title="Recommended jobs" sub="Ranked by the matching model" right={<ModelBadge versions={top.model_versions} compact />}>
-                    <div className="list">
-                      {matches.map((m) => {
-                        const miss = missingRequired(m);
-                        return (
-                          <ListRow key={m.job_id} thumb={`#${m.rank}`} thumbColor="#0f4c51" title={title(m)}
-                            meta={<><span>{m.summary.role}</span>{m.summary.country && <span>{m.summary.country}</span>}<span className="mono">{m.job_id}</span></>}
-                            tag={miss === null ? <NotEvaluated label="gaps: not evaluated" /> : miss ? <StatusTag tone="bad">{miss} required skill{miss > 1 ? "s" : ""} missing</StatusTag> : <StatusTag tone="good">all required skills</StatusTag>}
-                            score={<Val v={m.suitability_score} fmt={(v) => pct(v)} />}
-                            action={<button className="btn btn-primary btn-sm" onClick={() => navigate(`/student/jobs/${m.job_id}`)}>View match</button>} />
-                        );
-                      })}
-                    </div>
-                  </Card>
-                  <Card title="Learning for your top match" sub={`Phase 10 resources for ${title(top)}'s missing skills`}>
+                  <Card title="What to learn next" sub={`For ${title(top)}`}>
                     <LearningList output={learning} compact />
                   </Card>
                 </div>
-                <FunnelNote run={o.run} />
               </div>
             )}
           </>
@@ -157,28 +143,8 @@ function OverviewPage() {
   );
 }
 
-function FunnelNote({ run }: { run: Run }) {
-  const m = data<MatchingOutput>(run, "matching_agent");
-  if (!m || typeof m.funnel !== "object" || !m.funnel) return null;
-  const f = m.funnel as Record<string, unknown>;
-  return (
-    <Card title="How these were chosen" sub="The Matching Agent's funnel for this run">
-      <div className="row small" style={{ gap: 16 }}>
-        <span>Checked <b>{String(f.checked)}</b> postings</span>
-        <span>Excluded by hard rules: {Object.entries((f.excluded as Record<string, number>) ?? {}).filter(([, n]) => n).map(([k, n]) => `${dims(k)} ${n}`).join(", ") || "none"}</span>
-        <span>Eligible <b>{String(f.eligible)}</b></span>
-        <span>Retrieved <b>{String(f.retrieved)}</b></span>
-        <span>Same role collapsed {String(f.collapsed_same_role)}</span>
-        <span>Returned <b>{String(f.returned)}</b></span>
-      </div>
-      <div className="tiny muted" style={{ marginTop: 8 }}>{String(f.location_rule)}. {m.notes.join(" ")}</div>
-    </Card>
-  );
-}
-
 // ------------------------------------------------------------------------------------------------- Jobs & match
 function JobsPage() {
-  const navigate = useNavigate();
   const [q, setQ] = useState("");
   return (
     <WithOverview>
@@ -186,32 +152,10 @@ function JobsPage() {
         const matches = matchesOf(o.run).filter((m) => `${title(m)} ${m.summary.role}`.toLowerCase().includes(q.toLowerCase()));
         return (
           <>
-            <PageHead title="Jobs" sub="Your ranked recommendations. Open one to see its skill gaps, learning and explanation." actions={<RunMeta run={o.run} />} />
+            <PageHead title="Jobs" sub="Your ranked recommendations. Click a job for its details, then View match for the full comparison." />
             <Card title="Recommendations" right={<input className="btn btn-sm" placeholder="Filter by title or role" value={q} onChange={(e) => setQ(e.target.value)} style={{ cursor: "text" }} />}>
               {matches.length ? (
-                <div className="table-wrap">
-                  <table className="data">
-                    <thead>
-                      <tr>
-                        <th>Rank</th><th>Job</th><th>Role</th><th className="num">Suitability</th><th className="num">Overall</th><th className="num">Semantic similarity (pct.)</th><th>Required skills</th><th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {matches.map((m) => (
-                        <tr key={m.job_id}>
-                          <td>#{m.rank}</td>
-                          <td><b>{title(m)}</b><div className="tiny muted mono">{m.job_id}</div></td>
-                          <td>{m.summary.role ?? <NotEvaluated label="Not detected" />}</td>
-                          <td className="num"><Val v={m.suitability_score} fmt={(v) => pct(v)} /></td>
-                          <td className="num"><Val v={typeof m.employability === "object" ? m.employability.overall : m.employability} fmt={(v) => v.toFixed(1)} /></td>
-                          <td className="num"><Val v={m.semantic_similarity} fmt={(v) => `${(v * 100).toFixed(0)}th`} /></td>
-                          <td>{missingRequired(m) === null ? <NotEvaluated /> : `${missingRequired(m)} missing`}</td>
-                          <td><button className="btn btn-primary btn-sm" onClick={() => navigate(`/student/jobs/${m.job_id}`)}>View match</button></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <JobCardList matches={matches} />
               ) : (
                 <EmptyState title="No jobs to show" />
               )}
@@ -225,6 +169,7 @@ function JobsPage() {
 
 function MatchPage() {
   const { jobId } = useParams();
+  const { overview } = useOverview();
   const [refreshTick, setRefreshTick] = useState(0);
   const match = useApi<{ run: Run; ai_summary: AiSummary | null }>(jobId ? `/student/match/${jobId}${refreshTick ? `?refresh=true&t=${refreshTick}` : ""}` : null);
   const learning = useApi<{ run: Run }>(jobId ? `/student/learning/${jobId}` : null);
@@ -233,36 +178,39 @@ function MatchPage() {
   const matching = data<MatchingOutput>(run, "matching_agent");
   const expl = data<{ match_explanation: MatchExplanation | string }>(run, "explainability_agent")?.match_explanation;
   const emp = m && typeof m.employability === "object" ? m.employability : null;
+  const details = useJobDetails(m ? [m] : []);
+  const d = jobId ? details.data?.[jobId] : undefined;
+  const counts = m ? skillCounts(m) : null;
   return (
     <>
-      <PageHead title={m ? title(m) : "Match"} sub={m ? <>{m.summary.role} · <span className="mono">{jobId}</span></> : <span className="mono">{jobId}</span>}
+      <PageHead title={d?.job_title ?? (m ? title(m) : "Match")}
+        sub={d ? [d.company_name ?? "Company not stated", d.location, d.salary, d.work_type].filter(Boolean).join(" · ") : m?.summary.role ?? undefined}
         actions={<RunMeta run={run ?? null} onRefresh={() => setRefreshTick((t) => t + 1)} refreshing={match.loading} />} />
       {match.error && <ErrorBox error={match.error} onRetry={match.reload} />}
-      {match.loading && !run && <Loading label="The agents are scoring and explaining this match…" />}
+      {match.loading && !run && <Loading label="Loading this match…" />}
       {run && (
         <div className="stack">
-          <RunProblems run={run} agents={["matching_agent", "explainability_agent"]} />
           {matching?.pair_check && !matching.pair_check.eligible && (
-            <div className="alert alert-warn">This job would normally be filtered out: {matching.pair_check.failed_rules.join(", ")}. It is scored here because you asked for it.</div>
+            <div className="alert alert-warn">This job is outside your usual matches ({matching.pair_check.failed_rules.map(dims).join(", ").toLowerCase()}), but here is how you compare.</div>
           )}
           {!m ? (
-            <EmptyState title="This job could not be scored">{typeof matching?.matches === "string" ? matching.matches : "Insufficient evidence"}</EmptyState>
+            <EmptyState title="This job could not be scored">Try Refresh in a minute.</EmptyState>
           ) : (
             <>
               <div className="grid kpis">
-                <KpiCard icon={<Target size={16} />} color="#16a34a" label="Suitability" value={<Val v={m.suitability_score} fmt={(v) => pct(v)} />} foot="matching model score (a ranking score, not a probability)" />
-                <KpiCard icon={<BarChart3 size={16} />} color="#0f4c51" label="Overall employability" value={<Val v={emp?.overall} fmt={(v) => v.toFixed(1)} />} foot="out of 100 for this job" />
-                <KpiCard icon={<Compass size={16} />} color="#2a78d6" label="Semantic similarity" value={<Val v={m.semantic_similarity} fmt={(v) => `${(v * 100).toFixed(0)}th pct.`} />} foot="percentile among all student-job pairs" />
+                <KpiCard icon={<Target size={16} />} color="" label="Match" value={<Val v={m.suitability_score} fmt={(v) => pct(v, 0)} />} foot="how well this job fits your profile" />
+                <KpiCard icon={<BarChart3 size={16} />} color="" label="Overall employability" value={<Val v={emp?.overall} fmt={(v) => v.toFixed(0)} />} foot="out of 100 for this job" />
+                <KpiCard icon={<Puzzle size={16} />} color="" label="Required skills to develop" value={counts ? counts.req : "—"} foot={counts ? `${counts.have} of the job's ${counts.total} listed skills already in your profile` : undefined} />
               </div>
               <div className="grid split-main">
                 <div className="stack">
-                  <Card title="Score breakdown" sub={emp?.method}>
+                  <Card title="Score breakdown" sub="Out of 100">
                     {emp ? (
                       <div className="stack" style={{ gap: 8 }}>
                         {Object.entries(emp.dimensions).map(([k, v]) => (
                           <div className="row" key={k} style={{ flexWrap: "nowrap" }}>
                             <span style={{ width: 210 }} className="small">{dims(k)}</span>
-                            {isNum(v) ? <><ScoreBar value={v} /><b className="small" style={{ width: 44, textAlign: "right" }}>{v.toFixed(1)}</b></> : <NotEvaluated label={String(v)} />}
+                            {isNum(v) ? <><ScoreBar value={v} /><b className="small" style={{ width: 44, textAlign: "right" }}>{v.toFixed(0)}</b></> : <NotEvaluated label={String(v)} />}
                           </div>
                         ))}
                       </div>
@@ -270,27 +218,23 @@ function MatchPage() {
                       <NotEvaluated label={String(m.employability)} />
                     )}
                   </Card>
-                  <Card title="Skill gaps" sub="Phase 9 skill-gap report for this job">
+                  <Card title="Skills for this job">
                     <SkillGapView report={m.skill_gap} />
                   </Card>
                 </div>
-                <ExplanationPanel key={run.request_id} explanation={typeof expl === "object" ? expl : null} initialAi={match.data?.ai_summary} askPath={`/student/match/${jobId}/ask-ai`} />
+                <MatchSummary key={run.request_id} match={m} explanation={typeof expl === "object" ? expl : null} careerPaths={overview.data?.career_paths} />
               </div>
-              <Card title="What to learn for this job" sub="Learning Agent (Phase 10)" right={<RunMeta run={learning.data?.run ?? null} />}>
-                {learning.loading && <Loading label="The Learning Agent is ranking resources (this can take a minute on CPU)…" />}
+              <Card title="What to learn for this job">
+                {learning.loading && <Loading label="Finding courses (this can take a minute the first time)…" />}
                 {learning.error && <ErrorBox error={learning.error} onRetry={learning.reload} />}
                 {learning.data && (
-                  <>
-                    <RunProblems run={learning.data.run} agents={["learning_agent"]} />
-                    {learning.data.run.agents.learning_agent?.status === "skipped" ? (
-                      <EmptyState title="Nothing to learn for this job">{learning.data.run.agents.learning_agent.skip_reason}</EmptyState>
-                    ) : (
-                      <LearningList output={data<LearningOutput>(learning.data.run, "learning_agent")} />
-                    )}
-                  </>
+                  learning.data.run.agents.learning_agent?.status === "skipped" ? (
+                    <EmptyState title="Nothing to learn for this job">Your profile already covers its listed skills.</EmptyState>
+                  ) : (
+                    <LearningList output={data<LearningOutput>(learning.data.run, "learning_agent")} />
+                  )
                 )}
               </Card>
-              <Card title="Model and version information"><ModelBadge versions={m.model_versions} /> <span className="tiny muted">feature {m.model_versions.feature_version} · dataset {m.model_versions.dataset_version} · experiment {m.model_versions.experiment_id}</span></Card>
             </>
           )}
         </div>
@@ -322,10 +266,10 @@ function SkillGapsPage() {
             <PageHead title="Skill gaps" sub="What each recommended job asks for that was not detected in your profile." actions={sel && <JobPicker matches={matches} value={sel.job_id} onChange={setJob} />} />
             {sel ? (
               <div className="grid split-main">
-                <Card title={title(sel)} sub={`Rank #${sel.rank} · suitability ${isNum(sel.suitability_score) ? pct(sel.suitability_score) : sel.suitability_score}`}>
+                <Card title={title(sel)} sub={`Rank #${sel.rank}${isNum(sel.suitability_score) ? ` · ${pct(sel.suitability_score, 0)} match` : ""}`}>
                   <SkillGapView report={sel.skill_gap} />
                 </Card>
-                <Card title="Across your top jobs" sub="Required skills not detected, per job">
+                <Card title="Across your top jobs" sub="Required skills to develop, per job">
                   <div style={{ height: Math.max(180, matches.length * 30) }}>
                     <HBars digits={0} highlight={`#${sel.rank} ${title(sel)}`} points={matches.filter((m) => missingRequired(m) !== null).map((m) => ({ label: `#${m.rank} ${title(m)}`, value: missingRequired(m)! }))} />
                   </div>
@@ -351,18 +295,18 @@ function LearningPage() {
   const other = useApi<{ run: Run }>(sel && !fromOverview ? `/student/learning/${sel.job_id}` : null);
   return (
     <WithOverview>
-      {(o) => (
+      {() => (
         <>
-          <PageHead title="Learning" sub="Courses and videos for your missing skills, from the curated catalogue and the YouTube Data API." actions={sel && <JobPicker matches={matches} value={sel.job_id} onChange={setJob} />} />
-          <Card title={sel ? `For ${title(sel)}` : "Learning"} right={<RunMeta run={fromOverview ? o.run : other.data?.run ?? null} />}>
+          <PageHead title="Learning" sub="Courses for the skills each job asks for." actions={sel && <JobPicker matches={matches} value={sel.job_id} onChange={setJob} />} />
+          <Card title={sel ? `For ${title(sel)}` : "Learning"}>
             {fromOverview ? (
               <LearningList output={fromOverview} />
             ) : other.loading ? (
-              <Loading label="The Learning Agent is ranking resources (this can take a minute on CPU)…" />
+              <Loading label="Finding courses (this can take a minute the first time)…" />
             ) : other.error ? (
               <ErrorBox error={other.error} onRetry={other.reload} />
             ) : other.data?.run.agents.learning_agent?.status === "skipped" ? (
-              <EmptyState title="Nothing to learn for this job">{other.data.run.agents.learning_agent.skip_reason}</EmptyState>
+              <EmptyState title="Nothing to learn for this job">Your profile already covers its listed skills.</EmptyState>
             ) : (
               <LearningList output={data<LearningOutput>(other.data?.run, "learning_agent")} />
             )}
@@ -378,29 +322,20 @@ function CareerPage() {
   return (
     <WithOverview>
       {(o) => {
-        const top = matchesOf(o.run)[0];
-        const align = top && typeof top.employability === "object" ? top.employability.dimensions.career_interest_alignment : undefined;
         return (
           <>
             <PageHead title="Career" sub="Career directions your ranked matches point to." />
-            <div className="alert alert-info">
-              There is no separate career model in this system yet. These directions are your ranked job matches grouped by role (an aggregation of
-              the Matching Agent's output), so they change when your profile or the job pool changes.
-            </div>
             {o.career_paths.length ? (
               <div className="grid split-main">
-                <ChartCard title="Mean suitability by role" sub="Across your recommended jobs in each role" height={Math.max(220, o.career_paths.length * 34)}>
+                <ChartCard title="Fit by role" sub="Average match across your recommended jobs in each role" height={Math.max(220, o.career_paths.length * 34)}>
                   <HBars unit="%" digits={1} points={o.career_paths.map((c) => ({ label: c.role, value: c.mean_suitability * 100, hint: `${c.jobs} job(s), best rank #${c.best_rank}` }))} />
                 </ChartCard>
                 <Card title="Directions">
                   <div className="list">
                     {o.career_paths.map((c) => (
-                      <ListRow key={c.role} thumb={`#${c.best_rank}`} thumbColor="#2a78d6" title={c.role} meta={<><span>{c.jobs} matching job(s)</span><span>e.g. {c.example_titles.join(", ")}</span></>} score={pct(c.mean_suitability)} />
+                      <ListRow key={c.role} thumb={`#${c.best_rank}`} thumbColor="" title={c.role} meta={<><span>{c.jobs} matching job{c.jobs > 1 ? "s" : ""}</span><span>e.g. {c.example_titles.join(", ")}</span></>} score={pct(c.mean_suitability, 0)} />
                     ))}
                   </div>
-                  <div className="insight-section">Career-interest alignment (top match)</div>
-                  <Val v={align} fmt={(v) => `${v.toFixed(1)} / 100`} />
-                  {isSentinel(align) && <div className="tiny muted" style={{ marginTop: 4 }}>Add your career interests in Profile to let the model score this.</div>}
                 </Card>
               </div>
             ) : (
@@ -421,20 +356,20 @@ function BenchmarkView({ b }: { b: CohortBenchmark }) {
   return (
     <div className="stack">
       <div className="grid kpis">
-        <KpiCard icon={<Users size={16} />} color="#2a78d6" label="Comparable peers" value={b.comparable_size} foot={`most similar of ${b.cohort_size} in the cohort`} />
-        <KpiCard icon={<Target size={16} />} color="#16a34a" label="Your percentile" value={s ? `${s.percentile.toFixed(0)}th` : <Val v={b.suitability} />} foot={s ? `suitability for ${s.job_title ?? s.job_id}` : undefined} />
-        <KpiCard icon={<Puzzle size={16} />} color="#6250d6" label="Common-skill coverage" value={cov ? <Val v={cov.coverage} fmt={(v) => pct(v, 0)} /> : <Val v={b.skill_coverage} />} foot="of the skills most peers hold" />
-        <KpiCard icon={<BarChart3 size={16} />} color="#eb6834" label="Fewer gaps than" value={gap ? `${gap.fewer_missing_than_percentile.toFixed(0)}%` : <Val v={b.relative_skill_gap} />} foot="of peers, for this job" />
+        <KpiCard icon={<Users size={16} />} color="" label="Comparable peers" value={b.comparable_size} foot={`most similar of ${b.cohort_size} students like you`} />
+        <KpiCard icon={<Target size={16} />} color="" label="Your percentile" value={s ? `${s.percentile.toFixed(0)}th` : <Val v={b.suitability} />} foot={s ? `for ${s.job_title ?? "this job"}` : undefined} />
+        <KpiCard icon={<Puzzle size={16} />} color="" label="Common-skill coverage" value={cov ? <Val v={cov.coverage} fmt={(v) => pct(v, 0)} /> : <Val v={b.skill_coverage} />} foot="of the skills most peers have" />
+        <KpiCard icon={<BarChart3 size={16} />} color="" label="Fewer gaps than" value={gap ? `${gap.fewer_missing_than_percentile.toFixed(0)}%` : <Val v={b.relative_skill_gap} />} foot="of peers, for this job" />
       </div>
       <div className="grid two">
-        <ChartCard title="Suitability: you vs. comparable peers" sub={s ? `${s.peers_scored} peers scored, ${s.peers_unscored} not comparable` : undefined} height={190}>
+        <ChartCard title="Match: you vs. comparable peers" sub="For the selected job, out of 100" height={190}>
           {s ? (
-            <HBars unit="" digits={4} highlight="You" color="#16a34a" points={[{ label: "You", value: s.student_score }, { label: "Cohort average", value: s.cohort_average }, { label: "Cohort median", value: s.cohort_median }]} />
+            <HBars unit="" digits={0} highlight="You" points={[{ label: "You", value: s.student_score * 100 }, { label: "Peer average", value: s.cohort_average * 100 }, { label: "Peer median", value: s.cohort_median * 100 }]} />
           ) : (
             <EmptyState title="Not available"><Val v={b.suitability} /></EmptyState>
           )}
         </ChartCard>
-        <Card title="Skills compared with peers" sub="Shares of comparable peers, never individual records">
+        <Card title="Skills compared with peers" sub="Share of comparable peers; no individual is ever shown">
           {gap ? (
             <div className="stack" style={{ gap: 10 }}>
               {([["Distinctive gaps (most peers have them)", gap.distinctive_gaps, "bad"], ["Shared gaps (most peers lack them too)", gap.shared_gaps, "neutral"], ["Your advantages", gap.advantages, "good"]] as const).map(([h, list, tone]) => (
@@ -449,20 +384,16 @@ function BenchmarkView({ b }: { b: CohortBenchmark }) {
           )}
         </Card>
       </div>
-      <Card title="How the cohort was formed">
+      <Card title="Who you are compared with">
         <table className="data">
-          <thead><tr><th>Filter</th><th>Your value</th><th>Applied</th><th>Note</th></tr></thead>
+          <thead><tr><th>Filter</th><th>Your value</th><th>Used</th></tr></thead>
           <tbody>
             {b.filters.map((f, i) => (
-              <tr key={i}><td>{f.name === "[REDACTED]" ? <span title="The stored copy of this run had this key scrubbed by the storage PII filter (it redacts any key called 'name')"><NotEvaluated label="name redacted in stored run" /></span> : dims(f.name)}</td><td>{f.value ?? <NotEvaluated label="Not detected" />}</td><td>{f.applied ? <StatusTag tone="good">yes</StatusTag> : <StatusTag tone="neutral">no</StatusTag>}</td><td className="small">{f.note}</td></tr>
+              // filter names can arrive redacted from storage; their order is fixed: branch, graduation year, target role
+              <tr key={i}><td>{["Branch", "Graduation year", "Target role"][i] ?? dims(f.name)}</td><td>{f.value ?? <NotEvaluated label="Not stated" />}</td><td>{f.applied ? <StatusTag tone="good">yes</StatusTag> : <StatusTag tone="neutral">{f.note.startsWith("dropped") ? "widened to find enough peers" : "no"}</StatusTag>}</td></tr>
             ))}
           </tbody>
         </table>
-        <div className="tiny muted" style={{ marginTop: 8 }}>
-          {b.relaxed.length ? `Relaxed because the cohort was too small: ${b.relaxed.join(", ")}. ` : ""}
-          Privacy: {Object.entries(b.privacy).map(([k, v]) => `${dims(k)}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`).join(" · ")}. {b.notes.join(" ")}
-        </div>
-        <div style={{ marginTop: 8 }}><ModelBadge versions={typeof b.model_versions === "object" ? b.model_versions : null} /> <span className="tiny muted">method {b.method_version}</span></div>
       </Card>
     </div>
   );
@@ -481,7 +412,7 @@ function BenchmarkPage() {
       {() => (
         <>
           <PageHead title="Benchmark" sub="How you compare with similar students: aggregates only, no other student is ever shown." actions={matches.length > 0 && <JobPicker matches={matches} value={job || matches[0]!.job_id} onChange={setJob} />} />
-          {pick && other.loading ? <Loading label="Cohort analytics running…" /> : pick && other.error ? <ErrorBox error={other.error} /> : b && typeof b === "object" ? <BenchmarkView b={b} /> : <EmptyState title="Cohort benchmark not available">{typeof b === "string" ? b : "Insufficient evidence"}</EmptyState>}
+          {pick && other.loading ? <Loading label="Comparing you with similar students…" /> : pick && other.error ? <ErrorBox error={other.error} /> : b && typeof b === "object" ? <BenchmarkView b={b} /> : <EmptyState title="Benchmark not available yet">Try Refresh on the Overview page.</EmptyState>}
         </>
       )}
     </WithOverview>
@@ -489,48 +420,65 @@ function BenchmarkPage() {
 }
 
 // ------------------------------------------------------------------------------------------------- Profile & resume
+/** "Title: description" entries (projects, experience) as a bold title over the description. */
+function Entry({ text, split }: { text: string; split: boolean }) {
+  const at = split ? text.indexOf(": ") : -1;
+  if (at > 0 && at < 140) {
+    return <div className="entry"><b>{text.slice(0, at)}</b><p>{text.slice(at + 2)}</p></div>;
+  }
+  return <div className="entry">{text}</div>;
+}
+
 function ProfilePage() {
-  const prof = useApi<{ profile: StudentProfileData; stated_at_signup: Record<string, unknown>; confirmed_at: string | null; embeddings: { model_name: string; model_version: string; section: string; dimension: number }[] }>("/student/profile");
+  const prof = useApi<{ profile: StudentProfileData; stated_at_signup: Record<string, unknown>; confirmed_at: string | null; needs_reupload: boolean }>("/student/profile");
   const [editing, setEditing] = useState(false);
   const { refresh } = useOverview();
+  const navigate = useNavigate();
   if (prof.loading) return <Loading />;
   if (prof.error || !prof.data) return <ErrorBox error={prof.error ?? "No profile"} />;
   const p = prof.data.profile;
-  const models = Array.from(new Set(prof.data.embeddings.map((e) => `${e.model_name}|${e.model_version}|${e.dimension}`)));
+  const signup = prof.data.stated_at_signup;
+  // one value per fact: what you confirmed in your profile, else what you gave at sign-up
+  const fact = (k: string) => {
+    const v = (p as unknown as Record<string, unknown>)[k];
+    return isNum(v) || (typeof v === "string" && v.trim() && !isSentinel(v)) ? v : signup[k];
+  };
+  const facts: [string, unknown][] = [
+    ["College", signup.college], ["Degree", fact("degree")], ["Branch", fact("branch")],
+    ["Graduation year", fact("graduation_year")], ["Domain", fact("domain")], ["Career interests", fact("career_interests")],
+  ];
   return (
     <>
-      <PageHead title="Profile" sub={prof.data.confirmed_at ? `Confirmed by you · ${new Date(prof.data.confirmed_at).toLocaleString()}` : "Not confirmed yet"} actions={<button className="btn btn-primary" onClick={() => setEditing(!editing)}>{editing ? "Cancel" : "Correct my profile"}</button>} />
-      {editing ? (
-        <ConfirmProfile profile={p} onConfirmed={() => (setEditing(false), prof.reload(), refresh())} confirmLabel="Save corrections" />
-      ) : (
-        <div className="grid split-main">
-          <Card title="Structured profile">
-            <div className="stack" style={{ gap: 12 }}>
-              <div className="kv">
-                {(["degree", "branch", "graduation_year", "domain", "career_interests", "achievements"] as const).map((k) => (
-                  <div key={k} style={{ display: "contents" }}><dt>{dims(k)}</dt><dd><Val v={p[k]} /></dd></div>
-                ))}
-              </div>
-              <div>
-                <div className="insight-section">Skills</div>
-                {Array.isArray(p.skills) ? <div className="chips">{p.skills.map((s) => <span className="chip" key={s.canonical} title={`${s.raw} · ${s.method}${s.evidence ? ` · ${s.evidence}` : ""}`}>{s.canonical}</span>)}</div> : <NotEvaluated label={p.skills} />}
-              </div>
-              {(["projects", "experience", "certifications"] as const).map((k) => (
-                <div key={k}>
-                  <div className="insight-section">{dims(k)}</div>
-                  {Array.isArray(p[k]) ? <ul style={{ margin: 0, paddingLeft: 18 }}>{(p[k] as string[]).map((x, i) => <li key={i}>{x}</li>)}</ul> : <NotEvaluated label={String(p[k])} />}
-                </div>
-              ))}
-            </div>
-          </Card>
-          <div className="stack">
-            <Card title="Parser details"><ProfileFacts profile={p} /></Card>
-            <Card title="Stated at signup"><dl className="kv">{Object.entries(prof.data.stated_at_signup).map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt>{dims(k)}</dt><dd><Val v={v} missing="Not stated" /></dd></div>)}</dl></Card>
-            <Card title="Embeddings stored">
-              {models.length ? models.map((m) => { const [n, v, d] = m.split("|"); return <div key={m} className="small" style={{ marginBottom: 6 }}><ModelBadge versions={{ embedding_model: n!, embedding_version: v! }} /> <span className="muted">{d} dims · {prof.data!.embeddings.filter((e) => e.model_name === n).map((e) => e.section).join(", ")}</span></div>; }) : <NotEvaluated />}
-            </Card>
-          </div>
+      <PageHead title="Profile" sub={prof.data.confirmed_at ? `Last confirmed ${new Date(prof.data.confirmed_at).toLocaleDateString()}` : "Not confirmed yet"}
+        actions={<button className="btn btn-primary" onClick={() => setEditing(!editing)}>{editing ? "Cancel" : "Edit profile"}</button>} />
+      {prof.data.needs_reupload && !editing && (
+        <div className="alert alert-warn" style={{ alignItems: "center" }}>
+          <span style={{ flex: 1 }}>Your resume was read with an older version of the reader, so some text may run together. Upload it again to fix this.</span>
+          <button className="btn btn-sm" onClick={() => navigate("/student/resume")}>Upload resume</button>
         </div>
+      )}
+      {editing ? (
+        <ConfirmProfile profile={p} onConfirmed={() => (setEditing(false), prof.reload(), refresh())} confirmLabel="Save changes" />
+      ) : (
+        <Card>
+          <div className="stack" style={{ gap: 16 }}>
+            <dl className="kv">
+              {facts.map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt>{k}</dt><dd><Val v={v} missing="Not stated" /></dd></div>)}
+            </dl>
+            <div>
+              <div className="insight-section">Skills</div>
+              {Array.isArray(p.skills) && p.skills.length ? <div className="chips">{p.skills.map((s) => <span className="chip" key={s.canonical}>{s.canonical}</span>)}</div> : <span className="small muted">None added</span>}
+            </div>
+            {(["projects", "experience", "certifications"] as const).map((k) => (
+              <div key={k}>
+                <div className="insight-section">{dims(k)}</div>
+                {Array.isArray(p[k]) && (p[k] as string[]).length
+                  ? (p[k] as string[]).map((x, i) => <Entry key={i} text={x} split={k !== "certifications"} />)
+                  : <span className="small muted">None added</span>}
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
     </>
   );
@@ -567,14 +515,13 @@ export default function StudentApp() {
       setRefreshing(false);
     }
   };
-  const top = matchesOf(overview.data?.run)[0];
   if (me && !me.onboarding.profile_confirmed_at) {
     window.location.replace("/student/onboarding");
     return null;
   }
   return (
     <Ctx.Provider value={{ overview, refresh, refreshing }}>
-      <Shell nav={NAV} searchPlaceholder="Search jobs on the Jobs page…" topRight={top ? <ModelBadge versions={top.model_versions} compact /> : undefined}>
+      <Shell nav={NAV} searchPlaceholder="Search jobs on the Jobs page…">
         <Routes>
           <Route index element={<OverviewPage />} />
           <Route path="profile" element={<ProfilePage />} />

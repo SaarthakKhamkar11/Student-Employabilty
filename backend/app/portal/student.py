@@ -23,6 +23,7 @@ from app.portal.corrections import ProfileCorrection, correct_profile
 from app.portal.service import Portal, agent_data
 from app.profile.text_extraction import MAX_FILE_BYTES
 from app.schemas.agent_io import SupervisorInput
+from app.tools.profile_tools import EXTRACTOR_VERSION
 
 router = APIRouter(prefix="/student", tags=["student dashboard"])
 _portal: Portal | None = None
@@ -69,6 +70,9 @@ def get_profile(user: dict = Student):
     return {
         "student_id": sid, "profile": row["profile"], "stated_at_signup": {**stated, **(row["details"] or {})},
         "extractor_version": row["profile_extractor_version"],
+        # a resume read by the v1 extractor lost its PDF word gaps: the student is asked to upload it again
+        "needs_reupload": bool(row["profile"]) and "resume" in str((row["profile"] or {}).get("source", ""))
+                          and row["profile_extractor_version"] != EXTRACTOR_VERSION,
         "profile_updated_at": row["profile_updated_at"].isoformat() if row["profile_updated_at"] else None,
         "confirmed_at": row["profile_confirmed_at"].isoformat() if row["profile_confirmed_at"] else None,
         "embeddings": [{**e, "created_at": e["created_at"].isoformat()} for e in embeddings],
@@ -141,6 +145,62 @@ async def overview(refresh: bool = False, user: dict = Student):
                                 also_accept=("ingest_student_profile",), user_id=user["user_id"])
     matches = agent_data(run, "matching_agent", "matches")
     return {"run": run, "career_paths": _career_paths(matches) if isinstance(matches, list) else []}
+
+
+_SENTINEL_VALUES = ("Not detected", "Not yet evaluated", "Skill not detected", "Insufficient evidence")
+
+
+def _unmangle(text: str) -> str:
+    """Repair UTF-8 that was decoded as Latin-1 somewhere upstream of the job dataset ("AsunciÃ³n" -> "Asunción")."""
+    if "Ã" not in text and "Â" not in text:
+        return text
+    try:
+        return text.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return text
+
+
+def _shown(value: Any) -> Any:
+    """A stored value as the student sees it: sentinels and blanks become None (the page says "Not stated")."""
+    if isinstance(value, str):
+        return None if value.strip() in _SENTINEL_VALUES or not value.strip() else _unmangle(value.strip())
+    return value
+
+
+@router.get("/jobs/details")
+def job_details(ids: str, user: dict = Student):
+    """The job facts behind the student's recommendation cards: company, location, salary, work type and
+    requirements, read from the current posting (so a confirmed correction by the company shows straight away)."""
+    _sid(user)
+    wanted = [i for i in dict.fromkeys(ids.split(",")) if i][:50]
+    rows = portal().query(
+        "SELECT job_id, job_title, role, company_name, location, country, work_type, salary_range, "
+        "experience_required, qualification_required, posting FROM jobs WHERE job_id = ANY(%s)", (wanted,))
+    out = {}
+    for r in rows:
+        p = r["posting"] if isinstance(r["posting"], dict) else {}
+        lists = {k: (p.get(k) if isinstance(p.get(k), list) else []) for k in
+                 ("required_skills", "preferred_skills", "responsibilities")}
+        lo, hi = p.get("min_experience_years"), p.get("max_experience_years")
+        experience = (f"{lo:g}–{hi:g} years" if isinstance(lo, (int, float)) and isinstance(hi, (int, float))
+                      else f"{lo:g}+ years" if isinstance(lo, (int, float)) else _shown(r["experience_required"]))
+        out[r["job_id"]] = {
+            "job_id": r["job_id"],
+            "job_title": _shown(p.get("job_title")) or r["job_title"],
+            "role": _shown(p.get("role")) or _shown(r["role"]),
+            "company_name": _shown(p.get("company_name")) or _shown(r["company_name"]),
+            "location": ", ".join(x for x in dict.fromkeys(
+                (_shown(p.get("location")) or _shown(r["location"]), _shown(p.get("country")) or _shown(r["country"])))
+                if x) or None,
+            "work_type": _shown(p.get("work_type")) or _shown(r["work_type"]),
+            "salary": _shown(p.get("salary_range")) or _shown(r["salary_range"]),
+            "experience": experience,
+            "qualification": _shown(p.get("min_degree")) or _shown(r["qualification_required"]),
+            "required_skills": lists["required_skills"], "preferred_skills": lists["preferred_skills"],
+            "responsibilities": lists["responsibilities"][:6],
+            "description": (_shown(p.get("job_description")) or "")[:600] or None,
+        }
+    return out
 
 
 @router.get("/match/{job_id}")

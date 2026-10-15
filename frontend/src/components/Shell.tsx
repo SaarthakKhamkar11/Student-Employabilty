@@ -51,9 +51,6 @@ export function Shell({
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          Every number on these pages comes from the live API. Missing values read <i>Not yet evaluated</i>.
-        </div>
       </aside>
       <div className="main">
         <header className="topbar">

@@ -51,10 +51,16 @@ def _decode(data: bytes) -> str:
     raise ResumeRejected("text file is not valid UTF-8 (or BOM-marked UTF-16); re-save it as UTF-8")
 
 
+# The word gap as a fraction of the font size. pdfplumber's default (a fixed 3 pt) is wider than the inter-word
+# space of tightly set resumes (LaTeX, Overleaf templates), which glued whole lines into one token
+# ("PharmaProcurementRiskIntelligenceSystem") and broke every downstream skill and section match.
+PDF_X_TOLERANCE_RATIO = 0.15
+
+
 def _pdf_text(data: bytes) -> str:
     try:
         with pdfplumber.open(io.BytesIO(data)) as pdf:
-            text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+            text = "\n".join(page.extract_text(x_tolerance_ratio=PDF_X_TOLERANCE_RATIO) or "" for page in pdf.pages)
     except Exception as exc:
         raise ResumeRejected(f"PDF could not be read ({type(exc).__name__})") from exc
     if not text.strip():

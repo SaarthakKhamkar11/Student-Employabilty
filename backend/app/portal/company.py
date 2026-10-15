@@ -54,6 +54,10 @@ def _own_job(user: dict, job_id: str) -> dict:
     return row
 
 
+def _known(value) -> str | None:
+    return value if isinstance(value, str) and value not in ("Not detected", "Not yet evaluated") else None
+
+
 def _company(user: dict) -> dict:
     row = portal().one("SELECT company_id, name FROM companies WHERE company_id = %s", (user.get("company_id"),))
     if row is None:
@@ -95,7 +99,9 @@ class JobForm(BaseModel):
         return "\n".join(lines)
 
 
-async def _ingest(user: dict, jd_text: str) -> dict:
+async def _ingest(user: dict, jd_text: str, company_name: str | None = None) -> dict:
+    """company_name: the name the company typed with the JD; it wins over a name parsed from the text, and the
+    account's company is the fallback."""
     p = portal()
     company = _company(user)
     request = SupervisorInput(actor="company", request_kind="jd_upload", task_type="ingest_job", jd_text=jd_text)
@@ -113,11 +119,16 @@ async def _ingest(user: dict, jd_text: str) -> dict:
     if not saved:
         raise HTTPException(422, "The parsed job failed validation and was not saved: "
                                  + "; ".join(str(e.get("message")) for e in run.get("errors") or [] if isinstance(e, dict)))
-    posting["company_name"] = company["name"]  # the account's company, not whatever the text named
+    name = " ".join((company_name or "").split()) or company["name"]
+    posting["company_name"] = name
+    if posting.get("missing_fields") and "company_name" in posting["missing_fields"]:
+        posting["missing_fields"] = [f for f in posting["missing_fields"] if f != "company_name"]
     with p.connect() as conn:
         conn.execute("UPDATE jobs SET posted_by = %s, company_id = %s, company_name = %s, posting = %s, "
-                     "updated_at = now() WHERE job_id = %s",
-                     (user["user_id"], company["company_id"], company["name"], Jsonb(posting), job_id))
+                     "role = %s, location = %s, work_type = %s, salary_range = %s, updated_at = now() "
+                     "WHERE job_id = %s",
+                     (user["user_id"], company["company_id"], name, Jsonb(posting),
+                      *[_known(posting.get(k)) for k in ("role", "location", "work_type", "salary_range")], job_id))
     p.audit(user["user_id"], "job_posted", "job", job_id, {"request_id": run["request_id"]}, run["request_id"])
     return {"job_id": job_id, "posting": posting, "run": run,
             "embedding": agent_data(run, "job_intelligence_agent", "embedding")}
@@ -129,7 +140,10 @@ async def create_job(form: JobForm, user: dict = Company):
 
 
 @router.post("/jobs/upload")
-async def upload_jd(file: UploadFile | None = File(None), jd_text: str | None = Form(None), user: dict = Company):
+async def upload_jd(file: UploadFile | None = File(None), jd_text: str | None = Form(None),
+                    company_name: str | None = Form(None, max_length=200), user: dict = Company):
+    """The company sends only its name and the JD (a file or pasted text). Title, role, location, work type,
+    salary and the skill requirements are parsed from the JD, then shown back for confirmation."""
     if file is not None:
         data = await file.read(MAX_FILE_BYTES + 1)
         if len(data) > MAX_FILE_BYTES:
@@ -142,14 +156,15 @@ async def upload_jd(file: UploadFile | None = File(None), jd_text: str | None = 
         text = jd_text
     else:
         raise HTTPException(422, "Send a .pdf/.docx/.txt file or paste the job description text")
-    return await _ingest(user, text)
+    return await _ingest(user, text, company_name)
 
 
 @router.get("/jobs")
 def list_jobs(user: dict = Company):
     rows = portal().query(
         "SELECT job_id, job_title, created_at, confirmed_at, posting->'required_skills' AS required_skills, "
-        "posting->>'location' AS location, posting->>'work_type' AS work_type FROM jobs WHERE posted_by = %s "
+        "posting->>'location' AS location, posting->>'work_type' AS work_type, "
+        "posting->>'salary_range' AS salary_range, posting->>'company_name' AS company_name FROM jobs WHERE posted_by = %s "
         "ORDER BY created_at DESC", (user["user_id"],))
     return [{**r, "created_at": r["created_at"].isoformat(),
              "confirmed_at": r["confirmed_at"].isoformat() if r["confirmed_at"] else None} for r in rows]
@@ -172,9 +187,10 @@ async def confirm_job(job_id: str, body: JobCorrection, user: dict = Company):
     posting, changed, saved = await correct_posting(registry, row["posting"], body)
     with p.connect() as conn:
         if changed:  # the raw columns mirror the confirmed posting (company lists and eligibility read them)
-            conn.execute("UPDATE jobs SET job_title = %s, role = %s, location = %s, work_type = %s WHERE job_id = %s",
-                         tuple((posting.get(k) if isinstance(posting.get(k), str) and posting.get(k) != "Not detected"
-                                else None) for k in ("job_title", "role", "location", "work_type")) + (job_id,))
+            conn.execute("UPDATE jobs SET job_title = %s, role = %s, location = %s, work_type = %s, company_name = %s, "
+                         "salary_range = %s WHERE job_id = %s",
+                         tuple(_known(posting.get(k)) for k in ("job_title", "role", "location", "work_type",
+                                                                "company_name", "salary_range")) + (job_id,))
         conn.execute("UPDATE jobs SET confirmed_at = now() WHERE job_id = %s", (job_id,))
     p.audit(user["user_id"], "job_confirmed", "job", job_id, {"changed_fields": changed, **saved})
     return {"posting": posting, "changed_fields": changed, **saved}

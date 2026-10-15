@@ -30,7 +30,8 @@
 - Resending is allowed after 60 s, with a maximum of 5 codes per email per hour.
 - The signup token works once, and it can't be used as a login token (or the other way round).
 - Passwords are stored as bcrypt hashes. They need at least 8 characters with at least one letter and one number.
-- Login locks for 15 min after 10 wrong passwords. The error message never reveals whether an email is registered.
+- Login locks for 15 min after 10 failed attempts. An unknown email gets 404 "Account not found. Try signing up
+  instead." and a wrong password 401 "Incorrect password" (a product decision: new users are told to sign up).
 - Emails are lowercased, so `Riya@Gmail.com` and `riya@gmail.com` are the same account.
 - `gender` must be one of `male`, `female`, `other`, `prefer_not_to_say` (lowercase).
 

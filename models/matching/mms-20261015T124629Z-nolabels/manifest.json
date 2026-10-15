@@ -1,0 +1,83 @@
+{
+ "experiment_id": "mms-20261015T124629Z-nolabels",
+ "created_at": "2026-10-15T12:48:48+00:00",
+ "feature_version": "features-v2",
+ "features": [
+  "skill_match_score",
+  "required_skill_match_score",
+  "preferred_skill_match_score",
+  "semantic_similarity",
+  "education_match",
+  "degree_match",
+  "branch_match",
+  "experience_match",
+  "experience_gap",
+  "project_relevance",
+  "certification_relevance",
+  "career_interest_alignment",
+  "transferable_skill_score",
+  "matched_skill_count",
+  "missing_skill_count",
+  "required_skill_count",
+  "matched_skill_ratio",
+  "preferred_skill_ratio",
+  "role_similarity",
+  "domain_similarity"
+ ],
+ "embedding_model": "tfidf_baseline",
+ "embedding_version": "tfidf-953a75d166d8",
+ "dataset_version": "students:636d394f399c jobs:42c7d78b48c1",
+ "feature_matrix": {
+  "file": "features-v2-tfidf-953a75d166d8.csv.gz",
+  "sha256": "352f5bb1bdbbdf9719b2858618945ef8ad11be508fdc35c2f7559cdaf41a6b2a"
+ },
+ "training": {
+  "target": "relevance_label >= 2",
+  "label_source": "weakly_labelled",
+  "split": "train",
+  "seed": 42,
+  "class_balance": "balanced",
+  "threads": 1,
+  "decision_threshold": 0.5
+ },
+ "candidates_sha256": "8156f7634b685a39fc5c28037f33d950f4480e8c8b3d6527455e950520f01669",
+ "weak_labels_sha256": "085a07c100d380c5b8a23c8384d0af173b30ff43a6ce57ab65b4171908217937",
+ "models": {
+  "logistic_regression": {
+   "file": "logistic_regression.joblib",
+   "format": "joblib",
+   "sha256": "ac398089dfd8464fc2c8b73dd365c4ce62c9b5500508f2ee71ea088a6cf4dfb4",
+   "size_bytes": 2376
+  },
+  "decision_tree": {
+   "file": "decision_tree.joblib",
+   "format": "joblib",
+   "sha256": "59a056455baa588007753e19a02c124aac741a32e0e1f14a00ab4a1c97365dcc",
+   "size_bytes": 4001
+  },
+  "random_forest": {
+   "file": "random_forest.joblib",
+   "format": "joblib",
+   "sha256": "c51dee8d95475368068a8d1694882002f2e165e6fd23c5dd1cdd444b037e15d1",
+   "size_bytes": 2662254
+  },
+  "gradient_boosting": {
+   "file": "gradient_boosting.joblib",
+   "format": "joblib",
+   "sha256": "bb901bcd0b15725d54d70e4fcb34861e4a335b0d7620eebfbc3327a7dbfcd817",
+   "size_bytes": 91438
+  },
+  "xgboost": {
+   "file": "xgboost.json",
+   "format": "xgboost-json",
+   "sha256": "f065631c23316d72f14228c781ca9896cc26e60d5e9600d95314c0eeb3cb08f4",
+   "size_bytes": 368484
+  },
+  "lightgbm": {
+   "file": "lightgbm.txt",
+   "format": "lightgbm-text",
+   "sha256": "9899623c50b757f84cd1b7b1f7d12afcf1e4df966e6b06ee273d6316336baace",
+   "size_bytes": 353773
+  }
+ }
+}

@@ -110,3 +110,16 @@ def test_near_duplicates_need_same_company_title_and_text():
     assert find_near_duplicates(jobs) == {"J2": {"near_duplicate_of": "J1", "similarity": 1.0}}
     assert match_existing(_job(None, "Acme", "Analyst", text), jobs)["near_duplicate_of"] == "J1"
     assert match_existing(_job(None, "Acme", "Analyst", "Brand new role"), jobs) is None
+
+
+def test_labelled_jd_facts_are_extracted_and_nothing_is_guessed():
+    from app.jobs.header_fields import extract_header_fields
+
+    found = extract_header_fields("Business Intelligence Analyst\nCompany: Acme Analytics\n"
+                                  "Location: Mumbai, India | Job Type: Full-time (Hybrid)\nCTC: 6-8 LPA\n\n"
+                                  "About the role\nExposure to contract management is a plus.")
+    assert found == {"company_name": "Acme Analytics", "location": "Mumbai, India", "work_type": "Full-Time · Hybrid",
+                     "salary_range": "6-8 LPA"}
+    found = extract_header_fields("Data Analyst Intern\nStipend of Rs. 25,000 per month for this remote internship.")
+    assert found == {"salary_range": "Rs. 25,000 per month", "work_type": "Internship · Remote"}
+    assert extract_header_fields("Engineer\nWe value contract management skills.") == {}

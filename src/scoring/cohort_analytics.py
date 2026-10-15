@@ -27,6 +27,7 @@ min_skill_holders peers (tests/test_cohort_analytics.py checks the response agai
 
 import argparse
 import json
+import re
 import statistics
 from functools import lru_cache
 from pathlib import Path
@@ -52,6 +53,11 @@ def domain_families() -> dict[str, frozenset[str]]:
     with open(ROLE_RULES_PATH, encoding="utf-8") as fh:
         domains = yaml.safe_load(fh)["domains"]
     return {d: frozenset(v.get("primary") or ()) for d, v in domains.items()}
+
+
+def branch_key(branch: str | None) -> str | None:
+    """Branches compare by letters and digits only: "CSE (Data Science)" = "CSE(Data Science)" = "cse (data science)"."""
+    return re.sub(r"[^a-z0-9]+", "", branch.lower()) or None if branch else None
 
 
 def student_target(view, mcfg) -> tuple[frozenset[str], str, str | None]:
@@ -86,7 +92,7 @@ def benchmark(ctx, student_id: str, job_id: str | None = None, config: dict[str,
 
     def peer_matches(peer, name: str) -> bool:
         if name == "branch":
-            return peer.branch == student.branch
+            return branch_key(peer.branch) == branch_key(student.branch)
         if name == "graduation_year":
             return peer.graduation_year == student.graduation_year
         return bool(student_target(peer, ctx.cfg)[0] & families)

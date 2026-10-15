@@ -338,10 +338,13 @@ def real_rows(model, n=5):
     return frame[frame["split"] == "validation"].iloc[:n]
 
 
-@pytest.mark.parametrize("embedding, explainer", [("e5_base_v2", "TreeExplainer"),
-                                                  ("tfidf_baseline", "LinearExplainer")])
-def test_real_models_get_the_explainer_their_type_needs_and_values_add_up(embedding, explainer):
-    model = S.load_model(embedding)
+# Since the features-v2 selections (2026-10-15) the active E5 model is logistic regression and the TF-IDF fallback is
+# Baseline 3 (no SHAP needed), so the tree path is checked with an explicit override on the fallback's trained artifacts.
+@pytest.mark.parametrize("embedding, override, explainer", [("e5_base_v2", None, "LinearExplainer"),
+                                                            ("tfidf_baseline", "lightgbm", "TreeExplainer"),
+                                                            ("tfidf_baseline", "logistic_regression", "LinearExplainer")])
+def test_real_models_get_the_explainer_their_type_needs_and_values_add_up(embedding, override, explainer):
+    model = S.load_model(embedding, override)
     assert explainer in model.explainer_name, (model.key, model.explainer_name)
     for _, row in real_rows(model).iterrows():
         features = {f: (None if pd.isna(row[f]) else float(row[f])) for f in FEATURE_NAMES}
@@ -351,7 +354,8 @@ def test_real_models_get_the_explainer_their_type_needs_and_values_add_up(embedd
 
 
 def test_global_and_individual_are_separate_paths_with_separate_outputs():
-    model = S.load_model("tfidf_baseline")  # the fallback's Logistic Regression: fast enough for a unit test
+    # the fallback's trained Logistic Regression (the active fallback is Baseline 3): fast enough for a unit test
+    model = S.load_model("tfidf_baseline", "logistic_regression")
     out, result = run(mode="global", model=model)
     assert out.status == "success", out.errors
     assert result.match_explanation == "Not yet evaluated" and result.global_explanation.kind == "global"

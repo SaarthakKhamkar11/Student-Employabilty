@@ -173,7 +173,8 @@ def similarity(ctx: MatchingContext, query_kind: str, query_id: str, candidates:
 
 # -- Stage 3 -------------------------------------------------------------------
 def comparison(ctx: MatchingContext, student: StudentView, job: JobView):
-    return compare_skills(student.skills, job.skills, ctx.skill_vectors(), ctx.calibration().transferable_threshold)
+    return compare_skills(student.skills, job.skills, ctx.skill_vectors(), ctx.calibration().transferable_threshold,
+                          student.terms)
 
 
 def features(ctx: MatchingContext, query_kind: str, query_id: str, candidates: list[str],

@@ -10,7 +10,7 @@ from app.agents import build_agents
 from app.db.job_repository import InMemoryJobRepository
 from app.db.profile_repository import InMemoryProfileRepository
 from app.db.store import InMemoryAgentRunStore
-from app.schemas.agent_state import NOT_YET_EVALUATED, AgentState
+from app.schemas.agent_state import NOT_DETECTED, NOT_YET_EVALUATED, AgentState
 from app.schemas.job import JobPosting
 from tests.helpers import JOB
 from tests.test_profile_agent import _break
@@ -66,8 +66,9 @@ def test_free_text_jd_uses_explicit_sections_and_masks_pii(agents, repo):
     assert p["responsibilities"] == ["Build Power BI dashboards", "Write SQL queries and clean data in Python"]
     assert p["pii"]["counts"] == {"email": 1, "phone": 1}
     assert "hr@example.com" not in json.dumps(p) and "98765" not in json.dumps(p)
-    # no extractor reads company or location from free text: not evaluated, never guessed
-    assert p["company_name"] == p["location"] == NOT_YET_EVALUATED
+    # company and location are read only from labelled lines (app/jobs/header_fields.py); this JD has none, so
+    # they are not detected, never guessed
+    assert p["company_name"] == p["location"] == NOT_DETECTED
     assert out.data["saved"] and p["job_id"] in repo.jobs
 
 

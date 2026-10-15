@@ -1,14 +1,16 @@
-/* CareerCompass design tokens. Layout and feel follow the team's style reference (dark teal sidebar, green active
-   item, light grey canvas, white rounded cards); every value on screen comes from the FastAPI backend. */
+/* CareerCompass design tokens: a quiet slate sidebar, one muted steel-blue accent, light grey canvas, white rounded
+   cards. Every accent goes through --accent / --accent-soft so the scheme changes in one place. */
 :root {
   color-scheme: light;
-  --sidebar-bg: #0f4c51;
-  --sidebar-bg-2: #0c4044;
-  --sidebar-text: #cfe3e3;
-  --sidebar-muted: #8fb3b4;
-  --brand: #22c55e;
-  --brand-strong: #16a34a;
-  --brand-soft: #dcfce7;
+  --sidebar-bg: #1f2a37;
+  --sidebar-bg-2: #18212c;
+  --sidebar-text: #cbd5e1;
+  --sidebar-muted: #8a97a8;
+  --brand: #9db4cc;
+  --brand-strong: #3d5a7a;
+  --brand-soft: #e7edf4;
+  --accent: #3d5a7a;
+  --accent-soft: #e9eef4;
   --canvas: #f3f5f7;
   --surface: #ffffff;
   --surface-2: #f8fafb;
@@ -78,7 +80,7 @@ code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; f
   color: var(--sidebar-text); font-size: 13.5px; font-weight: 500; cursor: pointer; border: 0; background: none; text-align: left;
 }
 .nav-item:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
-.nav-item.active { background: var(--brand); color: #fff; }
+.nav-item.active { background: rgba(255,255,255,0.10); color: #fff; box-shadow: inset 3px 0 0 var(--brand); }
 .nav-section { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sidebar-muted); padding: 14px 12px 6px; }
 .sidebar-foot { margin-top: auto; font-size: 11.5px; color: var(--sidebar-muted); padding: 10px 8px 0; border-top: 1px solid rgba(255,255,255,0.08); }
 
@@ -134,7 +136,7 @@ code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; f
 /* ---------- KPI ---------- */
 .kpi { display: flex; flex-direction: column; gap: 10px; padding: 18px; }
 .kpi-top { display: flex; align-items: center; gap: 10px; }
-.kpi-icon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex-shrink: 0; }
+.kpi-icon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); flex-shrink: 0; }
 .kpi-label { font-weight: 500; color: var(--text-2); font-size: 13.5px; }
 .kpi-spark { margin-left: auto; }
 .kpi-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
@@ -148,7 +150,7 @@ code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; f
 .btn:hover { background: var(--surface-2); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-primary { background: var(--brand-strong); border-color: var(--brand-strong); color: #fff; }
-.btn-primary:hover { background: #15803d; }
+.btn-primary:hover { background: #334d69; }
 .btn-ai { background: var(--ai-soft); border-color: #e2d8ff; color: var(--ai); width: 100%; }
 .btn-ai:hover { background: #e8e0ff; }
 .btn-sm { padding: 5px 10px; font-size: 12.5px; border-radius: 8px; }
@@ -162,7 +164,7 @@ code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; f
   border: 1px solid var(--border-strong); border-radius: 9px; padding: 9px 12px; background: var(--surface); outline: none; width: 100%;
 }
 .field textarea { min-height: 110px; resize: vertical; }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand-strong); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15); }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand-strong); box-shadow: 0 0 0 3px rgba(61, 90, 122, 0.16); }
 .field.invalid input, .field.invalid select, .field.invalid textarea { border-color: var(--bad); }
 .field-error { color: var(--bad); font-size: 12px; }
 .field-hint { color: var(--muted); font-size: 12px; }
@@ -195,8 +197,8 @@ code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; f
 .list { display: flex; flex-direction: column; }
 .list-row { display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-top: 1px solid var(--border); }
 .list-row:first-child { border-top: 0; }
-.list-row.selected { background: #f4fbf6; border-radius: 10px; }
-.list-thumb { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; color: #fff; flex-shrink: 0; font-size: 13px; }
+.list-row.selected { background: #f2f5f9; border-radius: 10px; }
+.list-thumb { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; color: var(--accent); background: var(--accent-soft); flex-shrink: 0; font-size: 13px; }
 .list-main { flex: 1; min-width: 0; }
 .list-title { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-meta { color: var(--muted); font-size: 12px; display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
@@ -213,7 +215,7 @@ table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.data th { text-align: left; font-weight: 600; color: var(--text-2); font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--border-strong); white-space: nowrap; background: var(--surface-2); }
 table.data td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
 table.data td.num, table.data th.num { text-align: right; font-variant-numeric: tabular-nums; }
-table.data tr.highlight td { background: #f4fbf6; }
+table.data tr.highlight td { background: #f2f5f9; }
 
 /* ---------- misc ---------- */
 .empty { text-align: center; padding: 26px 16px; color: var(--muted); border: 1px dashed var(--border-strong); border-radius: 12px; background: var(--surface-2); }
@@ -281,9 +283,28 @@ details.disclosure summary { cursor: pointer; color: var(--text-2); font-weight:
 /* layout refinements */
 .card { overflow: hidden; }
 .split-main { align-items: start; }
-.kpi-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kpi-label { flex: 1; min-width: 0; }
 .kpi-spark { flex-shrink: 0; margin-left: 0; }
 .insight-scroll { max-height: 520px; overflow-y: auto; padding-right: 4px; margin-right: -4px; }
 table.data th { white-space: normal; vertical-align: bottom; }
 table.data .nye { white-space: normal; text-align: center; }
 .card .table-wrap { margin: 0 -4px; padding: 0 4px; }
+.field textarea.entries { min-height: 190px; line-height: 1.55; }
+.resource { margin-top: 7px; font-size: 13px; }
+.resource a { display: inline; overflow-wrap: break-word; }
+ul.entries { margin: 0; padding-left: 18px; }
+ul.entries li { margin-bottom: 8px; line-height: 1.55; }
+/* job cards */
+.job-cards { display: flex; flex-direction: column; gap: 10px; }
+.job-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.job-card.open { border-color: var(--border-strong); box-shadow: var(--shadow); }
+.job-card-head { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; border: 0; background: none; cursor: pointer; text-align: left; }
+.job-card-head:hover { background: var(--surface-2); border-radius: 12px; }
+.job-card-body { padding: 4px 16px 16px 68px; }
+.job-facts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--text-2); }
+.job-facts span { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 760px) { .job-card-body { padding-left: 16px; } }
+/* profile entries: bold title, then the description */
+.entry { margin-bottom: 12px; line-height: 1.55; }
+.entry b { display: block; }
+.entry p { margin: 2px 0 0; color: var(--text-2); }

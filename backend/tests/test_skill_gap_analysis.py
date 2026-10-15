@@ -97,7 +97,8 @@ def test_importance_matches_an_independent_rescore_with_the_real_pipeline(world,
 
     def suitability(skills):
         v = replace(s, skills=skills)
-        f = build_features(v, j, compare_skills(v.skills, j.skills, ctx.skill_vectors(), related), sims, ctx.cfg)
+        f = build_features(v, j, compare_skills(v.skills, j.skills, ctx.skill_vectors(), related, s.terms), sims,
+                           ctx.cfg)
         return ctx.predictor.predict_many({"x": f})["x"]["suitability"]
 
     assert gap["importance_score"] == round(suitability(s.skills + (gap["skill"],)) - suitability(s.skills), 6)
@@ -182,3 +183,17 @@ def test_the_agent_returns_skill_gap_reports_with_importance(world, embedder):
         assert isinstance(m.skill_gap, SkillGapReport)
         assert m.skill_gap.importance_model == m.model_versions.matching_model_version
         assert all(g.importance_score is not None for g in m.skill_gap.missing_required)
+
+
+def test_a_job_skill_stated_in_the_profile_text_is_matched_in_features_and_report():
+    from app.matching.skill_gap import evidenced, profile_terms
+
+    terms = profile_terms("Data Visualisation certificate. Analysed sales data and built Power BI reporting dashboards "
+                          "with star-schema modelling.")
+    assert evidenced("Data analysis and visualization tools", terms)  # British spelling, inflections
+    assert evidenced("Data modeling and reporting", terms)
+    assert not evidenced("Java programming", terms) and not evidenced("Cloud computing (AWS, Azure)", terms)
+    assert not evidenced("Strong skills", terms)  # filler only: nothing to look for
+    matched, missing = G.split_skills(("Python",), (("Data modeling and reporting", "required"),
+                                                    ("Java programming", "preferred")), terms)
+    assert matched == ["Data modeling and reporting"] and missing == [("Java programming", "preferred")]

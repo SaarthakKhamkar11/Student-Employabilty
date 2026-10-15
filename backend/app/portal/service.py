@@ -66,6 +66,21 @@ class Portal:
                          (user_id, action, entity_type, entity_id, request_id, Jsonb(details)))
 
     # -- runs --------------------------------------------------------------------------------------------------
+    def _matching_model_version(self) -> str | None:
+        """The active matching model's version (config/matching_model.yaml, read once per process: the model only
+        changes with a re-selection and a restart). None if it can't be built; then only data changes count."""
+        if not hasattr(self, "_model_version"):
+            try:
+                from app.core.config import get_settings
+                from app.matching.config import get_matching_config
+                from app.matching.predictor import build_predictor
+
+                predictor = build_predictor(get_matching_config(), embedding_model=get_settings().embedding_model)
+                self._model_version = predictor.version
+            except Exception:  # noqa: BLE001 - staleness check only; never block a dashboard on it
+                self._model_version = None
+        return self._model_version
+
     def _data_changed_at(self) -> datetime | None:
         """The last change to anything a stored result depends on: any profile, posting or confirmation."""
         row = self.one(
@@ -79,13 +94,17 @@ class Portal:
         """The newest stored run; with current_only=False, also one that newer data has since made out of date
         (summaries that show its timestamp)."""
         changed = self._data_changed_at() if current_only else None
+        # a run scored by another matching model (before a re-selection) is out of date too
+        model = self._matching_model_version() if current_only else None
         row = self.one(
             "SELECT request_id, task_type, status, finished_at, duration_ms, agent_results, model_versions, errors, "
             "routing_source, model_used FROM agent_runs WHERE agent_name = 'supervisor' AND parent_run_id IS NULL "
             "AND task_type = ANY(%s) AND student_id IS NOT DISTINCT FROM %s AND job_id IS NOT DISTINCT FROM %s "
             "AND status IN ('success', 'partial') AND (%s::timestamptz IS NULL OR finished_at > %s::timestamptz) "
+            "AND (%s::text IS NULL OR model_versions->>'matching_model_version' IS NULL "
+            "     OR model_versions->>'matching_model_version' = %s::text) "
             "ORDER BY finished_at DESC LIMIT 1",
-            (list(tasks), student_id, job_id, changed, changed))
+            (list(tasks), student_id, job_id, changed, changed, model, model))
         return _from_row(row) if row else None
 
     async def result(self, task: str, *, actor: str, student_id: str | None = None, job_id: str | None = None,

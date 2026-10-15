@@ -4,8 +4,8 @@ import { FileUp } from "lucide-react";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { Logo } from "../../components/Shell";
-import { Card, ErrorBox, Loading, ModelBadge, Steps } from "../../components/ui";
-import { initialCorrection, ProfileEditor, ProfileFacts, toPayload, type Correction, type StudentProfileData } from "./ProfileEditor";
+import { Card, ErrorBox, Loading, Steps } from "../../components/ui";
+import { initialCorrection, ProfileEditor, toPayload, type Correction, type StudentProfileData } from "./ProfileEditor";
 
 const STEPS = ["Create account", "Upload resume", "Confirm profile", "Dashboard"];
 
@@ -38,12 +38,12 @@ export function ResumeUpload({ onDone }: { onDone: (profile: StudentProfileData)
       <label className="empty" style={{ display: "block", cursor: "pointer", padding: 34 }}>
         <FileUp size={26} color="var(--brand-strong)" />
         <b style={{ marginTop: 8 }}>{file ? file.name : "Choose your resume"}</b>
-        <span className="small">PDF, DOCX or TXT, up to 5 MB. Names, emails and phone numbers are masked before parsing.</span>
+        <span className="small">PDF, DOCX or TXT, up to 5 MB.</span>
         <input type="file" accept=".pdf,.docx,.txt" style={{ display: "none" }} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
       </label>
       <div className="row" style={{ marginTop: 14 }}>
         <button className="btn btn-primary" onClick={upload} disabled={busy || !file}>
-          {busy ? <span className="spinner" /> : null} {busy ? "Agents are parsing and matching (this can take a minute)…" : "Upload and parse"}
+          {busy ? <span className="spinner" /> : null} {busy ? "Uploading…" : "Upload"}
         </button>
       </div>
     </div>
@@ -71,18 +71,13 @@ export function ConfirmProfile({ profile, onConfirmed, confirmLabel = "Confirm p
   }
 
   return (
-    <div className="grid split-main">
-      <Card title="Review what we parsed" sub="Correct anything wrong. Nothing is final until you confirm.">
-        {error && <ErrorBox error={error} />}
-        <ProfileEditor profile={profile} value={value} onChange={setValue} />
-        <button className="btn btn-primary" onClick={confirm} disabled={busy}>
-          {busy ? <span className="spinner" /> : null} {busy ? "Saving and re-embedding…" : confirmLabel}
-        </button>
-      </Card>
-      <Card title="Parser details">
-        <ProfileFacts profile={profile} />
-      </Card>
-    </div>
+    <Card title="Review your profile" sub="Correct anything wrong. Nothing is final until you confirm.">
+      {error && <ErrorBox error={error} />}
+      <ProfileEditor profile={profile} value={value} onChange={setValue} />
+      <button className="btn btn-primary" onClick={confirm} disabled={busy}>
+        {busy ? <span className="spinner" /> : null} {busy ? "Saving…" : confirmLabel}
+      </button>
+    </Card>
   );
 }
 
@@ -90,19 +85,17 @@ export default function StudentOnboarding() {
   const { me, refresh } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<StudentProfileData | null>(null);
-  const [embeddings, setEmbeddings] = useState<Record<string, string>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api<{ profile: StudentProfileData | null; embeddings: Record<string, string>[] }>("/student/profile")
-      .then((r) => (setProfile(r.profile), setEmbeddings(r.embeddings)))
+    api<{ profile: StudentProfileData | null }>("/student/profile")
+      .then((r) => setProfile(r.profile))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
   const step = profile ? 2 : 1;
-  const emb = embeddings.find((e) => e.model_name !== "tfidf_baseline");
   return (
     <div style={{ minHeight: "100vh" }}>
       <div style={{ background: "var(--sidebar-bg)", padding: "14px 28px" }}>
@@ -122,7 +115,6 @@ export default function StudentOnboarding() {
         ) : profile ? (
           <>
             <div className="row" style={{ marginBottom: 12 }}>
-              {emb && <ModelBadge versions={{ embedding_model: emb.model_name, embedding_version: emb.model_version }} />}
               <button className="btn btn-sm" onClick={() => setProfile(null)}>Upload a different resume</button>
             </div>
             <ConfirmProfile
@@ -135,7 +127,7 @@ export default function StudentOnboarding() {
             />
           </>
         ) : (
-          <Card title="Upload your resume" sub="The Profile Agent extracts your skills, projects, experience and education.">
+          <Card title="Upload your resume" sub="We'll pick out your skills, projects, experience and education for you to review.">
             <ResumeUpload onDone={(p) => setProfile(p)} />
           </Card>
         )}

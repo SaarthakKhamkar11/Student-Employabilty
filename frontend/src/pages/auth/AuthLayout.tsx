@@ -12,7 +12,6 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         <div className="tagline">
           Know where you stand. <span>See what to learn next.</span>
         </div>
-        <div className="fine">Employability scores, job matches and skill gaps from an explainable, versioned model pipeline.</div>
       </div>
       <div className="auth-form">
         <div className="card auth-card" style={{ padding: 28 }}>

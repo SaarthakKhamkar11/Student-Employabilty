@@ -85,7 +85,7 @@ def test_feature_vectors_never_contain_pii_or_protected_attributes(world, embedd
 
 
 def test_the_feature_contract_matches_the_builder():
-    assert FEATURE_VERSION == "features-v1" and len(FEATURE_NAMES) == 20
+    assert FEATURE_VERSION == "features-v2" and len(FEATURE_NAMES) == 20
 
 
 # -- Stage 1 ---------------------------------------------------------------------------------------------
@@ -231,7 +231,7 @@ def test_agent_ranks_jobs_with_full_metadata_scores_and_trace(world, embedder, m
         assert m.semantic_similarity != m.trace.retrieval["raw_score"]  # a calibrated percentile, not raw cosine
         assert m.employability.overall == round(m.suitability_score * 100, 1)
     assert state.model_versions["matching_model"] == "weighted_baseline_v1"
-    assert state.model_versions["feature_version"] == "features-v1"
+    assert state.model_versions["feature_version"] == FEATURE_VERSION
 
 
 def test_agent_ranks_candidates_for_a_job(world, embedder, msettings):

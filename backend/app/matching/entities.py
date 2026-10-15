@@ -7,6 +7,7 @@ else does (docs/adr/0009). Missing values stay None and are reported, never gues
 
 import re
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Any
 
 from app.jobs.requirements import parse_degree
@@ -63,6 +64,13 @@ class StudentView:
     # read by cohort analytics only (Phase 12, src/scoring/cohort_analytics.py); never matching features
     graduation_year: int | None = None
     career_interests: str | None = None  # as stated, plans ("Placements") included
+
+    @cached_property
+    def terms(self) -> frozenset[str]:
+        """Word stems of the whole profile text: evidence that a job skill phrase is stated (skill_gap.evidenced)."""
+        from app.matching.skill_gap import profile_terms
+
+        return profile_terms(" ".join(self.skills) + " " + self.texts.get("full", ""))
 
 
 @dataclass(frozen=True)

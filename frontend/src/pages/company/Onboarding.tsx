@@ -32,7 +32,7 @@ export default function CompanyOnboarding() {
             <button className="btn btn-primary" onClick={() => setStep(2)}>Looks right, continue</button>
           </Card>
         )}
-        {step === 2 && <PostJob onParsed={(p, h) => (setPosting(p), setHints(h), setStep(3))} />}
+        {step === 2 && <PostJob defaultCompany={c?.name ?? ""} onParsed={(p, h) => (setPosting(p), setHints(h), setStep(3))} />}
         {step === 3 && posting && (
           <ConfirmJob posting={posting} hints={hints} label="Confirm and open my dashboard" onConfirmed={async () => { await refresh(); navigate(`/company/candidates?job=${posting.job_id}`, { replace: true }); }} />
         )}

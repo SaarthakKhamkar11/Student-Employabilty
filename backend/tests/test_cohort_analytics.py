@@ -226,3 +226,12 @@ def test_the_profile_agent_runs_the_cohort_benchmark_for_a_cohort_question(world
     tree = asyncio.run(get_agent_trace(resp.request_id, store))
     assert [t.name for t in tree.root.children[0].children][-1] == "cohort_benchmark"
     assert not [i for i in other_ids(A) if i in json.dumps(store.records, default=str) + tree.model_dump_json()]
+
+
+def test_branches_compare_without_spacing_or_case():
+    from src.scoring.cohort_analytics import branch_key
+
+    assert branch_key("Computer Science and Engineering(Data Science)") == \
+        branch_key("computer science and engineering (Data Science)")
+    assert branch_key("Information Technology") != branch_key("Computer Engineering")
+    assert branch_key(None) is None and branch_key("") is None

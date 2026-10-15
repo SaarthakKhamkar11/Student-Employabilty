@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../lib/api";
+import { api, ApiError } from "../../lib/api";
 import { homeFor, useAuth } from "../../lib/auth";
 import { ErrorBox } from "../../components/ui";
 import { AuthLayout, EMAIL_RE, Field, RoleToggle, type SideRole } from "./AuthLayout";
@@ -11,6 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function Login() {
     e.preventDefault();
     setTouched(true);
     setError(null);
+    setNotFound(false);
     if (errs.email || errs.password) return;
     setBusy(true);
     try {
@@ -32,6 +34,7 @@ export default function Login() {
       navigate(homeFor(me), { replace: true });
     } catch (err) {
       setError((err as Error).message);
+      setNotFound(err instanceof ApiError && err.status === 404);
     } finally {
       setBusy(false);
     }
@@ -43,6 +46,11 @@ export default function Login() {
       <div className="muted">Log in to your {role === "student" ? "student" : "company"} account.</div>
       <RoleToggle role={role} onChange={(r) => (setRole(r), setError(null))} />
       {error && <ErrorBox error={error} />}
+      {notFound && (
+        <div className="alert alert-info">
+          <span>New to CareerCompass? <Link to="/signup">Create an account</Link> with this email.</span>
+        </div>
+      )}
       <form onSubmit={submit} noValidate>
         <Field label={role === "student" ? "Email" : "Work email"} error={touched ? errs.email : undefined}>
           <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />

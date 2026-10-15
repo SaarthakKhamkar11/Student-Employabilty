@@ -36,7 +36,8 @@ export interface Correction {
 }
 
 const txt = (v: unknown) => (typeof v === "string" && !isSentinel(v) ? v : "");
-const lines = (v: unknown) => (Array.isArray(v) ? v.join("\n") : "");
+// one entry per paragraph: a blank line between entries keeps long project descriptions readable
+const lines = (v: unknown) => (Array.isArray(v) ? v.join("\n\n") : "");
 
 export function initialCorrection(p: StudentProfileData): Correction {
   return {
@@ -53,7 +54,8 @@ export function initialCorrection(p: StudentProfileData): Correction {
 }
 
 export function toPayload(c: Correction) {
-  const split = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
+  // entries are separated by blank lines; a single line break inside an entry is just wrapping
+  const split = (s: string) => s.split(/\n\s*\n/).map((x) => x.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
   return {
     degree: c.degree,
     branch: c.branch,
@@ -65,13 +67,6 @@ export function toPayload(c: Correction) {
     experience: split(c.experience),
     certifications: split(c.certifications),
   };
-}
-
-function Parsed({ value }: { value: unknown }) {
-  if (isSentinel(value)) return <NotEvaluated label={value} />;
-  if (Array.isArray(value)) return <>{value.length} item(s)</>;
-  if (value === null || value === undefined || value === "") return <NotEvaluated label="Not detected" />;
-  return <>{String(value)}</>;
 }
 
 /** The parsed profile shown back to the student, field by field, with what the parser found beside each input. */
@@ -86,11 +81,9 @@ export function ProfileEditor({ profile, value, onChange }: { profile: StudentPr
     setNewSkill("");
   }
 
-  const field = (k: keyof Correction, label: string, parsed: unknown, hint?: string, input?: JSX.Element) => (
+  const field = (k: keyof Correction, label: string, hint?: string, input?: JSX.Element) => (
     <div className="field">
-      <label>
-        {label} <span className="tiny muted" style={{ fontWeight: 400 }}>· parsed: <Parsed value={parsed} /></span>
-      </label>
+      <label>{label}</label>
       {input ?? <input value={value[k] as string} onChange={set(k)} />}
       {hint && <span className="field-hint">{hint}</span>}
     </div>
@@ -99,26 +92,25 @@ export function ProfileEditor({ profile, value, onChange }: { profile: StudentPr
   return (
     <div>
       <div className="form-grid">
-        {field("degree", "Degree", profile.degree)}
-        {field("branch", "Branch / major", profile.branch, "The strongest matching signal")}
-        {field("graduation_year", "Graduation year", profile.graduation_year, undefined,
+        {field("degree", "Degree")}
+        {field("branch", "Branch / major")}
+        {field("graduation_year", "Graduation year", undefined,
           <input type="number" min={1990} max={2035} value={value.graduation_year} onChange={set("graduation_year")} />)}
-        {field("domain", "Domain", profile.domain, "e.g. Data Science, Web Development")}
+        {field("domain", "Domain", "e.g. Data Science, Web Development")}
       </div>
-      {field("career_interests", "Career interests", profile.career_interests,
-        "Roles you want. The model's career-interest alignment feature needs this.",
+      {field("career_interests", "Career interests", "The roles you want to work in.",
         <input value={value.career_interests} onChange={set("career_interests")} placeholder="e.g. Data Analyst, Business Intelligence" />)}
 
       <div className="field">
         <label>
-          Skills <span className="tiny muted" style={{ fontWeight: 400 }}>· parsed: <Parsed value={profile.skills} /> · remove wrong ones, add missing ones</span>
+          Skills <span className="tiny muted" style={{ fontWeight: 400 }}>· remove wrong ones, add missing ones</span>
         </label>
         <div className="chips" style={{ marginBottom: 8 }}>
           {value.skills.length ? (
             value.skills.map((s) => {
               const m = skillMeta.get(s);
               return (
-                <span className="chip" key={s} title={m ? `written as "${m.raw}" · ${m.method}${m.evidence ? ` · ${m.evidence}` : ""}` : "added by you"}>
+                <span className="chip" key={s}>
                   {s}
                   {!m && <StatusTag tone="info" dot={false}>added</StatusTag>}
                   <button type="button" className="btn-ghost" style={{ border: 0, background: "none", cursor: "pointer", padding: 0 }}
@@ -141,35 +133,12 @@ export function ProfileEditor({ profile, value, onChange }: { profile: StudentPr
         </div>
       </div>
 
-      <div className="three grid" style={{ gap: 14 }}>
-        {field("projects", "Projects (one per line)", profile.projects, undefined, <textarea value={value.projects} onChange={set("projects")} />)}
-        {field("experience", "Experience (one per line)", profile.experience, undefined, <textarea value={value.experience} onChange={set("experience")} />)}
-        {field("certifications", "Certifications (one per line)", profile.certifications, undefined, <textarea value={value.certifications} onChange={set("certifications")} />)}
-      </div>
+      {field("projects", "Projects", "Leave a blank line between projects.",
+        <textarea className="entries" value={value.projects} onChange={set("projects")} />)}
+      {field("experience", "Experience", "Leave a blank line between roles.",
+        <textarea className="entries" value={value.experience} onChange={set("experience")} />)}
+      {field("certifications", "Certifications", "Leave a blank line between certifications.",
+        <textarea className="entries" style={{ minHeight: 110 }} value={value.certifications} onChange={set("certifications")} />)}
     </div>
-  );
-}
-
-export function ProfileFacts({ profile }: { profile: StudentProfileData }) {
-  const pii = typeof profile.pii === "object" ? profile.pii : null;
-  return (
-    <dl className="kv">
-      <dt>Profile id</dt>
-      <dd><code>{profile.student_id}</code></dd>
-      <dt>Built from</dt>
-      <dd>{profile.source.replace(/_/g, " ").replace("+", " + ")}</dd>
-      <dt>Education (parsed)</dt>
-      <dd><Parsed value={profile.education} /></dd>
-      <dt>CGPA</dt>
-      <dd><Parsed value={profile.avg_cgpa_sem5} /></dd>
-      <dt>PII removed</dt>
-      <dd>
-        {pii ? (pii.detected ? Object.entries(pii.counts).map(([k, n]) => `${n} ${k}`).join(", ") + " (masked before parsing)" : "none detected") : <NotEvaluated />}
-      </dd>
-      <dt>Still missing</dt>
-      <dd>{profile.missing_fields.length ? profile.missing_fields.join(", ") : "nothing"}</dd>
-      <dt>Extractor</dt>
-      <dd><code>{profile.extractor_version}</code></dd>
-    </dl>
   );
 }

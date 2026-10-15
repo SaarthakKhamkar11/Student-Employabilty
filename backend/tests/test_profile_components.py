@@ -137,3 +137,46 @@ def test_tfidf_baseline_is_deterministic_and_reports_no_signal(embedder):
     vectors = embedder.embed(["python sql machine learning", "zzqx wvyk"])
     assert abs(sum(x * x for x in vectors[0].values) - 1) < 1e-5 and vectors[1] is None
     assert vectors[0].indices and len(vectors[0].indices) < 50  # sparse: a handful of non-zero terms (ADR 0011)
+
+
+# -- uploaded resumes (2026-10-15): headings, entries, grouped skills --------------------------------------------
+RESUME = """EDUCATION
+Example Institute of Technology Mumbai, India
+B.Tech, Computer Science & Engineering (Data Science) | CGPA: 8.5 / 10 Aug 2023 – Aug 2027
+TECHNICAL SKILLS
+Analytics & Reporting: Root Cause Analysis, Python (Pandas, NumPy), SQL,
+Power BI (DAX, Star Schema), Excel (Advanced) – automated dashboards
+PROJECTS
+Procurement Risk System May 2026
+• Built a risk scoring model across price, delivery and quality for 400+ purchase
+orders; presented findings to the CFO.
+• Designed an agentic pipeline via
+LLM to classify supplier risk.
+Field Force Analytics April 2026
+• Applied K-Means clustering to classify representatives.
+CERTIFICATIONS
+Data Visualisation: Empowering Business – Tata iQ | Forage May 2026
+LEADERSHIP EXPERIENCE
+Vice Chairperson – NSS June 2025 – present
+Example College Mumbai, India
+• Coordinated a blood donation programme.
+"""
+
+
+def test_uploaded_resume_entries_are_one_item_each_with_wrapped_lines_joined():
+    r = sections.resume_sections(RESUME)
+    assert r["projects"] == [
+        "Procurement Risk System May 2026: Built a risk scoring model across price, delivery and quality for 400+ "
+        "purchase orders; presented findings to the CFO. Designed an agentic pipeline via LLM to classify supplier risk.",
+        "Field Force Analytics April 2026: Applied K-Means clustering to classify representatives.",
+    ]
+    assert r["experience"] == ["Vice Chairperson – NSS June 2025 – present · Example College Mumbai, India: "
+                               "Coordinated a blood donation programme."]
+    assert r["certifications"] == ["Data Visualisation: Empowering Business – Tata iQ | Forage May 2026"]
+    assert r["degree"] == "B.TECH" and "Computer Science" in r["education"]
+
+
+def test_uploaded_resume_skills_drop_category_prefixes_and_expand_groups():
+    assert sections.resume_skill_items(RESUME) == [
+        "Root Cause Analysis", "Python", "Pandas", "NumPy", "SQL", "Power BI", "DAX", "Star Schema", "Excel",
+        "automated dashboards"]

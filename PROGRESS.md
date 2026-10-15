@@ -2,7 +2,7 @@
 
 **Rule:** update this file at the end of every phase. That means the status table, the "Pick up here" block, and a new entry in the Phase log. **From Phase 6 on, also extend `scripts/demo.py`** with a live demo of the phase's new capability, and run it once against the backend, and refresh the owner's progress dashboard (a private claude.ai artifact: aggregates only, real measured numbers, with the same caveats as the reports). Anyone taking over should be able to read only this file and know exactly where to start.
 
-Last updated: **2026-10-15** · Last completed phase: **Phase 13 (Frontend: auth + student, company, admin/research dashboards)** · Next: **Phase 14 (Evaluation framework)**. Both human-label selections are made. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **LightGBM** on E5, Logistic Regression for the fallback (ADR 0015).
+Last updated: **2026-10-15** · Last completed phase: **Phase 13 (Frontend: auth + student, company, admin/research dashboards)** · Next: **Phase 14 (Evaluation framework)**. Both human-label selections are made. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **Logistic Regression** on E5 features-v2 (re-selected 2026-10-15), Baseline 3 for the TF-IDF fallback (ADR 0015).
 
 **Latest code: `main`** holds Phases 1–8 (Phase 8 committed directly on `main` as `7e680b6`). Phase 9 is also committed. Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
 
@@ -11,6 +11,40 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
 ---
 
 ## ▶ Pick up here: Phase 14 (Evaluation framework)
+
+**Done on 2026-10-15 (later): Phase 13 review fixes (owner's walkthrough of the student and company dashboards).**
+- **Resume PDFs lost every word gap** (pdfplumber's fixed 3 pt tolerance vs tightly set LaTeX resumes:
+  "PharmaProcurementRiskIntelligenceSystem"). Now `x_tolerance_ratio=0.15` (`app/profile/text_extraction.py`). This
+  glued text was the root of unreadable projects, unmatched skills and "0 matched skills".
+- **Uploaded resumes are sectioned by headings** (`app/profile/sections.py`: `split_resume_sections`,
+  `group_entries`, `resume_skill_items`): one item per project / role with wrapped lines joined, category prefixes
+  dropped ("Reporting & Visualisation: Power BI"), grouped skills expanded ("Python (Pandas, NumPy)"), education and
+  degree found under "EDUCATION". Stored Kaggle/placement records still use src/parsing unchanged.
+- **features-v2:** a job skill also counts as matched when every content word of it occurs in the profile text
+  (spelling-tolerant stems; `app/matching/skill_gap.evidenced`). The features and the skill-gap report use the same
+  rule, so "skill match 37.9 but 0 matched skills" can't happen. Retrained (`mms-20261015T123632Z-nolabels`) and
+  re-selected on the human labels: **Logistic Regression** (`mms-20261015T124013Z-human`; NDCG@10 0.840, LightGBM
+  0.843, Baseline 3 0.801, all overlapping CIs; wins all 3 scenarios and 81% of random weightings). TF-IDF fallback
+  retrained too (`mms-20261015T124629Z-nolabels`); its human-label run decided **keep Baseline 3**
+  (`mms-20261015T124901Z-human`), written into `config/matching_model.yaml` by hand because `--activate` writes only
+  "select" decisions. Global SHAP regenerated for both.
+- **Cohort benchmark returned 0 peers** for "Computer Science and Engineering(Data Science)" (no space): branches now
+  compare by letters and digits only (`cohort_analytics.branch_key`). Live check: 70 → 20 comparable peers.
+- **Stored dashboard runs are also out of date when the active matching model changes** (`Portal.stored`).
+- **Auth:** an unknown email gets 404 "Account not found. Try signing up instead." and a wrong password 401
+  "Incorrect password" (owner decision; reveals whether an email is registered). The session token is in
+  localStorage, so a login survives closing the tab.
+- **Company job posting:** only the company name + the JD (file or paste). `app/jobs/header_fields.py` reads job
+  title, role, company, location, work type and salary from labelled lines (salary also from a currency pattern);
+  `salary_range` and `company_name` are correctable at confirmation.
+- **Frontend:** muted slate/steel-blue palette (`--accent` tokens), no model/version/agent/phase wording, no parser
+  details; plain-language "Why this job / Gaps / Why this role / How to improve" (`MatchSummary`); learning shows
+  course, provider, relevance, required/preferred and course effort only; projects/experience edited as paragraphs.
+- **Tests:** 383 pass (new: entry grouping, skill splitting, skill evidence, JD fields, branch key); the known TF-IDF
+  hash test still fails. End-to-end through the portal with a temporary account (deleted; its 2 append-only
+  `audit_logs` rows remain): top jobs now have 4-5 matched skills and 0 missing required.
+- **Owner action:** existing accounts keep the profile parsed by the old extractor until the resume is uploaded again
+  (Resume page).
 
 **Done on 2026-10-15: Phase 13 (frontend + dashboards).**
 - **Run it:** `docker compose up -d --build --wait`, then `cd frontend && npm install && npm run dev` →
