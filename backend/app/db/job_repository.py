@@ -35,6 +35,8 @@ def _children(posting: JobPosting) -> dict[str, list[tuple]]:
 class JobRepository(Protocol):
     def get_job(self, job_id: str) -> dict[str, Any] | None: ...
 
+    def get_stored_posting(self, job_id: str) -> dict[str, Any] | None: ...
+
     def candidates(self, company_name: str | None, job_title: str) -> list[dict[str, Any]]: ...
 
     def save_posting(self, posting: JobPosting, embeddings: list[EmbeddingRow], is_new: bool) -> SaveResult: ...
@@ -53,6 +55,11 @@ class PostgresJobRepository:
             row = conn.execute(f"SELECT {', '.join(JOB_SCHEMA)}, source_dataset FROM jobs WHERE job_id = %s",
                                (job_id,)).fetchone()
         return dict(row) if row else None
+
+    def get_stored_posting(self, job_id: str) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT posting FROM jobs WHERE job_id = %s", (job_id,)).fetchone()
+        return row[0] if row else None
 
     def candidates(self, company_name: str | None, job_title: str) -> list[dict[str, Any]]:
         """Stored jobs with the same company and title; with no company, those that have none either."""
@@ -81,10 +88,12 @@ class PostgresJobRepository:
                 conn.execute(f"INSERT INTO jobs ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))}) "
                              "ON CONFLICT (job_id) DO NOTHING", values)
             conn.execute(
-                "UPDATE jobs SET posting = %s, posting_extractor_version = %s, posting_updated_at = now(), "
+                "UPDATE jobs SET posting_updated_at = CASE WHEN posting IS DISTINCT FROM %s THEN now() "
+                "ELSE posting_updated_at END, posting = %s, posting_extractor_version = %s, "
                 "min_degree = %s, min_degree_level = %s, min_experience_years = %s, max_experience_years = %s, "
                 "near_duplicate_of = %s, pii_flags = %s, updated_at = now() WHERE job_id = %s",
-                (Jsonb(posting.model_dump(mode="json")), version, _value(posting.min_degree),
+                (Jsonb(posting.model_dump(mode="json")), Jsonb(posting.model_dump(mode="json")), version,
+                 _value(posting.min_degree),
                  _value(posting.min_degree_level), _value(posting.min_experience_years),
                  _value(posting.max_experience_years), duplicate.near_duplicate_of if duplicate else None,
                  Jsonb(pii), jid))
@@ -115,6 +124,9 @@ class InMemoryJobRepository:
     def get_job(self, job_id: str) -> dict[str, Any] | None:
         return self.jobs.get(job_id)
 
+    def get_stored_posting(self, job_id: str) -> dict[str, Any] | None:
+        return self.postings.get(job_id)
+
     def candidates(self, company_name: str | None, job_title: str) -> list[dict[str, Any]]:
         key = ((company_name or "").strip().lower(), job_title.strip().lower())
         return [j for j in self.jobs.values()
@@ -123,7 +135,8 @@ class InMemoryJobRepository:
     def save_posting(self, posting: JobPosting, embeddings: list[EmbeddingRow], is_new: bool) -> SaveResult:
         data = posting.model_dump(mode="json")
         if is_new:
-            self.jobs[posting.job_id] = {c: _value(data.get(c)) for c in ("job_id", *_RAW_FROM_POSTING)}
+            self.jobs[posting.job_id] = {**{c: _value(data.get(c)) for c in ("job_id", *_RAW_FROM_POSTING)},
+                                         "source_dataset": "job_description_upload"}  # as the Postgres INSERT
         self.postings[posting.job_id] = data
         for e in embeddings:
             self.embeddings[(posting.job_id, e.section, e.model_name, e.model_version)] = e

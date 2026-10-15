@@ -51,6 +51,7 @@ class JobRecord(BaseModel):
 RequirementBasis = Literal[
     "explicit_required_section", "explicit_preferred_section", "explicit_required_language",
     "explicit_preferred_language", "named_in_role_text", "not_named_in_role_text", "first_listed_fallback",
+    "confirmed_by_company",  # Phase 13: set or corrected by the company at job confirmation (no longer inferred)
 ]
 
 

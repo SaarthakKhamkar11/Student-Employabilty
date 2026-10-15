@@ -4,9 +4,10 @@ Phase 3: the Supervisor is live behind POST /requests. Phase 4: the Profile
 Agent is live, including POST /requests/resume-file for .pdf/.docx/.txt
 uploads. Phase 5: the Job Intelligence Agent. Phase 6: the relevance-labelling
 page (/labelling) and the recorded embedding-selection experiments
-(/experiments). The other specialists are still shells, so their results read
-"Not yet evaluated" or "Insufficient evidence" until their phases. There is no
-authentication yet (Phase 16): ports bind to 127.0.0.1 only.
+(/experiments). Phases 7-12: matching, skill gaps, learning, explanations, tracing.
+Phase 13: JWT auth (app/auth) and the role-protected dashboard APIs (app/portal:
+/student, /company, /admin). The pre-Phase-13 routes (/requests, /experiments,
+/labelling) stay open; ports bind to 127.0.0.1 only, and Phase 16 hardens them.
 """
 
 import asyncio
@@ -20,7 +21,6 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 
 from app import experiments
 from app.agents import SupervisorAgent, build_agents
-from app.auth import init_auth_schema
 from app.auth import router as auth_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, log_event
@@ -30,6 +30,10 @@ from app.embeddings.provider import build_embedding_provider, fallback_provider
 from app.labelling import routes as labelling
 from app.labelling.repository import build_labelling_repository
 from app.llm import build_llm_client
+from app.portal import admin as portal_admin
+from app.portal import company as portal_company
+from app.portal import student as portal_student
+from app.portal.service import Portal
 from app.profile.text_extraction import MAX_FILE_BYTES
 from app.schemas.agent_io import SupervisorInput, SupervisorResponse
 
@@ -41,14 +45,18 @@ embedder = build_embedding_provider(settings, verify=True)
 fallback_embedder = fallback_provider(embedder, settings)  # TF-IDF vectors stored beside E5's (docs/adr/0012)
 # Fails at startup if an agent declares an unregistered tool.
 llm = build_llm_client(settings)  # a quota-aware model chain (GEMINI_MODEL, then GEMINI_FALLBACK_MODELS)
-agents = build_agents(llm=llm, store=build_store(settings), embedder=embedder,
-                      fallback_embedder=fallback_embedder)
+store = build_store(settings)
+agents = build_agents(llm=llm, store=store, embedder=embedder, fallback_embedder=fallback_embedder)
+# Phase 13 dashboards: a second agent set with no LLM, so loading a page never spends Gemini quota (deterministic
+# routing, structured explanations). Gemini runs only on an explicit "Ask AI" (app/portal/service.py).
+quiet_agents = build_agents(llm=None, store=store, embedder=embedder, fallback_embedder=fallback_embedder)
+dsn = settings.database_url.get_secret_value() if settings.database_url else None
+portal = Portal(quiet=quiet_agents["supervisor"], llm=agents["supervisor"], dsn=dsn,  # type: ignore[arg-type]
+                llm_configured=llm is not None)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    # Auth tables (app_users, student_accounts, recruiter_accounts); idempotent.
-    await asyncio.to_thread(init_auth_schema)
     # Fit the embedding model once at startup, so the first request doesn't pay for it.
     try:
         version, dimension = await asyncio.to_thread(embedder.describe)
@@ -62,14 +70,21 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Student Employability Intelligence API", version="0.6.0", lifespan=lifespan)
+app = FastAPI(title="Student Employability Intelligence API", version="0.13.0", lifespan=lifespan)
 # Phase 6: the human relevance-labelling page and the recorded model-selection experiments
 labelling.configure(build_labelling_repository(settings))
 experiments.configure(settings.database_url.get_secret_value() if settings.database_url else None)
 app.include_router(labelling.router)
 app.include_router(experiments.router)
-# Email-OTP signup and email/password login (JWT) for students and recruiters
+# Email-OTP signup and email/password login (JWT) for students, companies and the seeded admin
 app.include_router(auth_router)
+# Phase 13: the role-protected dashboard APIs
+portal_student.configure(portal)
+portal_company.configure(portal)
+portal_admin.configure(portal, embedder)
+app.include_router(portal_student.router)
+app.include_router(portal_company.router)
+app.include_router(portal_admin.router)
 
 
 def get_supervisor() -> SupervisorAgent:

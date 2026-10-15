@@ -122,11 +122,16 @@ def create_job(user = Depends(require_role("recruiter"))):
     ...
 ```
 
-## Tables created
-- `app_users`: email, bcrypt password hash, role, full name, active flag, timestamps
-- `student_accounts`: degree, branch, graduation_year, gender, and `student_id`
-- `recruiter_accounts`: company_name, designation
+## Tables (Phase 13: one user store)
+Accounts live in migration 0009's `users` table (the only PII table), extended by migration 0012 (`full_name`,
+`details`, `profile_confirmed_at`). The module no longer creates `app_users` / `student_accounts` /
+`recruiter_accounts`; 0012 copies any accounts from those tables once, if they exist.
 
-`student_accounts.student_id` stays empty at signup. Fill it in with the project-assigned student ID when that
-student's record is created in your matching pipeline (for example, after their resume is parsed). That links
-the login account to the student's matches.
+- Student signup also creates the student's own `student_profiles` row (degree, branch, graduation year,
+  `source_dataset = 'resume_upload'`) and links it as `users.student_id`. The Profile Agent then merges those stated
+  facts with the uploaded resume.
+- Company signup creates (or reuses) a `companies` row (name, industry, company_size, website) and links it as
+  `users.company_id`. The role name stays `recruiter`; the UI calls it "Company".
+- Admin: `ADMIN_EMAIL=... ADMIN_PASSWORD=... python -m app.auth.seed_admin` (or set both in `.env`). Never hardcoded.
+- `POST /auth/login` takes an optional `role` (the login page's toggle) and refuses a student on the company side and
+  vice versa; admins may sign in from either side.

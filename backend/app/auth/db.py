@@ -1,40 +1,14 @@
-"""Postgres access (psycopg 3) and the auth tables."""
+"""Postgres access (psycopg 3) for the auth module.
+
+The account tables are migration 0009's `users` (the only PII table) plus migration 0012's columns: full_name,
+details, profile_confirmed_at. A student account is linked to its `student_profiles` row (users.student_id) from
+signup on; a company account to its `companies` row (users.company_id). The schema is owned by the SQL migrations
+(python -m app.db.migrate, run on container start), not created here.
+"""
 import psycopg
 from psycopg.rows import dict_row
 
 from .config import get_settings
-
-# app_users is named this way so it can't clash with any existing "users"/"students" table.
-# student_accounts.student_id is left NULL at signup: it is where you link the account to the
-# project-assigned student_id used by the matching pipeline, once that record is created.
-SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS app_users (
-    user_id        BIGSERIAL PRIMARY KEY,
-    email          TEXT        NOT NULL,
-    password_hash  TEXT        NOT NULL,
-    role           TEXT        NOT NULL CHECK (role IN ('student', 'recruiter')),
-    full_name      TEXT        NOT NULL,
-    is_active      BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_login_at  TIMESTAMPTZ
-);
-CREATE UNIQUE INDEX IF NOT EXISTS app_users_email_lower_uq ON app_users (lower(email));
-
-CREATE TABLE IF NOT EXISTS student_accounts (
-    user_id          BIGINT PRIMARY KEY REFERENCES app_users(user_id) ON DELETE CASCADE,
-    student_id       TEXT UNIQUE,
-    degree           TEXT NOT NULL,
-    branch           TEXT NOT NULL,
-    graduation_year  INT  NOT NULL CHECK (graduation_year BETWEEN 2000 AND 2100),
-    gender           TEXT NOT NULL CHECK (gender IN ('male', 'female', 'other', 'prefer_not_to_say'))
-);
-
-CREATE TABLE IF NOT EXISTS recruiter_accounts (
-    user_id       BIGINT PRIMARY KEY REFERENCES app_users(user_id) ON DELETE CASCADE,
-    company_name  TEXT NOT NULL,
-    designation   TEXT
-);
-"""
 
 
 def get_conn() -> psycopg.Connection:
@@ -43,6 +17,5 @@ def get_conn() -> psycopg.Connection:
 
 
 def init_auth_schema() -> None:
-    """Create the auth tables if they don't exist. Safe to call on every startup."""
-    with get_conn() as conn:
-        conn.execute(SCHEMA_SQL)
+    """Kept for callers of the pre-Phase-13 module: the tables now come from migrations 0009 and 0012."""
+    return None

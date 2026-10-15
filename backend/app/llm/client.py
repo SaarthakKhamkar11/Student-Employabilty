@@ -203,12 +203,18 @@ class FallbackLLMClient:
 
     traces_itself = True
 
-    def __init__(self, clients: list[LLMClient], cooldown_s: float = 3600.0, clock=time.monotonic):
+    def __init__(self, clients: list[LLMClient], cooldown_s: float = 3600.0, clock=time.monotonic,
+                 quota_attempts: int = 1, backoff_s: float = 1.0, sleep=asyncio.sleep):
         if not clients:
             raise ValueError("FallbackLLMClient needs at least one client")
         self.clients = [traced(c) for c in clients]
         self.model_name = clients[0].model_name  # the primary; capture_served_model() says who answered
         self.cooldown_s = cooldown_s
+        # Phase 13: a 429 is retried on the same model with exponential backoff (backoff_s, 2x, 4x ...) up to
+        # quota_attempts calls in total; only then does the model go into cooldown and the chain move on.
+        self.quota_attempts = max(1, quota_attempts)
+        self.backoff_s = backoff_s
+        self._sleep = sleep
         self._clock = clock
         self._until: dict[str, float] = {}
 
@@ -229,8 +235,8 @@ class FallbackLLMClient:
         last: LLMQuotaError | None = None
         for client in ready:
             try:
-                result = await client.generate_structured(system=system, prompt=prompt, schema=schema,
-                                                          timeout_s=timeout_s, max_output_tokens=max_output_tokens)
+                result = await self._with_backoff(client, system=system, prompt=prompt, schema=schema,
+                                                  timeout_s=timeout_s, max_output_tokens=max_output_tokens)
             except LLMQuotaError as exc:
                 self._until[client.model_name] = self._clock() + (exc.retry_after_s or self.cooldown_s)
                 log_event(_logger, "llm_quota_cooldown", logging.WARNING, model=client.model_name,
@@ -241,6 +247,19 @@ class FallbackLLMClient:
                 info["model"] = client.model_name
             return result
         raise last
+
+
+    async def _with_backoff(self, client: LLMClient, **kwargs):
+        for attempt in range(1, self.quota_attempts + 1):
+            try:
+                return await client.generate_structured(**kwargs)
+            except LLMQuotaError:
+                if attempt == self.quota_attempts:
+                    raise
+                delay = self.backoff_s * 2 ** (attempt - 1)
+                log_event(_logger, "llm_quota_backoff", logging.WARNING, model=client.model_name, attempt=attempt,
+                          sleep_s=delay)
+                await self._sleep(delay)
 
 
 def served_model(llm: LLMClient, info: dict) -> str:
@@ -254,4 +273,5 @@ def build_llm_client(settings: Settings) -> LLMClient | None:
     key = settings.gemini_api_key.get_secret_value()
     models = [settings.gemini_model] + [m.strip() for m in (settings.gemini_fallback_models or "").split(",")
                                         if m.strip() and m.strip() != settings.gemini_model]
-    return FallbackLLMClient([GeminiClient(key, m) for m in models], cooldown_s=settings.llm_quota_cooldown_seconds)
+    return FallbackLLMClient([GeminiClient(key, m) for m in models], cooldown_s=settings.llm_quota_cooldown_seconds,
+                             quota_attempts=settings.llm_quota_attempts, backoff_s=settings.llm_quota_backoff_seconds)

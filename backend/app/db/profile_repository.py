@@ -103,7 +103,11 @@ class PostgresProfileRepository:
                 "profile_extractor_version, profile_updated_at, pii_flags) "
                 "VALUES (%s, 'resume_upload', false, %s, %s, now(), %s) "
                 "ON CONFLICT (student_id) DO UPDATE SET profile = EXCLUDED.profile, "
-                "profile_extractor_version = EXCLUDED.profile_extractor_version, profile_updated_at = now(), "
+                "profile_extractor_version = EXCLUDED.profile_extractor_version, "
+                # the timestamp means "the profile changed": a rebuild with identical content keeps it (Phase 13
+                # dashboards treat a newer profile as making stored results out of date)
+                "profile_updated_at = CASE WHEN student_profiles.profile IS DISTINCT FROM EXCLUDED.profile "
+                "THEN now() ELSE student_profiles.profile_updated_at END, "
                 "pii_flags = EXCLUDED.pii_flags, updated_at = now()",
                 (sid, Jsonb(profile.model_dump(mode="json")), version, Jsonb(pii)))
             for table, rows in children.items():

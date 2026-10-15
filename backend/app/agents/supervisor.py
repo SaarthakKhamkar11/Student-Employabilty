@@ -45,6 +45,8 @@ from app.tools.registry import ToolRegistry
 
 TRANSIENT_FAILURES = {"timeout", "tool_failure", "internal_error"}
 NOT_NEEDED = "not needed: "  # prefix for skips that are not failures
+# Tasks about one (student, job) pair: with both ids given, the Matching Agent runs in pair mode for either actor.
+PAIR_TASKS = ("explain_match", "skill_gap_analysis", "learning_recommendations")
 
 
 @dataclass(frozen=True)
@@ -250,6 +252,10 @@ class SupervisorAgent(BaseAgent):
             if name == "matching_agent":
                 student_id = req.student_id or _data_field(outcomes, "profile_agent", "profile", "student_id")
                 job_id = req.job_id or _data_field(outcomes, "job_intelligence_agent", "posting", "job_id")
+                if student_id and job_id and routing.task_type in PAIR_TASKS:
+                    # One named pair (pair mode), from either side: a company asking why a candidate matched a
+                    # job wants that candidate explained, not whoever ranks first.
+                    return MatchingAgentInput(mode="jobs_for_student", student_id=student_id, job_id=job_id), None
                 if req.actor == "company" or routing.task_type in ("rank_candidates_for_job", "ingest_job"):
                     if not job_id:
                         return None, "no job_id available for candidate matching"

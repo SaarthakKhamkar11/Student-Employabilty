@@ -2,7 +2,7 @@
 
 **Rule:** update this file at the end of every phase. That means the status table, the "Pick up here" block, and a new entry in the Phase log. **From Phase 6 on, also extend `scripts/demo.py`** with a live demo of the phase's new capability, and run it once against the backend, and refresh the owner's progress dashboard (a private claude.ai artifact: aggregates only, real measured numbers, with the same caveats as the reports). Anyone taking over should be able to read only this file and know exactly where to start.
 
-Last updated: **2026-10-15** · Last completed phase: **Phase 12 (Agent tracing + cohort analytics)** · Next: **Phase 13 (Research dashboard)**. Both human-label selections are made. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **LightGBM** on E5, Logistic Regression for the fallback (ADR 0015).
+Last updated: **2026-10-15** · Last completed phase: **Phase 13 (Frontend: auth + student, company, admin/research dashboards)** · Next: **Phase 14 (Evaluation framework)**. Both human-label selections are made. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **LightGBM** on E5, Logistic Regression for the fallback (ADR 0015).
 
 **Latest code: `main`** holds Phases 1–8 (Phase 8 committed directly on `main` as `7e680b6`). Phase 9 is also committed. Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
 
@@ -10,7 +10,42 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
 
 ---
 
-## ▶ Pick up here: Phase 13 (Research dashboard)
+## ▶ Pick up here: Phase 14 (Evaluation framework)
+
+**Done on 2026-10-15: Phase 13 (frontend + dashboards).**
+- **Run it:** `docker compose up -d --build --wait`, then `cd frontend && npm install && npm run dev` →
+  http://127.0.0.1:5173. Vite proxies `/api/*` to the backend on :8000; there is no mock layer.
+  Admin: `docker compose exec backend python -m app.auth.seed_admin` with `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`.
+  Demo accounts (password `DEMO_PASSWORD` in `.env`): `demo.student@example.com`, `demo.recruiter@example.com`.
+- **Environment restored on this Windows machine:** the running image predated the auth module and had no E5 weights.
+  E5 staged to `.model_cache/hf` (pinned revision), image rebuilt, `seed_jobs --process` (4,990 jobs, 835 s on CPU),
+  `seed --process` (286 students), `load_pool` (360 pairs), `learning.catalog load` (20 courses). The 9 stored Phase 6/8
+  reports were loaded into `experiment_runs` with the engines' own `--record-existing` (the DB had none).
+  Docker Desktop's registry proxy (`http.docker.internal:3128`) fails image pulls; builds work from the local cache.
+- **Auth:** one user store (`users`, migration 0012); see `backend/app/auth/README.md`.
+- **Portal API (`backend/app/portal/`):** every dashboard value is a Supervisor run with an explicit task type, or the
+  newest stored run for the same task + ids if nothing changed since. Page loads use an agent set built without an LLM;
+  "Ask AI" uses the Gemini chain (429: exponential backoff 1 s/2 s, max 3 calls per model; successes cached in
+  `llm_explanations`; failures shown, never replaced by text).
+- **Agent changes:** Supervisor runs pair mode for `explain_match` / `skill_gap_analysis` / `learning_recommendations`
+  whenever both ids are given (company side too). Job Intelligence Agent reuses an uploaded JD's stored posting when
+  asked by id (so confirmed corrections survive), mirroring the Profile Agent. Profile/posting `*_updated_at` now move
+  only when the content changes (a deterministic rebuild no longer marks every stored result out of date).
+- **Tests:** 377 pass; `test_the_deployed_tfidf_version_is_unchanged_by_the_benchmark_rewrite` still fails (known,
+  platform-dependent TF-IDF hash, ADR 0015). New: `backend/tests/test_phase13_portal.py`.
+
+**Open items found in Phase 13 (for Phase 14 / 16):**
+- The Phase 6 recorder writes **no `experiment_metrics` rows for slot E (domain-adapted E5)** although its report JSON has
+  them, so the leaderboard shows it as "Not yet evaluated". Fix `record_experiment` in Phase 14.
+- `relevance_judgments` is empty in this database (the labels are read from `data/benchmark/human_labels.csv`).
+- The stored-run PII scrubber redacts every JSON key named `name` (cohort filter names read `[REDACTED]` in stored runs).
+- The Learning Agent's `compute_course_similarity` takes 23-30 s on this CPU and can hit the 30 s tool timeout (one retry).
+- Parsed JDs: qualifications can land in the skill list ("B.Tech or BCA") and `Location:` lines are not parsed; the
+  confirmation step lets the company fix both.
+- The pre-Phase-13 routes (`/requests`, `/experiments`, `/labelling`) are still unauthenticated (localhost only).
+- Stored results are invalidated by any profile/posting/confirmation change anywhere (simple and safe, but coarse).
+
+## Earlier hand-off (Phase 13 inputs, kept for history)
 
 **Done by the team since Phase 9 (2026-10-12 to 2026-10-14):**
 - **Labelling finished.** `scripts/export_labels.py` wrote `data/benchmark/human_labels.csv` and its `.manifest.json`
@@ -163,8 +198,8 @@ Open items owned by the project owner:
 | 10 | Learning Agent | ✅ Done (2026-10-14): 20-course curated catalogue + YouTube Data API, E5 relevance ranking, threshold 0.80, "No resources found" instead of fillers (ADR 0018) |
 | 11 | Explainability Agent + SHAP | ✅ Done (2026-10-15): SHAP per model type (TreeSHAP for LightGBM), global + per-match explanations, LLM lines validated against cited evidence or replaced by the structured evidence (ADR 0019). Live Gemini prose blocked by the free-tier quota |
 | 12 | Agent state/tracing | ✅ Done (2026-10-15): runtime spans persisted to `agent_runs` + `agent_messages`, `get_agent_trace` / `GET /requests/{id}/trace`, request-scoped PII redaction proved by grep; cohort benchmarking (aggregates only) as a tool of the Matching and Profile agents (ADR 0020) |
-| 13 | Research dashboard | ⏭ Next |
-| 14 | Evaluation framework | Not started |
+| 13 | Frontend + research dashboard | ✅ Done (2026-10-15): React app (`frontend/`), JWT auth on one `users` store, role-protected `/student` `/company` `/admin` APIs over the real Supervisor, confirmation steps, shortlist → `feedback_events`, live leaderboards/SHAP/traces |
+| 14 | Evaluation framework | ⏭ Next |
 | 15 | Feedback loop | Not started |
 | 16 | Security hardening | Not started |
 | 17 | Testing | Not started |

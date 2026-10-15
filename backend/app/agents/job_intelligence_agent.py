@@ -88,6 +88,12 @@ class JobIntelligenceAgent(BaseAgent):
     # -- decisions -------------------------------------------------------------
     async def decide_next_action(self, ctx: AgentContext) -> CallTool | Finish:
         x = self._init(ctx)
+        loaded = self._out(ctx, "load_job_record")
+        if not x["is_text"] and loaded is not None and loaded.stored_posting is not None:
+            # An uploaded JD asked for again by id: its raw text is not stored, and the posting may hold the
+            # company's confirmed corrections (Phase 13), so rebuilding it from the stored columns would lose them.
+            x["reused"] = loaded.stored_posting
+            return Finish(reason="reused the stored posting of an uploaded job description")
         done = {o.tool_name for o in ctx.observations}
         for stage in x["pipeline"]:
             if stage in done or stage in x["stages"]:
@@ -243,6 +249,10 @@ class JobIntelligenceAgent(BaseAgent):
     def _output(self, ctx: AgentContext) -> JobIntelligenceOutput:
         x = ctx.extras
         stages = {**{o.tool_name: "success" for o in ctx.observations}, **x.get("stages", {})}
+        if x.get("reused") is not None:
+            skipped = {s: "skipped" for s in RECORD_PIPELINE if s != "load_job_record"}
+            return JobIntelligenceOutput(posting=x["reused"], embedding=NOT_YET_EVALUATED, saved=False,
+                                         stages={**skipped, **stages})
         posting, embedding, saved = (self._out(ctx, t) for t in ("extract_job_posting", "generate_embedding", "save_job"))
         stored = saved is not None and saved.saved
         info = (EmbeddingInfo(model_name=embedding.model_name, model_version=embedding.model_version,

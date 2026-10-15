@@ -59,9 +59,13 @@ class LoadJobIn(_Model):
     required: bool
 
 
+UPLOAD_SOURCE = "job_description_upload"  # jobs.source_dataset of a JD uploaded through the API
+
+
 class LoadJobOut(_Model):
     found: bool
     record: dict[str, Any] | None
+    stored_posting: dict[str, Any] | None = None  # an uploaded JD's saved posting (its raw text is not kept)
 
 
 class ParseJobIn(_Model):
@@ -201,7 +205,10 @@ def register_job_tools(registry: ToolRegistry, *, repo: JobRepository | None, se
         record = _repo().get_job(job_id)
         if record is None and required:
             raise ToolInputRejected("load_job_record", f"unknown job_id {job_id}")
-        return {"found": record is not None, "record": record}
+        stored = None
+        if record is not None and record.get("source_dataset") == UPLOAD_SOURCE:
+            stored = _repo().get_stored_posting(job_id)
+        return {"found": record is not None, "record": record, "stored_posting": stored}
 
     @registry.register("parse_job_description", input_schema=ParseJobIn, output_schema=ParseJobOut)
     def tool_parse_job_description(text=None, record=None):

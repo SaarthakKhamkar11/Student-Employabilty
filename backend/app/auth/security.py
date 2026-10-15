@@ -85,7 +85,7 @@ def decode_token(token: str, expected_purpose: str) -> dict:
     return payload
 
 
-def create_access_token(user_id: int, role: str) -> tuple[str, int]:
+def create_access_token(user_id, role: str) -> tuple[str, int]:
     minutes = get_settings().access_token_expire_minutes
     token, _ = create_token(str(user_id), PURPOSE_ACCESS, minutes, role=role)
     return token, minutes * 60

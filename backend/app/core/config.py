@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # (app/llm/client.py FallbackLLMClient). An exhausted model is skipped until its reset (or this cooldown).
     gemini_fallback_models: str | None = None
     llm_quota_cooldown_seconds: float = Field(3600.0, gt=0)
+    # Phase 13: a 429 is retried on the same model with exponential backoff, at most this many calls in total
+    llm_quota_attempts: int = Field(3, ge=1, le=5)
+    llm_quota_backoff_seconds: float = Field(1.0, ge=0, le=10)
     # When the UI sends an explicit task_type there is nothing left to classify: route deterministically and keep
     # the LLM budget for requests that need it (a free-text question). Set true to route those by LLM too.
     llm_route_explicit_tasks: bool = False
