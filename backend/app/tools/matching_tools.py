@@ -11,6 +11,8 @@
                                    preferred ranked by counterfactual importance, transferable, partially related
     evaluate_model                 ranking metrics of the current matching configuration on labelled pairs
     benchmark_matching             per-stage latency of the whole pipeline
+    cohort_benchmark               Phase 12: the student against comparable peers (src/scoring/cohort_analytics.py);
+                                   aggregates only, never another student's data
 """
 
 import statistics
@@ -25,7 +27,7 @@ from app.db.matching_repository import MatchingRepository
 from app.embeddings.provider import EmbeddingProvider
 from app.matching import pipeline as P
 from app.matching.config import get_matching_config
-from app.schemas.agent_io import SkillGapReport
+from app.schemas.agent_io import CohortBenchmark, SkillGapReport
 from app.schemas.agent_state import PredictionVersions
 from app.tools.registry import ToolInputRejected, ToolRegistry
 from src.evaluation.retrieval_metrics import evaluate
@@ -165,6 +167,11 @@ class GapsOut(_Model):
     gaps: dict[str, SkillGapReport]
 
 
+class CohortIn(_Model):
+    student_id: str
+    job_id: str | None = None  # the job to compare suitability and gaps for; None = skill coverage only
+
+
 class LabelledPair(_Model):
     student_id: str
     job_id: str
@@ -292,6 +299,14 @@ def register_matching_tools(registry: ToolRegistry, *, repo: MatchingRepository 
         """Stage 6: matched skills; missing required / preferred ranked by counterfactual importance under the
         active model; transferable and partially related skills (src/scoring/skill_gap_analysis.py)."""
         return guarded("identify_skill_gaps", P.skill_gaps, ctx(), query_kind, query_id, candidates, percentiles)
+
+    @registry.register("cohort_benchmark", input_schema=CohortIn, output_schema=CohortBenchmark)
+    def tool_cohort_benchmark(student_id, job_id=None):
+        """Spec §18: filter peers (branch, graduation year, target role), take the most similar by profile embedding,
+        and return the cohort average, the student's percentile, skill coverage and the relative skill gap."""
+        from src.scoring.cohort_analytics import benchmark
+
+        return guarded("cohort_benchmark", benchmark, ctx(), student_id, job_id)
 
     @registry.register("evaluate_model", input_schema=EvaluateIn, output_schema=EvaluateOut)
     def tool_evaluate_model(pairs, ks, relevance_threshold):

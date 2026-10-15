@@ -25,8 +25,10 @@ def test_agents_endpoint_reports_implementation_status():
     agents = {a["name"]: a for a in client.get("/agents").json()}
     assert len(agents) == 6
     assert {n for n, a in agents.items() if a["implemented"]} == {"supervisor", "profile_agent", "job_intelligence_agent",
-                                                                  "matching_agent", "learning_agent"}
-    assert len(agents["profile_agent"]["allowed_tools"]) == 11
+                                                                  "matching_agent", "learning_agent",
+                                                                  "explainability_agent"}
+    assert len(agents["profile_agent"]["allowed_tools"]) == 12  # 11 + cohort_benchmark (Phase 12)
+    assert len(agents["explainability_agent"]["allowed_tools"]) == 8
 
 
 def test_post_request_runs_the_supervisor_and_the_run_can_be_read_back():

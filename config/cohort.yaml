@@ -1,0 +1,32 @@
+# Phase 12: cohort benchmarking (spec §18, docs/adr/0020). Every value has a reason; none is tuned on labels.
+version: cohort-v1
+
+filters:
+  # Stage 1. A filter applies only when the requesting student's own value is known; a peer whose value is
+  # unknown for an applied filter is left out (it can't be confirmed comparable). Branch is never relaxed.
+  # When fewer than privacy.min_cohort_size peers remain, these filters are dropped in this order, and the
+  # response says which were dropped.
+  relax_order: [graduation_year, target_role]
+
+comparable:
+  # Stage 2. The N most similar peers inside the filtered cohort, by cosine similarity of the stored
+  # PROFILE-LEVEL embedding (section "full": skills + experience + education + projects + certifications) of the
+  # configured embedding model. Profile-level, not skills-only: a skills-only vector is empty for 35 of the 286
+  # students (no skills section), and "comparable" should cover projects and experience too.
+  section: full
+  top_n: 20
+
+privacy:
+  # No aggregate over fewer than this many peers: with very small cohorts an average or a percentile approximates an
+  # individual's score. Below it, every statistic is "Insufficient evidence" and only the count is returned.
+  min_cohort_size: 5
+  # A skill is listed among the cohort's common skills only if at least this many peers hold it, so a listed
+  # skill can never point at one student.
+  min_skill_holders: 3
+
+statistics:
+  # Skill coverage: the share of the cohort's most common skills the student has (top this many by holder count).
+  common_skills: 10
+  # Relative skill gap: a missing job skill is "shared" when at least this share of peers also lack it, and
+  # "distinctive" (most peers have it) otherwise.
+  shared_gap_share: 0.5

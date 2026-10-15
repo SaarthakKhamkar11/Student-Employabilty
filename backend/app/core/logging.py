@@ -6,7 +6,11 @@ they reach a handler:
 - values under sensitive keys (email, phone, password, api_key, resume_text ...)
   are masked;
 - email addresses and phone-number-like digit runs inside strings are replaced;
-- long free text, such as resume or JD bodies, is never logged verbatim.
+- long free text, such as resume or JD bodies, is never logged verbatim;
+- the request's own detected PII values (Phase 12): the PII detector (app/profile/pii.py) registers each value it
+  flags with register_sensitive_values(), and every later string of that request has them replaced, wherever
+  they appear. This catches what the patterns can't, e.g. a resume's name repeated in its project text.
+  The registered values live only in memory, for one request, and are never logged or stored.
 
 This is the safe baseline. Full hardening is Phase 16 (security).
 """
@@ -22,6 +26,9 @@ from typing import Any
 from pydantic import BaseModel, SecretStr
 
 request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
+# One mutable set per request (the Supervisor opens it). Tasks and worker threads see the same object, so a value
+# the Profile Agent's detect_pii tool registers is redacted from the Supervisor's own later records too.
+sensitive_values_var: ContextVar[set[str] | None] = ContextVar("sensitive_values", default=None)
 
 REDACTED = "[REDACTED]"
 MAX_LOGGED_TEXT = 120  # longer strings are summarised, never logged verbatim
@@ -51,10 +58,45 @@ def _is_sensitive_key(key: str, keys: set[str] = SENSITIVE_KEYS) -> bool:
     return k in keys or any(part in k for part in SENSITIVE_KEY_PARTS)
 
 
+MIN_SENSITIVE_LEN = 3  # shorter fragments ("K", "of") would redact ordinary words
+
+
+def register_sensitive_values(values, *, words: bool = False) -> int:
+    """Register literal PII values detected in this request's input, so every later log line and persisted trace
+    record of the request has them replaced. words=True (names) also registers each word ("Asha" and "Rao" for
+    "Asha Rao"); phone numbers are also registered as their bare digits. Returns how many were added (0 outside a
+    request)."""
+    registry = sensitive_values_var.get()
+    if registry is None:
+        return 0
+    before = len(registry)
+    for value in values:
+        value = " ".join(str(value).split())
+        if len(value) < MIN_SENSITIVE_LEN:
+            continue
+        registry.add(value)
+        if words:
+            registry.update(w for w in re.split(r"[\s,|.]+", value) if len(w) >= MIN_SENSITIVE_LEN and w.isalpha())
+        digits = re.sub(r"\D", "", value)
+        if len(digits) >= 10:
+            registry.add(digits)
+    return len(registry) - before
+
+
+def _scrub_values(text: str) -> str:
+    registry = sensitive_values_var.get()
+    if not registry:
+        return text
+    for value in sorted(registry, key=len, reverse=True):  # "Asha Rao" before "Asha"
+        if value.lower() in text.lower():
+            text = re.sub(re.escape(value), REDACTED, text, flags=re.I)
+    return text
+
+
 def redact_text(text: str, max_text: int | None = MAX_LOGGED_TEXT) -> str:
     if max_text is not None and len(text) > max_text:
         return f"[TEXT len={len(text)}]"
-    return PHONE_RE.sub("[PHONE]", EMAIL_RE.sub("[EMAIL]", text))
+    return PHONE_RE.sub("[PHONE]", EMAIL_RE.sub("[EMAIL]", _scrub_values(text)))
 
 
 def redact(value: Any, key: str | None = None, *, max_text: int | None = MAX_LOGGED_TEXT,

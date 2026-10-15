@@ -221,7 +221,7 @@ def test_final_state_is_persisted_with_lifecycle_fields(sup_settings):
 
 def test_database_failure_does_not_break_the_request(sup_settings):
     class BrokenStore:
-        async def save(self, record):
+        async def save(self, record, executions=None, messages=None):
             raise ConnectionRefusedError("db down")
 
         async def get(self, request_id):

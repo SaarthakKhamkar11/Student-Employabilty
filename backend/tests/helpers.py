@@ -82,7 +82,8 @@ class FakeLLM:
         self.responses = list(responses)
         self.calls: list[dict[str, str]] = []
 
-    async def generate_structured(self, *, system: str, prompt: str, schema: type[BaseModel], timeout_s: float):
+    async def generate_structured(self, *, system: str, prompt: str, schema: type[BaseModel], timeout_s: float,
+                                  max_output_tokens: int = 1024):
         self.calls.append({"system": system, "prompt": prompt})
         response = self.responses[min(len(self.calls), len(self.responses)) - 1]
         if isinstance(response, BaseException):

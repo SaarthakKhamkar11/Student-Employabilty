@@ -11,7 +11,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.schemas.agent_state import NOT_YET_EVALUATED, ModelVersionInfo, PredictionVersions, Unavailable
+from app.schemas.agent_state import NOT_YET_EVALUATED, PredictionVersions, Unavailable
 from app.schemas.job import JobPosting
 from app.schemas.student import StudentProfile
 
@@ -242,6 +242,7 @@ class ProfileAgentOutput(Contract):
     embedding: EmbeddingInfo | Unavailable = NOT_YET_EVALUATED
     saved: bool = False
     stages: dict[str, StageStatus] = Field(default_factory=dict)
+    cohort_benchmark: "CohortBenchmark | Unavailable" = NOT_YET_EVALUATED  # Phase 12: task cohort_benchmark only
 
 
 # --------------------------------------------------------------------------
@@ -375,6 +376,67 @@ class MatchingFunnel(Contract):
     returned: int
 
 
+# --------------------------------------------------------------------------
+# Cohort analytics (Phase 12, spec §18, docs/adr/0020): aggregates only, never another student's data
+# --------------------------------------------------------------------------
+class CohortFilter(Contract):
+    name: Literal["branch", "graduation_year", "target_role"]
+    value: str | None  # the requesting student's own value
+    applied: bool
+    note: str
+
+
+class CohortSkillShare(Contract):
+    skill: str
+    peers_with_share: float  # share (0-1) of the comparable peers whose profile lists this skill
+
+
+class CohortSuitability(Contract):
+    job_id: str
+    job_title: str | None
+    student_score: float  # the student's own suitability for the job (0-1), same model as the Matching Agent
+    cohort_average: float  # mean suitability of the comparable peers for the same job
+    cohort_median: float
+    percentile: float  # 0-100: share of comparable peers scored below the student (ties count half)
+    peers_scored: int
+    peers_unscored: int  # no comparable section with the job: no score, so not in the statistics
+
+
+class CohortSkillCoverage(Contract):
+    common_skills: list[CohortSkillShare]  # the cohort's most common skills (each held by >= min_skill_holders)
+    coverage: float | Unavailable  # share of those the student has
+    covered: list[str]
+    missing: list[str]
+
+
+class RelativeSkillGap(Contract):
+    job_id: str
+    student_missing_count: int  # job skills not detected in the student's profile
+    cohort_average_missing_count: float
+    fewer_missing_than_percentile: float  # 0-100: share of peers missing MORE of the job's skills (ties half)
+    distinctive_gaps: list[CohortSkillShare]  # the student lacks them, most peers have them: the priorities
+    shared_gaps: list[CohortSkillShare]  # most peers lack them too
+    advantages: list[CohortSkillShare]  # the student has them, most peers don't
+
+
+class CohortBenchmark(Contract):
+    student_id: str  # the requesting student only; peers are never identified
+    job_id: str | None
+    method_version: str
+    target_role: dict[str, Any]  # source (job | career_interests | domain), label, role families
+    filters: list[CohortFilter]
+    relaxed: list[str]  # filters dropped because the cohort was too small
+    cohort_size: int  # peers left after the filters (the student excluded)
+    comparable_size: int  # the N most similar of them, by embedding similarity (the statistics' population)
+    similarity: dict[str, Any]  # embedding model and version, section, aggregate similarity of the comparable peers
+    suitability: CohortSuitability | Unavailable = NOT_YET_EVALUATED
+    skill_coverage: CohortSkillCoverage | Unavailable = NOT_YET_EVALUATED
+    relative_skill_gap: RelativeSkillGap | Unavailable = NOT_YET_EVALUATED
+    model_versions: PredictionVersions | Unavailable = NOT_YET_EVALUATED
+    privacy: dict[str, Any]
+    notes: list[str] = Field(default_factory=list)
+
+
 class MatchingAgentOutput(Contract):
     mode: Literal["jobs_for_student", "candidates_for_job", "pair"] | Unavailable = NOT_YET_EVALUATED
     query_id: str | Unavailable = NOT_YET_EVALUATED
@@ -383,6 +445,7 @@ class MatchingAgentOutput(Contract):
     pair_check: dict[str, Any] | None = None  # pair mode: the hard rules this pair fails (reported, not applied)
     model_versions: PredictionVersions | Unavailable = NOT_YET_EVALUATED
     notes: list[str] = Field(default_factory=list)
+    cohort_benchmark: CohortBenchmark | Unavailable = NOT_YET_EVALUATED  # Phase 12: for the top job (student modes)
 
 
 # --------------------------------------------------------------------------
@@ -436,18 +499,129 @@ class LearningAgentOutput(Contract):
 
 
 # --------------------------------------------------------------------------
-# Explainability Agent (Phase 11)
+# Explainability Agent (Phase 11, docs/adr/0019)
 # --------------------------------------------------------------------------
 class ExplainabilityAgentInput(Contract):
-    match: MatchResult
+    """mode "match": explain one prediction (`match` required). mode "global": explain the active model as a
+    whole. The two are separate pipelines with separate outputs, not one function with a flag."""
+
+    mode: Literal["match", "global"] = "match"
+    match: MatchResult | None = None
+
+    @model_validator(mode="after")
+    def _match_for_match_mode(self) -> "ExplainabilityAgentInput":
+        if self.mode == "match" and self.match is None:
+            raise ValueError("mode 'match' requires a MatchResult")
+        return self
+
+
+EvidenceKind = Literal["matched_skill", "transferable_skill", "education", "experience", "branch", "similarity",
+                       "missing_required", "missing_preferred", "shap"]
+
+
+class EvidenceItem(Contract):
+    """One claim the explanation may make, built deterministically from an input value. A generated line must
+    cite the items it states (validate_explanation checks it against `anchors`, `mentions`, `numbers`, `sign`)."""
+
+    id: str  # P<n> positive, G<n> gap, M<n> model evidence
+    kind: EvidenceKind
+    fact: str  # the claim in plain words: the structured fallback prints exactly this
+    anchors: list[str] = Field(min_length=1)  # a line citing this item must contain each of these terms
+    mentions: list[str] = Field(default_factory=list)  # other known terms the item legitimately involves
+    numbers: list[float] = Field(default_factory=list)  # the only numbers a line citing this item may state
+    sign: Literal[1, -1] | None = None  # model evidence: the SHAP direction (+1 raised, -1 lowered the score)
+    source: dict[str, Any]  # the input value(s) behind the claim, for tracing
+
+
+class EvidenceBundle(Contract):
+    suitability_score: float  # 0-1, from the prediction (never recomputed by the LLM)
+    positive: list[EvidenceItem]
+    gaps: list[EvidenceItem]
+    model: list[EvidenceItem]
+    improve: list[str]  # gap ids eligible for "How to Improve", most important first
+    known_terms: list[str]  # every skill name and feature label: a line may name one only if a cited item does
+    semantic: dict[str, Any]  # semantic similarity: percentile, raw cosine, its contribution
+    notes: list[str] = Field(default_factory=list)
+
+
+class ProseLine(Contract):
+    text: str = Field(min_length=1, max_length=240)
+    evidence_ids: list[str] = Field(min_length=1, max_length=12)
+
+
+class ProseDraft(Contract):
+    """What the LLM returns: lines of prose, each citing the evidence items it states. No numbers are computed."""
+
+    positive_evidence: list[ProseLine] = Field(max_length=12)
+    potential_gaps: list[ProseLine] = Field(max_length=12)
+    model_evidence: list[ProseLine] = Field(max_length=8)
+    how_to_improve: list[ProseLine] = Field(max_length=3)
+
+
+class ExplanationValidation(Contract):
+    attempt: int = Field(ge=0)  # 0 = the structured fallback
+    valid: bool
+    errors: list[str]
+    lines_checked: int
+
+
+class MatchExplanation(Contract):
+    """One (student, job) prediction explained. Every line traces to an item in `evidence`."""
+
+    student_id: str
+    job_id: str
+    job_title: str | None
+    suitability_score: float  # 0-1, the prediction's own value
+    positive_evidence: list[str]
+    potential_gaps: list[str]
+    model_evidence: list[str]
+    how_to_improve: list[str]
+    text: str  # rendered in the spec's format
+    source: Literal["llm_validated", "structured_fallback"]
+    generation: dict[str, Any]  # LLM used, attempts, each validation, why the fallback was used
+    evidence: EvidenceBundle
+    contributions: dict[str, Any]  # base value, per-feature SHAP, output space, explainer, additivity error
+    model_versions: PredictionVersions
+
+
+class ImportanceRow(Contract):
+    rank: int  # equal importances share a rank
+    feature: str
+    mean_abs_shap: float
+    used_by_model: bool
+    skill_feature: bool
+    tied: bool
+
+
+class GlobalExplanation(Contract):
+    """The active model as a whole: data for the Phase 13 dashboard to plot, not a rendered image."""
+
+    kind: Literal["global"] = "global"
+    matching_model: str
+    matching_model_version: str
+    artifacts_experiment: str
+    embedding_model: str | None
+    embedding_version: str
+    feature_version: str
+    feature_matrix: str
+    explainer: str
+    output_space: str
+    base_value: float
+    split: str
+    rows: int
+    additivity_max_abs_error: float
+    importance_ranking: list[ImportanceRow]
+    distributions: dict[str, dict[str, Any]]  # per feature: mean, std, mean_abs, percentiles, histogram
+    summary_plot: dict[str, Any]  # per feature: sampled (feature value, SHAP) points
+    notes: list[str]
 
 
 class ExplainabilityAgentOutput(Contract):
     """Every statement must be traceable to model or data evidence (spec §16)."""
 
-    suitability_score: float | Unavailable = NOT_YET_EVALUATED
-    positive_evidence: list[str] | Unavailable = NOT_YET_EVALUATED
-    potential_gaps: list[str] | Unavailable = NOT_YET_EVALUATED
-    model_evidence: list[str] | Unavailable = NOT_YET_EVALUATED
-    improvement_suggestions: list[str] | Unavailable = NOT_YET_EVALUATED
-    model_versions: ModelVersionInfo = Field(default_factory=ModelVersionInfo)
+    mode: Literal["match", "global"] | Unavailable = NOT_YET_EVALUATED
+    match_explanation: MatchExplanation | Unavailable = NOT_YET_EVALUATED
+    global_explanation: GlobalExplanation | Unavailable = NOT_YET_EVALUATED
+
+
+ProfileAgentOutput.model_rebuild()

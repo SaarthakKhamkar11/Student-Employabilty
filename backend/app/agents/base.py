@@ -36,6 +36,7 @@ from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from app.core.config import Settings, get_settings
 from app.core.logging import get_logger, log_event, redact_text, request_id_var
+from app.core.tracing import current_span_id, current_trace, open_span
 from app.schemas.agent_io import (
     AgentAction, AgentError, AgentOutput, AgentStatus, CallTool, Delegate, Finish, Handoff,
     TerminationReason, ToolCallRecord,
@@ -155,6 +156,11 @@ class BaseAgent(ABC):
         """
         return False
 
+    def trace_model_versions(self, data: dict[str, Any]) -> dict[str, str]:
+        """The model versions this agent's result came from, for its trace span (spec §39 model_version). Each
+        agent reads them from its own output; {} for an agent whose result no model produced."""
+        return {}
+
     def record_error(self, ctx: AgentContext, code: str, message: str, tool_name: str | None = None) -> AgentError:
         """Record a problem that makes the run partial without stopping it (e.g. a failed validation)."""
         return self._error(ctx, code, message, tool_name)
@@ -166,20 +172,28 @@ class BaseAgent(ABC):
         token = request_id_var.set(state.request_id)
         ctx = AgentContext(state=state)
         state.agents_called.append(self.name)
-        try:
+        trace, parent = current_trace(), current_span_id()
+        attempt = trace.attempt_of(self.name, parent) + 1 if trace else 1
+        # the top-level agent's span is the request itself; every other execution gets its own id (Phase 12)
+        with open_span("agent", self.name, span_id=state.request_id if parent is None else None,
+                       task=state.task_type, attempt=attempt) as span:
             try:
-                outcome = await asyncio.wait_for(self._execute(ctx, input_payload), timeout=self.timeout_seconds())
-            except TimeoutError:
-                outcome = self._fail(ctx, "timeout", f"agent exceeded {self.timeout_seconds()}s")
-            except Exception as exc:  # run() must never raise
-                outcome = self._fail(ctx, "internal_error", f"{type(exc).__name__}: {redact_text(str(exc))}")
-            output = self._build_output(ctx, outcome, started_at, t0)
-            state.agent_results[self.name] = output.model_dump(mode="json")
-            state.errors.extend(e.model_dump(mode="json") for e in output.errors)
-            self._log_run(state, output)
-            return output
-        finally:
-            request_id_var.reset(token)
+                try:
+                    outcome = await asyncio.wait_for(self._execute(ctx, input_payload), timeout=self.timeout_seconds())
+                except TimeoutError:
+                    outcome = self._fail(ctx, "timeout", f"agent exceeded {self.timeout_seconds()}s")
+                except Exception as exc:  # run() must never raise
+                    outcome = self._fail(ctx, "internal_error", f"{type(exc).__name__}: {redact_text(str(exc))}")
+                output = self._build_output(ctx, outcome, started_at, t0)
+                state.agent_results[self.name] = output.model_dump(mode="json")
+                state.errors.extend(e.model_dump(mode="json") for e in output.errors)
+                fields = self._trace_fields(state, output, span, attempt)
+                if span is not None:
+                    trace.finish(span, output.status, **{k: v for k, v in fields.items() if k != "status"})
+                self._log_run(fields, output)
+                return output
+            finally:
+                request_id_var.reset(token)
 
     # -- loop internals --------------------------------------------------------
     async def _execute(self, ctx: AgentContext, input_payload: BaseModel | dict[str, Any]) -> _Outcome:
@@ -229,10 +243,17 @@ class BaseAgent(ABC):
     async def _call_tool_with_retry(self, ctx: AgentContext, action: CallTool) -> BaseModel:
         max_attempts = 1 + self.max_tool_retries()
         start = time.perf_counter()
+        trace = current_trace()
         for attempt in range(1, max_attempts + 1):
             try:
-                output = await self.registry.call(action.tool_name, action.arguments,
-                                                  timeout=self.settings.tool_timeout_seconds)
+                with open_span("tool", action.tool_name, attempt=attempt) as span:
+                    try:
+                        output = await self.registry.call(action.tool_name, action.arguments,
+                                                          timeout=self.settings.tool_timeout_seconds)
+                    except ToolError as exc:
+                        if span is not None:
+                            trace.finish(span, "failed", error_type=type(exc).__name__)
+                        raise
             except ToolError as exc:
                 if attempt == max_attempts or isinstance(exc, ToolInputRejected):
                     ctx.tool_calls.append(ToolCallRecord(tool_name=action.tool_name, attempts=attempt, success=False,
@@ -299,18 +320,34 @@ class BaseAgent(ABC):
                                termination_reason="internal_error", finished_at=_utcnow(), duration_ms=_ms(t0),
                                **common)
 
-    def _log_run(self, state: AgentState, output: AgentOutput) -> None:
-        log_event(
-            self.logger, "agent_run",
-            logging.INFO if output.status == "success" else logging.WARNING,
-            agent_name=self.name, task=state.task_type, status=output.status,
-            termination_reason=output.termination_reason, start_time=output.started_at.isoformat(),
-            end_time=output.finished_at.isoformat(), duration_ms=output.duration_ms,
-            tool_calls=[c.model_dump() for c in output.tool_calls],
-            retry_count=sum(c.attempts - 1 for c in output.tool_calls),
-            model_used=output.model_used, model_versions=state.model_versions, fallback_used=output.fallback_used,
-            error=output.errors[0].code if output.errors else None,
-        )
+    def _trace_fields(self, state: AgentState, output: AgentOutput, span, attempt: int) -> dict[str, Any]:
+        """The spec §39 record of one execution: what ran, how long each tool took, which models, how it ended."""
+        try:
+            versions = self.trace_model_versions(output.data) if isinstance(output.data, dict) else {}
+        except Exception:  # a malformed result must not break tracing; the result itself is validated elsewhere
+            versions = {}
+        trace = current_trace()
+        llm_models = sorted({s.name for s in trace.descendants(span.span_id, "llm")}) if span is not None else []
+        tool_calls = [{"tool_name": c.tool_name, "duration_ms": c.duration_ms, "success": c.success,
+                       "attempts": c.attempts, "error_type": c.error_type} for c in output.tool_calls]
+        return {
+            "request_id": state.request_id, "agent_name": self.name, "task": state.task_type, "attempt": attempt,
+            "start_time": output.started_at.isoformat(), "end_time": output.finished_at.isoformat(),
+            "duration_ms": output.duration_ms, "tool_calls": tool_calls,
+            "tool_latency_ms": round(sum(c.duration_ms for c in output.tool_calls), 3),
+            "model_used": output.model_used or (", ".join(llm_models) if llm_models else None),
+            "model_version": next(iter(versions.values()), None), "model_versions": versions,
+            "status": output.status, "termination_reason": output.termination_reason,
+            "error": output.errors[0].code if output.errors else None,
+            "errors": [e.model_dump(mode="json") for e in output.errors],
+            "retry_count": sum(c.attempts - 1 for c in output.tool_calls), "fallback_used": output.fallback_used,
+            "span_id": span.span_id if span is not None else None,
+            "parent_span_id": span.parent_id if span is not None else None,
+        }
+
+    def _log_run(self, fields: dict[str, Any], output: AgentOutput) -> None:
+        log_event(self.logger, "agent_run", logging.INFO if output.status == "success" else logging.WARNING,
+                  **{k: v for k, v in fields.items() if k != "errors"})
 
 
 def _utcnow() -> datetime:

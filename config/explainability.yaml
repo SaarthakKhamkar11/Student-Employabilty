@@ -1,0 +1,23 @@
+# Phase 11: Explainability Agent settings (docs/adr/0019). Every value has a reason; none is tuned on labels.
+
+individual:
+  # A SHAP contribution is "model evidence" for a pair when its share of the pair's total |SHAP| is at least this.
+  # A share, not an absolute value, so it means the same in log-odds (LightGBM, LR) and suitability (Baseline 3).
+  min_abs_share: 0.05
+  # At most this many contributors per direction: the template shows a few lines, not 20 features.
+  max_per_direction: 3
+  # A similarity feature counts as positive evidence when its calibrated percentile is at least this: the pair is
+  # in the top quarter of all student-job pairs for the configured embedding model (percentiles, never raw cosine).
+  positive_similarity_percentile: 0.75
+  # Gemini's output budget for one explanation (JSON with ~15 lines plus the model's own reasoning tokens).
+  max_output_tokens: 4096
+
+global:
+  # Distributions are computed over every row of this split of the feature matrix the model was trained with.
+  split: validation
+  # Points per feature for the summary (beeswarm) plot: a fixed, seeded sample, so the dashboard payload stays small.
+  summary_sample: 300
+  histogram_bins: 20
+  seed: 42
+  # Background rows for SHAP explainers that need one (LinearExplainer); Phase 8 used the same 200-row train sample.
+  background_rows: 200

@@ -3,7 +3,7 @@
 Pipeline, each stage a validated tool call through the BaseAgent loop:
 
     filter_eligible → retrieve_jobs | retrieve_candidates → compute_similarity → generate_features
-    → predict_suitability → rank_candidates → identify_skill_gaps
+    → predict_suitability → rank_candidates → identify_skill_gaps → cohort_benchmark (student modes, Phase 12)
 
 Modes: jobs_for_student, candidates_for_job, and "pair" (jobs_for_student with a job_id: one named job,
 whose hard-rule failures are reported instead of applied). The agent is not a model: the embedding model
@@ -20,10 +20,10 @@ from pydantic import BaseModel
 from app.agents.base import GUARDRAILS, AgentContext, BaseAgent
 from app.matching.features import FEATURE_NAMES
 from app.schemas.agent_io import CallTool, Finish, MatchingAgentInput, MatchingAgentOutput
-from app.schemas.agent_state import INSUFFICIENT_EVIDENCE
+from app.schemas.agent_state import INSUFFICIENT_EVIDENCE, NOT_YET_EVALUATED
 
 PIPELINE = ("filter_eligible", "retrieve", "compute_similarity", "generate_features", "predict_suitability",
-            "rank_candidates", "identify_skill_gaps")
+            "rank_candidates", "identify_skill_gaps", "cohort_benchmark")
 NOTES = (
     "Similarity values are percentiles among all student-job pairs for the configured embedding model, "
     "never raw cosine (raw values are model-specific; Phase 6).",
@@ -46,6 +46,7 @@ class MatchingAgent(BaseAgent):
     allowed_tools: ClassVar[list[str]] = [
         "filter_eligible", "retrieve_jobs", "retrieve_candidates", "compute_similarity", "generate_features",
         "predict_suitability", "rank_candidates", "identify_skill_gaps", "evaluate_model", "benchmark_matching",
+        "cohort_benchmark",
     ]
     planned_tools = (  # spec §20
         "retrieve_candidates",
@@ -66,11 +67,21 @@ class MatchingAgent(BaseAgent):
     implemented = True
     implemented_in_phase = 7
 
+    def trace_model_versions(self, data: dict) -> dict[str, str]:
+        v = data.get("model_versions")
+        if not isinstance(v, dict):
+            return {}
+        return {"matching": v["matching_model_version"], "embedding": f"{v['embedding_model']} {v['embedding_version']}"}
+
     def max_steps(self) -> int:
         return len(PIPELINE) + 2
 
     def max_tool_retries(self) -> int:
         return 1
+
+    def continue_after_failure(self, ctx: AgentContext, action: CallTool, error) -> bool:
+        # an enrichment: the matches stand without it (the error is kept, so the run reports "partial")
+        return action.tool_name == "cohort_benchmark"
 
     # -- decisions -------------------------------------------------------------
     async def decide_next_action(self, ctx: AgentContext) -> CallTool | Finish:
@@ -80,6 +91,8 @@ class MatchingAgent(BaseAgent):
                 continue
             x["done"].add(stage)
             arguments = self._arguments(stage, ctx)
+            if arguments is None and stage == "cohort_benchmark":
+                return Finish(reason="matching pipeline complete (no cohort benchmark for this mode)")
             if arguments is None:  # nothing left to match: stop early with what the funnel shows
                 return Finish(reason=f"nothing to {stage}")
             tool = stage if stage != "retrieve" else ("retrieve_candidates" if x["kind"] == "job" else "retrieve_jobs")
@@ -143,6 +156,11 @@ class MatchingAgent(BaseAgent):
                        for r in retrieved.top} if kind == "student" else {})
             return {"suitability": {c: p.suitability for c, p in predictions.items()}, "top_k": x["top_k"],
                     "groups": groups}
+        if stage == "cohort_benchmark":  # the student against comparable peers, for the top-ranked job
+            ranked = self._out(ctx, "rank_candidates").ranked
+            if kind != "student" or not ranked:
+                return None
+            return {"student_id": qid, "job_id": ranked[0].id}
         if stage == "identify_skill_gaps":
             ranked = [r.id for r in self._out(ctx, "rank_candidates").ranked]
             sims = self._out(ctx, "compute_similarity").percentiles
@@ -202,7 +220,10 @@ class MatchingAgent(BaseAgent):
         return MatchingAgentOutput(
             mode=x["mode"], query_id=x["query_id"], matches=matches, funnel=funnel, pair_check=pair,
             model_versions=preds.model_versions if preds is not None else INSUFFICIENT_EVIDENCE,
-            notes=[preds.method + ".", *NOTES] if preds is not None else list(NOTES))
+            notes=[preds.method + ".", *NOTES] if preds is not None else list(NOTES),
+            cohort_benchmark=cohort if (cohort := self._out(ctx, "cohort_benchmark")) is not None else (
+                INSUFFICIENT_EVIDENCE if "cohort_benchmark" in x["done"] and x["kind"] == "student" and matches
+                else NOT_YET_EVALUATED))
 
 
 def _or_sentinel(value: float | None) -> float | str:

@@ -75,6 +75,10 @@ class JobIntelligenceAgent(BaseAgent):
     implemented = True
     implemented_in_phase = 5
 
+    def trace_model_versions(self, data: dict) -> dict[str, str]:
+        e = data.get("embedding")
+        return {"embedding": f"{e['model_name']} {e['model_version']}"} if isinstance(e, dict) else {}
+
     def max_tool_retries(self) -> int:
         return 1
 

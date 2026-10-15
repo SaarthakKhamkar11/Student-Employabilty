@@ -5,6 +5,7 @@ Pipeline, with each stage a validated tool call through the BaseAgent loop:
     resume:  extract_text → detect_pii → parse_resume → extract_skills → normalize_skills
              → extract_profile → generate_embedding → validate_profile → save_profile
     stored:  load_student_record → detect_pii → parse_student_sections → extract_skills → …(same)
+    task cohort_benchmark (Phase 12): … → save_profile → cohort_benchmark (the stored profile against its peers)
 
 When both a student_id and a resume are given, the stored record supplies the
 fields a resume does not state (branch, CGPA, graduation year ...), and the
@@ -49,6 +50,8 @@ DEGRADE_POLICY: dict[str, tuple[str, ...]] = {
     "generate_embedding": (),
     # Profile returned but not stored (saved=false).
     "save_profile": (),
+    # Profile returned without the cohort comparison (cohort_benchmark reads "Insufficient evidence").
+    "cohort_benchmark": (),
 }
 
 
@@ -62,7 +65,7 @@ class ProfileAgent(BaseAgent):
         "skill you cannot find is 'not detected', never 'not possessed'. "
         + GUARDRAILS
     )
-    allowed_tools: ClassVar[list[str]] = sorted(set(RESUME_PIPELINE) | set(RECORD_PIPELINE))
+    allowed_tools: ClassVar[list[str]] = sorted(set(RESUME_PIPELINE) | set(RECORD_PIPELINE) | {"cohort_benchmark"})
     planned_tools = (  # spec §20
         "parse_resume",
         "extract_profile",
@@ -76,12 +79,16 @@ class ProfileAgent(BaseAgent):
     implemented = True
     implemented_in_phase = 4
 
+    def trace_model_versions(self, data: dict) -> dict[str, str]:
+        e = data.get("embedding")
+        return {"embedding": f"{e['model_name']} {e['model_version']}"} if isinstance(e, dict) else {}
+
     def max_tool_retries(self) -> int:
         return 1  # Phase 4 rule: a failing stage is retried once, then degraded or stopped
 
     def max_steps(self) -> int:
-        # the longest path (stored record + resume) is 10 tool calls, plus the finish decision
-        return len(RESUME_PIPELINE) + 2
+        # the longest path (stored record + resume, then cohort_benchmark) is 11 tool calls, plus the finish decision
+        return len(RESUME_PIPELINE) + 3
 
     # -- decisions -------------------------------------------------------------
     async def decide_next_action(self, ctx: AgentContext) -> CallTool | Finish:
@@ -91,6 +98,10 @@ class ProfileAgent(BaseAgent):
             # A resume upload asked for again by id: its raw resume is not stored, so rebuilding from the empty
             # stored columns would overwrite the real profile with an empty one. Reuse the stored profile instead.
             x["reused"] = loaded.stored_profile
+            if self._wants_cohort(ctx) and "cohort_benchmark" not in x["stages"] \
+                    and self._out(ctx, "cohort_benchmark") is None:
+                return CallTool(tool_name="cohort_benchmark",
+                                arguments={"student_id": x["student_id"], "job_id": ctx.state.job_id})
             return Finish(reason="reused the stored profile of a resume upload")
         done = {o.tool_name for o in ctx.observations}
         for stage in x["pipeline"]:
@@ -138,8 +149,14 @@ class ProfileAgent(BaseAgent):
             x["pipeline"] = (("load_student_record",) if req.student_id else ()) + RESUME_PIPELINE \
                 if x["has_resume"] else RECORD_PIPELINE
             x["student_id"] = req.student_id or f"U{uuid.uuid4().hex[:12]}"  # new upload: new id, never reused
+            if self._wants_cohort(ctx):
+                x["pipeline"] += ("cohort_benchmark",)
             x["stages"], x["skip"] = {}, set()
         return x
+
+    @staticmethod
+    def _wants_cohort(ctx: AgentContext) -> bool:
+        return ctx.state.task_type == "cohort_benchmark"
 
     def _out(self, ctx: AgentContext, tool: str) -> BaseModel | None:
         for obs in reversed(ctx.observations):
@@ -238,7 +255,18 @@ class ProfileAgent(BaseAgent):
             embedding = self._out(ctx, "generate_embedding")
             return {"profile": self._profile(ctx),
                     "embedding": embedding.model_dump() if embedding is not None else None}
+        if stage == "cohort_benchmark":  # only a stored profile can be compared with its stored peers
+            saved = self._out(ctx, "save_profile")
+            if saved is None or not saved.saved:
+                return None
+            return {"student_id": x["student_id"], "job_id": ctx.state.job_id}
         return None
+
+    def _cohort(self, ctx: AgentContext):
+        found = self._out(ctx, "cohort_benchmark")
+        if found is not None:
+            return found
+        return INSUFFICIENT_EVIDENCE if self._wants_cohort(ctx) else NOT_YET_EVALUATED
 
     def _output(self, ctx: AgentContext) -> ProfileAgentOutput:
         x = ctx.extras
@@ -246,7 +274,7 @@ class ProfileAgent(BaseAgent):
         if x.get("reused") is not None:
             skipped = {s: "skipped" for s in RECORD_PIPELINE if s != "load_student_record"}
             return ProfileAgentOutput(profile=x["reused"], embedding=NOT_YET_EVALUATED, saved=False,
-                                      stages={**skipped, **stages})
+                                      stages={**skipped, **stages}, cohort_benchmark=self._cohort(ctx))
         embedding, saved = self._out(ctx, "generate_embedding"), self._out(ctx, "save_profile")
         stored = saved is not None and saved.saved
         info = (EmbeddingInfo(model_name=embedding.model_name, model_version=embedding.model_version,
@@ -254,7 +282,7 @@ class ProfileAgent(BaseAgent):
                               interim=embedding.interim)
                 if embedding is not None and embedding.vectors and stored else NOT_YET_EVALUATED)
         return ProfileAgentOutput(profile=self._profile(ctx) or NOT_YET_EVALUATED, embedding=info, saved=stored,
-                                  stages=stages)
+                                  stages=stages, cohort_benchmark=self._cohort(ctx))
 
 
 def section_texts(profile: dict[str, Any]) -> dict[str, str]:

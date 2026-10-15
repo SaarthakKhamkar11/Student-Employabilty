@@ -2,7 +2,7 @@
 
 **Rule:** update this file at the end of every phase. That means the status table, the "Pick up here" block, and a new entry in the Phase log. **From Phase 6 on, also extend `scripts/demo.py`** with a live demo of the phase's new capability, and run it once against the backend, and refresh the owner's progress dashboard (a private claude.ai artifact: aggregates only, real measured numbers, with the same caveats as the reports). Anyone taking over should be able to read only this file and know exactly where to start.
 
-Last updated: **2026-10-14** · Last completed phase: **Phase 10 (Learning Agent)** · Next: **Phase 11 (Explainability Agent + SHAP)**. Both human-label selections are made. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **LightGBM** on E5, Logistic Regression for the fallback (ADR 0015).
+Last updated: **2026-10-15** · Last completed phase: **Phase 12 (Agent tracing + cohort analytics)** · Next: **Phase 13 (Research dashboard)**. Both human-label selections are made. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **LightGBM** on E5, Logistic Regression for the fallback (ADR 0015).
 
 **Latest code: `main`** holds Phases 1–8 (Phase 8 committed directly on `main` as `7e680b6`). Phase 9 is also committed. Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
 
@@ -10,7 +10,7 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
 
 ---
 
-## ▶ Pick up here: Phase 11 (Explainability Agent + SHAP)
+## ▶ Pick up here: Phase 13 (Research dashboard)
 
 **Done by the team since Phase 9 (2026-10-12 to 2026-10-14):**
 - **Labelling finished.** `scripts/export_labels.py` wrote `data/benchmark/human_labels.csv` and its `.manifest.json`
@@ -57,24 +57,59 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
   Regression**. `config/matching_model.yaml` now holds one choice per embedding model.
 - **Phase 10 done** on E5 (`min_relevance` 0.80), with a TF-IDF threshold (0.15) for the fallback.
 
-**Next:** Phase 11 (Explainability Agent + SHAP).
+**Done on 2026-10-15: Phase 11** (ADR [0019](docs/adr/0019-explainability-agent.md); Phase log below).
+- The Explainability Agent works end to end on the live API (LightGBM, exact TreeSHAP), for all three Phase 9 pairs.
+- **Gemini prose is not yet verified live.** The first explanation calls got `400 INVALID_ARGUMENT`. The response
+  schema was then made Gemini-safe (nested models inlined, limits checked locally), but before that fix could be
+  tried, the free-tier quota ran out: **20 requests per day per model** for `gemini-3.8-flash`, with each request
+  also spending one Supervisor routing call. The real runs therefore show the validated structured fallback.
+- **First thing to do:** after the quota resets, run `python scripts/demo.py 16` (3 pairs, up to 9 Gemini calls). Check
+  that `source` reads `llm_validated`, or read the validator's errors.
 
-**Phase 11 inputs:**
-1. **Per-pair results:** `MatchResult` (with its `SkillGapReport`) and `LearningAgentOutput` (one
-   `LearningRecommendation` per missing skill, each with an evidence-only `explanation`). Both are in
-   `app/schemas/agent_io.py`.
-2. **SHAP for the active model, LightGBM** (exact TreeSHAP is built in; Phase 8 verified it per candidate). The
-   fallback's Logistic Regression is linear: contributions are coefficient × (feature − mean).
-   - **Skill importances under LightGBM are tiny and sometimes negative** (a tree's score moves in steps;
-     ADR 0015). Explain this; don't present them as precise.
-3. **Wording rules carried over:** a missing skill is "not detected", never "lacking"; tied importances are not a
-   ranking; any field a source doesn't state is "Not available in source data".
-4. **Owner decisions still pending:**
+**Done on 2026-10-15: Phase 12** (ADR [0020](docs/adr/0020-agent-tracing-and-cohort-analytics.md); Phase log below).
+- **Tracing:** every agent execution, tool attempt, LLM call and skipped agent is recorded at the moment it runs,
+  persisted to `agent_runs` + `agent_messages` (migration 0011), and rebuilt by `get_agent_trace(request_id)`, or by
+  `GET /requests/{id}/trace`.
+- **No PII in logs or traces:** the Phase 4 detector's values are redacted wherever they reappear. Proved by grep in
+  `test_tracing.py`; live: 0 of 39 rows and 0 container log lines hold the test resume's name, email or phone.
+- **Cohort benchmarking:** `src/scoring/cohort_analytics.py` plus the `cohort_benchmark` tool (Matching Agent: top
+  job; Profile Agent: task `cohort_benchmark`). Aggregates only; checked against all 286 real ids.
+- The Gemini quota was still exhausted: every live LLM call returned **429**, now visible per agent in the trace.
+
+**Next:** Phase 13 (Research dashboard, spec §30, §31, §39).
+
+**Phase 13 inputs:**
+1. **Agent execution traces (spec §30 item 16):**
+   - `GET /requests/{id}/trace` gives `{trace: TraceTree, text}`, rebuilt only from persisted rows.
+   - For history across requests, query `agent_runs` (`agent_name`, `attempt`, `duration_ms`, `tool_latency_ms`,
+     `retry_count`, `model_version`, `error_code`) and `agent_messages` (`message_type` tool_call | llm_call | skip,
+     `duration_ms`, `content->>'http_status'`).
+   - Rows from before Phase 12 have no execution children.
+   - There is no list endpoint for traces yet. Add one (filter by task, status, date) for the dashboard.
+2. **Already measured, for the latency panels:**
+   - The Learning Agent's `compute_course_similarity` is 13–15 s of a ~20 s resume upload (E5 on CPU);
+   - matching ≈ 4.6 s; explainability ≈ 1.5 s.
+   - Worth a look before the dashboard makes it prominent.
+3. **SHAP summaries:** `results/explainability/global-<model version>.json` (Phase 11).
+4. **Leaderboards and experiment history:** `GET /experiments` (Phases 6 and 8).
+5. **Cohort analytics for the student view:** the `cohort_benchmark` field of the Matching Agent's output, or a
+   `cohort_benchmark` question (`scripts/demo.py 18`).
+6. **Known issues found in Phase 12:**
+   - **PII in stored profiles:** a name repeated in a resume body still reaches `student_profiles` (Phase 4 masks
+     only detected spans). Logs and traces are protected; the data isn't. Fix `mask()` in Phase 16.
+   - **Uploads score near 0:** uploaded resumes rarely yield a branch or graduation year, so LightGBM (`branch_match`
+     is its top feature) scores them near 0, and their cohort is filtered by target role only.
+   - **Saturated scores:** LightGBM scores cluster near 1 for strong jobs (cohort averages around 0.999), so
+     percentiles there separate tiny differences.
+   - `test_the_deployed_tfidf_version_is_unchanged_by_the_benchmark_rewrite` fails in the backend image (it computes
+     `tfidf-953a…`, the test expects `tfidf-3ec0…`). This is the platform-dependent TF-IDF hash (ADR 0015); it is
+     unrelated to Phase 12.
+7. **Owner decisions still pending:**
    - the hard degree/experience filters (ADR 0013);
    - the gender visibility filter (ADR 0009);
    - whether to make the TF-IDF version hash platform-stable (ADR 0015);
-   - **new (Phase 10):** a minimum video length for YouTube results. Relevance scores the title and description
-     only, so clips of 5–19 s pass the threshold (see the Phase 10 findings).
+   - a minimum YouTube video length (Phase 10);
+   - the Gemini free tier (Phase 11).
 
 Decisions already made (do not re-ask):
 - **LLM provider: Gemini.** Wherever the spec or a prompt says "Claude / Anthropic", use Gemini (`GEMINI_API_KEY`).
@@ -107,9 +142,9 @@ Open items owned by the project owner:
 | 8 | Matching model experimentation | ✅ Done (2026-10-11): 6 candidates trained, measured and wired behind a config flag; **LightGBM selected on E5 features, Logistic Regression for the TF-IDF fallback (2026-10-14)** (ADR 0015) |
 | 9 | Skill-gap analysis | ✅ Done (2026-10-11): `src/scoring/skill_gap_analysis.py`, counterfactual importance, tuned relation tiers, the `SkillGapReport` contract (ADR 0016) |
 | 10 | Learning Agent | ✅ Done (2026-10-14): 20-course curated catalogue + YouTube Data API, E5 relevance ranking, threshold 0.80, "No resources found" instead of fillers (ADR 0018) |
-| 11 | Explainability Agent + SHAP | ⏭ Next |
-| 12 | Agent state/tracing | Not started |
-| 13 | Research dashboard | Not started |
+| 11 | Explainability Agent + SHAP | ✅ Done (2026-10-15): SHAP per model type (TreeSHAP for LightGBM), global + per-match explanations, LLM lines validated against cited evidence or replaced by the structured evidence (ADR 0019). Live Gemini prose blocked by the free-tier quota |
+| 12 | Agent state/tracing | ✅ Done (2026-10-15): runtime spans persisted to `agent_runs` + `agent_messages`, `get_agent_trace` / `GET /requests/{id}/trace`, request-scoped PII redaction proved by grep; cohort benchmarking (aggregates only) as a tool of the Matching and Profile agents (ADR 0020) |
+| 13 | Research dashboard | ⏭ Next |
 | 14 | Evaluation framework | Not started |
 | 15 | Feedback loop | Not started |
 | 16 | Security hardening | Not started |
@@ -122,7 +157,7 @@ Open items owned by the project owner:
 
 ---
 
-## Repository layout (after Phase 10)
+## Repository layout (after Phase 12)
 
 ```
 preprocess.py                 thin entry point → src/pipeline/build_unified_dataset.py
@@ -136,6 +171,8 @@ config/matching_model_candidates.yaml  Phase 8 candidates: fixed hyperparameters
 config/matching_model_selection_weights.yaml  Phase 8 selection weights: 3 scenarios, gate, sensitivity, "close enough"
 config/skill_gap.yaml         Phase 9 relation-tier thresholds per embedding model family, with the tuning evidence
 config/learning.yaml          Phase 10: top_k, min_relevance per embedding model (tuning evidence), YouTube query/quota/cache
+config/explainability.yaml    Phase 11: model-evidence share/count, positive-similarity percentile, global split and sample sizes
+config/cohort.yaml            Phase 12: cohort filters' relax order, comparable top_n + embedding section, privacy minimums
 src/parsing/                  section_parser.py (+ parse_job_sections, P5), resume_text_parser.py
 src/pipeline/                 ingest_placement_cell.py, ingest_kaggle_resumes.py, ingest_real_jobs.py,
                               validate_and_report.py, build_unified_dataset.py
@@ -148,13 +185,19 @@ src/evaluation/               splits.py (fixed per-student splits), relevance_la
 src/scoring/                  Phase 8: matching_models.py (build/train/save/load/score/SHAP per candidate; isolated
                               measurement worker), matching_model_selection_engine.py (the Phase 8 table, scenarios,
                               sensitivity, simpler-model check, ADR 0015 decision, --activate, --record-db),
-                              skill_gap_analysis.py (P9: the SkillGapReport; Stage 6 wraps it; CLI per pair)
+                              skill_gap_analysis.py (P9: the SkillGapReport; Stage 6 wraps it; CLI per pair),
+                              shap_explainer.py (P11: explain_pair / global_explanation for the Stage 4 model; CLI `global`),
+                              cohort_analytics.py (P12: benchmark(); CLI `--student S --top-job`)
 backend/app/agents/           base.py, supervisor.py + routing.py (P3), profile_agent.py (P4), job_intelligence_agent.py (P5),
-                              matching_agent.py (P7), learning_agent.py (P10), explainability_agent.py (shell)
+                              matching_agent.py (P7), learning_agent.py (P10), explainability_agent.py (P11)
 backend/app/schemas/          agent_state.py, agent_io.py, student.py, job.py
 backend/app/tools/            registry.py, profile_tools.py (11 tools), job_tools.py (12 tools, incl. check_job_visibility),
                               matching_tools.py (10 tools: Stages 1-6 + evaluate_model + benchmark_matching),
-                              learning_tools.py (P10, 6 tools: prioritize_gaps -> ... -> save_learning_recommendations)
+                              learning_tools.py (P10, 6 tools: prioritize_gaps -> ... -> save_learning_recommendations),
+                              explainability_tools.py (P11, 8 tools: get_model_prediction -> ... -> get_match_explanation;
+                              get_global_explanation)
+backend/app/explainability/   P11: evidence.py (EvidenceItems from the inputs), validation.py (validate_explanation),
+                              prose.py (Gemini prompt, structured fallback, the spec's format)
 backend/app/learning/         P10: catalog.py (build the catalogue from the course pages; load), youtube.py (Data API v3),
                               ranking.py (prioritise, relevance, rank, explain), repository.py (Postgres / in-memory)
 backend/app/auth/             email-OTP signup + JWT login (students, recruiters); see its README
@@ -170,8 +213,9 @@ models/matching/<experiment>/ Phase 8 trained artifacts (joblib / XGBoost JSON /
                               each, checked before loading) + measurements.json
 backend/app/embeddings/       provider.py (EMBEDDING_MODEL: e5_base_v2, selected by Phase 6, dense, query/passage roles;
                               tfidf_baseline, the floor, sparse vectors)
-backend/app/core/             config.py (.env loading), logging.py (JSON, PII-redacting), sanitize.py (prompt-injection defence)
-backend/app/llm/client.py     Gemini client (structured JSON output, validated locally)
+backend/app/core/             config.py (.env loading), logging.py (JSON, PII-redacting, + request-scoped detected values),
+                              sanitize.py (prompt-injection defence), tracing.py (P12: spans), trace_tree.py (P12: get_agent_trace)
+backend/app/llm/client.py     Gemini client (structured JSON output, validated locally); TracedLLMClient (P12)
 backend/app/db/               migrate.py, store.py, seed.py (students), seed_jobs.py (jobs + dedup + --process),
                               profile_repository.py, job_repository.py, matching_repository.py
 backend/app/labelling/        Phase 6 labelling page (page.html), API (routes.py), logic (service.py), storage, load_pool.py
@@ -180,11 +224,13 @@ backend/migrations/           0001 agent_runs · 0002 student tables · 0003 emb
                               0005/0006 student_skills unique-key fix · 0007 jobs tables + sparse embeddings ·
                               0008 relevance_pool, relevance_judgments, experiment_runs, experiment_metrics ·
                               0009 core tables (users, learning_resources, learning_recommendations, ...; ADR 0017) ·
-                              0010 youtube_searches (P10 search cache)
-docs/adr/                     architecture decision records 0001–0018 (index: docs/adr/README.md)
+                              0010 youtube_searches (P10 search cache) ·
+                              0011 agent tracing (P12: execution columns on agent_runs, span columns on agent_messages)
+docs/adr/                     architecture decision records 0001–0020 (index: docs/adr/README.md)
 backend/app/main.py           FastAPI: GET /health, GET /agents, POST /requests, POST /requests/resume-file, GET /requests/{id},
+                              GET /requests/{id}/trace (P12),
                               /labelling (page + API), /experiments
-backend/tests/                346 tests (19 skipped by default: most need TEST_DATABASE_URL, 1 live Gemini)
+backend/tests/                385 tests (21 skipped by default: most need TEST_DATABASE_URL, 1 live Gemini)
 backend/db/init/              01_enable_pgvector.sql (runs on first postgres start)
 docker-compose.yml            postgres+pgvector, redis, backend
 .env.example                  template; copy to .env (gitignored)
@@ -201,7 +247,8 @@ results/                      data-quality report; embedding_evaluation/<experim
                               embedding_model_evaluation[_<label source>].{md,json} (latest), embedding_cost_measurements.json,
                               matching_evaluation/<experiment_id>.json (Phase 7 registration runs),
                               matching_model_evaluation/<experiment_id>.{md,json} (Phase 8 engine runs),
-                              matching_model_evaluation[_<label source>].{md,json} (latest)
+                              matching_model_evaluation[_<label source>].{md,json} (latest),
+                              explainability/global-<matching_model_version>.json (P11: data for the Phase 13 dashboard)
 .gitattributes                data/** and models/** are never line-ending converted (their bytes are hashed)
 ```
 
@@ -291,6 +338,20 @@ python -m app.learning.catalog build    # fetches each course page in data/learn
 python -m app.learning.catalog load     # upserts it into learning_resources (needs DATABASE_URL)
 python scripts/demo.py 15 S00001 S00210 # host: recommendations for each student's top job through the live API
 ```
+**Phase 11 explanations** (inside the backend image; the global one needs no database):
+```bash
+python -m src.scoring.shap_explainer global      # results/explainability/global-<model version>.json (~4 s, 21,432 pairs)
+python scripts/demo.py 16 [S00001:J0974289 ...]  # host: explain pairs through the live API (default: the Phase 9 pairs)
+```
+**Phase 12 tracing and cohorts** (migration 0011 is applied on backend start):
+```bash
+python scripts/demo.py 17                        # host: a resume upload and its persisted trace tree (GET /requests/{id}/trace)
+python scripts/demo.py 18 [S00001:J0918392 ...]  # host: cohort benchmark questions through the live API
+python -m src.scoring.cohort_analytics --student S00001 --top-job   # in the image: the CLI (needs DATABASE_URL, ~10 s)
+```
+Tests in the image (it has no pytest): `docker compose run --rm --no-deps -v "$PWD:/srv/work" -w /srv/work backend
+sh -c "pip install -q pytest==9.1.1 httpx2==2.13.1 && python -m pytest -q"`.
+
 **Phase 6 slot E (domain-adapted E5), on request only:**
 ```bash
 python -m src.embeddings.domain_adapt     # ~70 min on CPU; -> models/embeddings/e5-base-v2-domain-<hash>/ (gitignored)
@@ -319,6 +380,116 @@ Windows. Inside Docker it is still `postgres:5432`.
 ---
 
 ## Phase log
+
+### Phase 12: Agent tracing + cohort analytics (2026-10-15) ✅
+
+**What was built** (ADR [0020](docs/adr/0020-agent-tracing-and-cohort-analytics.md)):
+
+| Piece | Where | Notes |
+|---|---|---|
+| Spans | `app/core/tracing.py` | One recorder per request. Agent execution, tool attempt, LLM call and skip, nested through a context variable (works across `gather` and worker threads) |
+| Runtime hooks | `app/agents/base.py`, `supervisor.py`, `app/llm/client.py` | `BaseAgent.run` and `_call_tool_with_retry` open the spans. `TracedLLMClient` is wrapped in the `Router` and the explainability tools. Each agent reports its `model_version` (`trace_model_versions`). `agent_run` log lines carry every spec §39 field |
+| Persistence | `app/db/store.py`, migration 0011 | The request row and one `agent_runs` row per execution (`parent_run_id`, `attempt`, `tool_call_count`, `tool_latency_ms`, `model_version`, `error_code`), plus `agent_messages` per tool attempt, LLM call and skip, all in one transaction |
+| Trace tree | `app/core/trace_tree.py`, `GET /requests/{id}/trace` | `get_agent_trace(request_id) -> TraceTree` and `render_trace`, built only from persisted rows. An unpersisted request has no trace |
+| PII | `app/core/logging.py`, `detect_pii` tool, `Supervisor.handle` | The detector's values (names word by word, phones as digits) are redacted from every later log and trace string of the request. Held only in memory |
+| Cohorts | `src/scoring/cohort_analytics.py`, `config/cohort.yaml`, `cohort_benchmark` tool | Filters (branch, graduation year, target role), then the top 20 by `full` profile embedding, then average, median, percentile, coverage and relative gap. At least 5 peers, a skill only if 3 or more peers hold it, aggregates only |
+| Agents | `matching_agent.py`, `profile_agent.py` | Matching: the last stage, for the top job (student modes). Profile: for task `cohort_benchmark` |
+| Tests | `test_tracing.py` (7), `test_cohort_analytics.py` (9) | Full-chain PII grep; tree vs `AgentOutput.tool_calls`; agent and tool retries; skips; 429s; Postgres round trip; privacy against every real id; percentile and average recomputed independently |
+| Demo | `scripts/demo.py 17`, `18` | Live API |
+
+**Live trace of one resume upload** (request `e8931d4d-…`, 19.3 s, persisted; Gemini returned 429 on all four calls,
+so routing used the deterministic fallback and explanations the structured fallback):
+```
+supervisor  partial  19278 ms
++--> LLM gemini-3.8-flash (LLMRoutingDecision)  FAILED LLMError 429  817 ms
++--> LLM gemini-3.8-flash (LLMRoutingDecision)  FAILED LLMError 429  424 ms
++--> profile_agent  success  311 ms  9 tools / 310 ms  model e5_base_v2 intfloat/e5-base-v2@f52bf8ec8c71
++--> matching_agent  success  4558 ms  8 tools / 4553 ms  model lightgbm+7b0926d22cea   (cohort_benchmark 1611 ms)
++--> learning_agent  success  13161 ms  6 tools / 13158 ms                             (compute_course_similarity 13007 ms)
++--> explainability_agent  partial  1510 ms  7 tools  llm gemini-3.8-flash  error explanation_fallback
+(4 agent executions, 30 tool attempts, 4 LLM calls, 0 skipped, 0 agent retries, 0 tool retries)
+```
+The live database holds 5 `agent_runs` rows and 34 `agent_messages` rows for it. None contains the resume's name,
+email or phone, and neither does the container log.
+
+**Cohort benchmarks, real students** (live DB, E5, LightGBM, each against its top-ranked job):
+
+| | S00001 (placement cell) | S00262 (Kaggle) |
+|---|---|---|
+| Filters applied | branch CSE (Data Science), graduation year 2027, target role (BI Analyst: data_ml, business_analysis) | branch Information Technology, target role (Java Backend Developer: software_dev); graduation year not stated, not applied |
+| Cohort → comparable | 69 → 20 (mean cosine 0.887) | 30 → 20 (mean cosine 0.849) |
+| Job | J0918392 Data Analyst | J0890205 Java Developer |
+| Student / cohort average / median | 0.99899 / 0.99940 / 0.99944 | 0.99964 / 0.97596 / 0.99941 |
+| Percentile | 10.0 | 70.0 |
+| Skill coverage (top 10 cohort skills) | 0.3: has Python, SQL, Power BI | 0.2: has Java, JavaScript |
+| Missing job skills vs cohort average | 2 vs 2.7 (fewer missing than 65% of peers) | 4 vs 4.55 (65%) |
+| Distinctive gaps (most peers have) | Business intelligence concepts (65%) | none |
+| Shared gaps | Strong analytical and problem-solving skills (10% of peers have it) | Backend Development (5%), Enterprise Edition, Performance optimization, RESTful APIs Database integration (0%) |
+
+Privacy: neither output contains any of the other 285 real `student_id`s.
+
+### Phase 11: Explainability Agent + SHAP (2026-10-15) ✅
+
+**SHAP explainer per model** (prompt's manual step: `shap==0.51.0` was already pinned in Phase 8). The winner,
+LightGBM, is tree-based, so `TreeExplainer` (exact TreeSHAP) applies. The TF-IDF fallback's Logistic Regression
+gets `LinearExplainer`. Baseline 3 uses its own additive decomposition, labelled "not SHAP".
+
+**What was built** (ADR [0019](docs/adr/0019-explainability-agent.md)):
+
+| Piece | Where | Notes |
+|---|---|---|
+| SHAP | `src/scoring/shap_explainer.py` | Loads the Stage 4 model (hash-checked) and reuses Phase 8's `Explainer`. `explain_pair` and `global_explanation` are separate. Additivity is checked (≤ 1e-6) or nothing is returned |
+| Agent | `app/agents/explainability_agent.py` | **match:** prediction → SHAP → contributions → evidence → generate → validate (→ strict retry → validate) → `get_match_explanation`. **global:** `get_global_explanation` |
+| Tools | `app/tools/explainability_tools.py` | 8 tools. `get_shap_values` refuses another model version, or a vector that doesn't reproduce the predicted score |
+| Evidence | `app/explainability/evidence.py` | One `EvidenceItem` per claim (anchors, allowed numbers, SHAP sign, source value) |
+| Validator | `app/explainability/validation.py` | Per line: ids, section, anchors, unbacked skill/feature names, numbers, SHAP direction, "not detected" wording. Whole draft: coverage, most important gap addressed |
+| Prose | `app/explainability/prose.py` | Gemini prompt (evidence as untrusted data), strict-mode retry, structured fallback, the spec's format, plus a computed "base value + contributions = output" line |
+| Contracts | `app/schemas/agent_io.py` | `ExplainabilityAgentInput.mode`, `EvidenceItem`/`EvidenceBundle`, `ProseDraft`, `ExplanationValidation`, `MatchExplanation`, `GlobalExplanation` |
+| LLM client | `app/llm/client.py` | `response_schema()`: nested models inlined, limits checked locally; optional `max_output_tokens`; the HTTP status kept in redacted errors |
+| Tests | `backend/tests/test_explainability_agent.py` (18) | Traceability (known vector + known SHAP, every bullet grepped); deliberately broken draft (13 errors caught, retried, never returned); retry success; no LLM; LLM error; wrong model; wrong score; fallback always validates; real LightGBM/LR additivity; global vs individual; end to end on the Matching Agent's output |
+| Demo | `scripts/demo.py 16 [pairs]` | Live API |
+
+**Global explanation, real model** (`lightgbm+7b0926d22cea`, TreeSHAP, all 21,432 validation pairs of the E5 feature
+matrix, additivity error 5.2e-14, log-odds, base value −9.64). Mean |SHAP|:
+
+| Rank | Feature | Mean abs SHAP |
+|---|---|---|
+| 1 | branch_match | 1.9758 |
+| 2 | career_interest_alignment | 1.1253 |
+| 3 | domain_similarity | 0.4641 |
+| 4 | missing_skill_count | 0.3815 |
+| 5 | semantic_similarity | 0.3505 |
+| 6 | project_relevance | 0.3023 |
+| 7 | role_similarity | 0.2918 |
+| 8 | required_skill_count | 0.2445 |
+| 9 | certification_relevance | 0.2219 |
+| 10 | education_match | 0.1553 |
+
+`required_skill_match_score` ranks 17th (0.0103). All 20 features are used. There are no ties.
+
+**Per-pair explanations, real** (the Phase 9 pairs, live API, all `structured_fallback`):
+- Gemini returned 429 (daily free-tier quota) on every call, after a `400 INVALID_ARGUMENT` that led to the
+  schema fix.
+- Validation passed on every pair. The agent status is `partial` (`explanation_fallback`).
+
+| Pair | Score | Model evidence (SHAP, log-odds) | Base + contributions |
+|---|---|---|---|
+| S00073 × J0002158 Data Scientist | 100% | career interest +7.97, branch +4.73, domain +2.96 | −9.64 + 16.41 = +6.77 |
+| S00001 × J0974289 Business Analyst | 0% | career interest +3.64, branch +2.32, domain +1.96, project −1.48, certification −1.05 | −9.64 + 3.60 = −6.04 |
+| S00023 × J0071584 Systems Engineer | 2% | branch +4.98, career interest +0.95, missing-skill count +0.72, project −0.94 | −9.64 + 5.66 = −3.98 |
+
+**Findings:**
+- **Explanations expose the weak-label leakage (ADR 0015).**
+  - The data student scores 2% for a cloud job and 0% for a Business Analyst job, though the Business Analyst job
+    matches more skills.
+  - `branch_match` and career interest decide the score; skill match barely moves it.
+- **A skill count points the "wrong" way:** six missing skills *raised* S00023's score by +0.72. This is the
+  tree-step artefact Phase 9 noted. The output carries the caveat.
+- **Phase 9 importances under LightGBM are near zero for a saturated score:** S00073's gaps are +0.000.
+- **Kaggle degree requirements read oddly** ("B.E meets the job's minimum B.COM"). That is the data as stated.
+
+**Tests:** 348 passed, 20 skipped, 1 failed, in the Python 3.11 backend image. The failure is the
+platform-dependent TF-IDF version pin, unchanged since Phase 8.
 
 ### Phase 10: Learning Agent (2026-10-14) ✅
 

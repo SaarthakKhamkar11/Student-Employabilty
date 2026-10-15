@@ -20,7 +20,7 @@ from collections.abc import Iterable
 from app.core.config import Settings
 from app.core.logging import get_logger, log_event
 from app.core.sanitize import INJECTION_GUARD, mask_pii, wrap_untrusted
-from app.llm import LLMClient, LLMError, LLMInvalidOutputError, LLMTimeoutError
+from app.llm import LLMClient, LLMError, LLMInvalidOutputError, LLMTimeoutError, traced
 from app.schemas.agent_io import LLMRoutingDecision, RoutingDecision, SupervisorInput, TaskType
 
 logger = get_logger("agents.supervisor.routing")
@@ -157,7 +157,7 @@ def build_router_prompt(req: SupervisorInput) -> str:
 
 class Router:
     def __init__(self, llm: LLMClient | None, settings: Settings):
-        self.llm = llm
+        self.llm = traced(llm)  # each routing call is a trace span (Phase 12)
         self.settings = settings
 
     async def route(self, req: SupervisorInput) -> RoutingDecision:

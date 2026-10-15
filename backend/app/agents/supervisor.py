@@ -10,7 +10,9 @@ One request, end to end:
       │    ├─ Delegate wave 2: matching_agent
       │    ├─ Delegate wave 3: learning_agent ‖ explainability_agent
       │    └─ Finish → finalize(): aggregate the outcomes; nothing is invented
-      └─ persist the final AgentState to agent_runs (on failure persisted=false; never a crash)
+      └─ persist the final AgentState to agent_runs (on failure persisted=false; never a crash), with the
+         request's trace (Phase 12): one agent_runs row per agent execution, one agent_messages row per tool
+         attempt, LLM call and skipped agent (app/core/tracing.py; rebuilt by app/core/trace_tree.py)
 
 The LLM only routes. It never sees resume or JD bodies, and never computes anything.
 """
@@ -28,8 +30,10 @@ from pydantic import BaseModel, ValidationError
 from app.agents.base import GUARDRAILS, AgentConfigurationError, AgentContext, BaseAgent
 from app.agents.routing import EXECUTION_WAVES, SPECIALISTS, UPSTREAM, Router
 from app.core.config import Settings
-from app.core.logging import log_event, redact_text
-from app.db.store import AgentRunRecord, AgentRunStore
+from app.core.logging import log_event, redact_text, register_sensitive_values, sensitive_values_var
+from app.core.tracing import Span, TraceRecorder, current_span_id, current_trace, trace_var
+from app.db.store import AgentMessageRecord, AgentRunRecord, AgentRunStore
+from app.profile import pii as pii_detector
 from app.llm import LLMClient
 from app.schemas.agent_io import (
     AgentError, AgentOutcome, AgentOutput, CallTool, Delegate, ExplainabilityAgentInput, Finish,
@@ -98,6 +102,10 @@ class SupervisorAgent(BaseAgent):
         self.router = Router(llm, self.settings)
         self.store = store
 
+    def trace_model_versions(self, data: dict) -> dict[str, str]:
+        routing = data.get("routing")
+        return {"routing": routing["model_used"]} if isinstance(routing, dict) else {}
+
     def timeout_seconds(self) -> float:
         return self.settings.supervisor_timeout_seconds
 
@@ -107,11 +115,26 @@ class SupervisorAgent(BaseAgent):
         request = SupervisorInput.model_validate(request if isinstance(request, dict) else request.model_dump())
         state = AgentState(request_id=str(uuid.uuid4()), user_id=user_id, task_type="unclassified",
                            student_id=request.student_id, job_id=request.job_id, status="running")
+        # Phase 12: this request's trace, and its PII registry. The resume text is scanned with the Phase 4
+        # detector before anything runs, so even the first log line can't carry a detected value (a file upload
+        # is scanned by the Profile Agent's detect_pii tool once its text is extracted).
+        trace = TraceRecorder(state.request_id)
+        tokens = trace_var.set(trace), sensitive_values_var.set(set())
+        try:
+            if request.resume_text:
+                for f in pii_detector.detect(request.resume_text):
+                    register_sensitive_values([request.resume_text[f.start:f.end]], words=f.type == "name")
+            return await self._handle(request, state, trace, started, t0)
+        finally:
+            trace_var.reset(tokens[0])
+            sensitive_values_var.reset(tokens[1])
 
+    async def _handle(self, request: SupervisorInput, state: AgentState, trace: TraceRecorder, started: datetime,
+                      t0: float) -> SupervisorResponse:
         output = await self.run(state, request)
         result = SupervisorOutput.model_validate(output.data) if output.status == "success" else None
         state.status = result.request_status if result else "failed"
-        persisted = await self._persist(state, result, started, t0)
+        persisted = await self._persist(state, result, started, t0, trace)
 
         task_type = state.task_type if state.task_type in get_args(TaskType) else "unknown"
         summary = result.summary if result else (
@@ -153,6 +176,8 @@ class SupervisorAgent(BaseAgent):
             if skip_reason:
                 outcomes[name] = AgentOutcome(agent_name=name, status="skipped", attempts=0,
                                               data=INSUFFICIENT_EVIDENCE, skip_reason=skip_reason)
+                if (trace := current_trace()) is not None:  # a decision, not an execution: zero duration
+                    trace.event("skip", name, current_span_id(), "skipped", reason=skip_reason, wave=action.reason)
                 log_event(self.logger, "agent_skipped", agent_name=name, reason=skip_reason)
             else:
                 runnable.append((name, payload))
@@ -248,10 +273,13 @@ class SupervisorAgent(BaseAgent):
         return None, "no input builder for this agent"
 
     # -- persistence -------------------------------------------------------------
-    async def _persist(self, state: AgentState, result: SupervisorOutput | None, started: datetime, t0: float) -> bool:
+    async def _persist(self, state: AgentState, result: SupervisorOutput | None, started: datetime, t0: float,
+                       trace: TraceRecorder) -> bool:
         if self.store is None:
             log_event(self.logger, "persistence_skipped", logging.WARNING, reason="no database configured")
             return False
+        root = trace.get(state.request_id)
+        attrs = root.attrs if root is not None else {}
         record = AgentRunRecord(
             request_id=state.request_id, user_id=state.user_id, task_type=state.task_type,
             student_id=state.student_id, job_id=state.job_id, status=state.status,
@@ -260,14 +288,62 @@ class SupervisorAgent(BaseAgent):
             agents_called=state.agents_called, agent_results=state.agent_results,
             model_versions=state.model_versions, errors=state.errors,
             started_at=started, finished_at=_utcnow(), duration_ms=_ms(t0),
+            agent_name=self.name, termination_reason=attrs.get("termination_reason"),
+            # the Supervisor's own retries are its re-runs of agents (each a second execution row)
+            retry_count=sum(1 for s in trace.spans if s.kind == "agent" and s.attrs.get("attempt", 1) > 1),
+            used_fallback=bool(result and result.routing.source != "llm"),
+            model_version=attrs.get("model_version"),
+            error_code=attrs.get("error"),
         )
+        executions, messages = _trace_rows(state, trace)
         try:
-            await asyncio.wait_for(self.store.save(record), timeout=10)
+            await asyncio.wait_for(self.store.save(record, executions, messages), timeout=10)
             return True
         except Exception as exc:  # a database failure must not break the request (spec §21)
             state.errors.append(_error("persistence_failed", type(exc).__name__))
             log_event(self.logger, "persistence_failed", logging.ERROR, error=type(exc).__name__)
             return False
+
+
+def _trace_rows(state: AgentState, trace: TraceRecorder) -> tuple[list[AgentRunRecord], list[AgentMessageRecord]]:
+    """The recorded spans as rows: every agent execution below the Supervisor becomes an agent_runs row, and every
+    other span (tool attempt, LLM call, skip) an agent_messages row of the agent execution it happened in."""
+    executions = []
+    for span in trace.spans:
+        if span.kind != "agent" or span.span_id == state.request_id or span.finished_at is None:
+            continue
+        a = span.attrs
+        owner = trace.owning_agent(span)
+        executions.append(AgentRunRecord(
+            request_id=span.span_id, parent_run_id=owner.span_id if owner else state.request_id,
+            user_id=state.user_id, task_type=a.get("task") or state.task_type, student_id=state.student_id,
+            job_id=state.job_id, status=span.status, routing_source=None, model_used=a.get("model_used"),
+            agents_called=[span.name], agent_results={}, model_versions=a.get("model_versions") or {},
+            errors=a.get("errors") or [], started_at=span.started_at, finished_at=span.finished_at,
+            duration_ms=span.duration_ms, agent_name=span.name, attempt=a.get("attempt", 1),
+            termination_reason=a.get("termination_reason"), retry_count=a.get("retry_count", 0),
+            used_fallback=bool(a.get("fallback_used")), tool_call_count=len(a.get("tool_calls") or []),
+            tool_latency_ms=a.get("tool_latency_ms", 0.0), model_version=a.get("model_version"),
+            error_code=a.get("error")))
+    messages, sequence = [], {}
+    for span in trace.spans:
+        if span.kind == "agent" or span.finished_at is None:
+            continue
+        owner = trace.owning_agent(span)
+        run_id = owner.span_id if owner else state.request_id
+        n = sequence[run_id] = sequence.get(run_id, -1) + 1
+        messages.append(AgentMessageRecord(
+            run_id=run_id, sequence=n, sender=owner.name if owner else "supervisor", recipient=span.name,
+            message_type={"tool": "tool_call", "llm": "llm_call", "skip": "skip"}[span.kind], span_id=span.span_id,
+            parent_span_id=span.parent_id, status=span.status, started_at=span.started_at,
+            finished_at=span.finished_at, duration_ms=span.duration_ms, content=_message_content(span)))
+    return executions, messages
+
+
+def _message_content(span: Span) -> dict[str, Any]:
+    keep = {"tool": ("attempt", "error_type"), "llm": ("purpose", "error_type", "http_status", "agent_name"),
+            "skip": ("reason", "wave")}[span.kind]
+    return {"name": span.name, **{k: span.attrs.get(k) for k in keep}}
 
 
 def _request_status(routing: RoutingDecision, outcomes: dict[str, AgentOutcome]) -> str:

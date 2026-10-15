@@ -60,6 +60,9 @@ class StudentView:
     experience_basis: str
     country: str | None
     texts: dict[str, str] = field(default_factory=dict)  # embedding inputs, PII-masked upstream
+    # read by cohort analytics only (Phase 12, src/scoring/cohort_analytics.py); never matching features
+    graduation_year: int | None = None
+    career_interests: str | None = None  # as stated, plans ("Placements") included
 
 
 @dataclass(frozen=True)
@@ -109,7 +112,16 @@ def student_view(student_id: str, profile: dict[str, Any], record: dict[str, Any
         texts["field"] = field_text
     return StudentView(student_id=student_id, skills=names, degree_code=code, degree_level=level,
                        branch=_value(profile.get("branch")), domain=domain, experience_years=years,
-                       experience_basis=basis, country=_value(record.get("country")), texts=texts)
+                       experience_basis=basis, country=_value(record.get("country")), texts=texts,
+                       graduation_year=_year(profile.get("graduation_year")),
+                       career_interests=_value(profile.get("career_interests")))
+
+
+def _year(value: Any) -> int | None:
+    try:
+        return int(value) if _value(value) is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def job_view(job_id: str, posting: dict[str, Any], record: dict[str, Any] | None = None) -> JobView:

@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from app.core.logging import get_logger, log_event
+from app.core.logging import get_logger, log_event, register_sensitive_values
 from app.db.profile_repository import EmbeddingRow, ProfileRepository
 from app.embeddings.provider import EmbeddingProvider, Vector
 from app.profile import pii as pii_detector
@@ -194,6 +194,10 @@ def register_profile_tools(registry: ToolRegistry, *, repo: ProfileRepository | 
         for name, value in fields.items():
             found = pii_detector.detect(value, field=name)
             findings += found
+            # Phase 12: the detected values themselves are redacted from every later log and trace record of
+            # this request (held in memory only; app/core/logging.py)
+            for f in found:
+                register_sensitive_values([value[f.start:f.end]], words=f.type == "name")
             masked[name] = pii_detector.mask(value, found)
         counts: dict[str, int] = {}
         for f in findings:

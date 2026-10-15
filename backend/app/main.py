@@ -24,6 +24,7 @@ from app.auth import init_auth_schema
 from app.auth import router as auth_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, log_event
+from app.core.trace_tree import get_agent_trace, render_trace
 from app.db.store import build_store
 from app.embeddings.provider import build_embedding_provider, fallback_provider
 from app.labelling import routes as labelling
@@ -139,6 +140,20 @@ async def upload_resume_file(file: UploadFile = File(...), student_id: str | Non
     request = SupervisorInput(actor="student", request_kind="resume_upload", student_id=student_id or None,
                               resume_file_b64=base64.b64encode(data).decode(), resume_filename=file.filename)
     return await supervisor.handle(request)
+
+
+@app.get("/requests/{request_id}/trace")
+async def get_request_trace(request_id: UUID, supervisor: SupervisorAgent = Depends(get_supervisor)) -> dict:
+    """The request's execution tree, rebuilt from agent_runs + agent_messages (Phase 12, spec §39)."""
+    if supervisor.store is None:
+        raise HTTPException(503, "persistence is not configured")
+    try:
+        tree = await get_agent_trace(str(request_id), supervisor.store)
+    except Exception:
+        raise HTTPException(503, "database unavailable") from None
+    if tree is None:
+        raise HTTPException(404, "unknown request_id")
+    return {"trace": tree.model_dump(mode="json"), "text": render_trace(tree)}
 
 
 @app.get("/requests/{request_id}")

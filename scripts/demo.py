@@ -1,7 +1,9 @@
 """Live demo of the finished phases against the running backend: the Supervisor, Profile and Job
 Intelligence agents (Phases 3-5), the embedding-selection framework (Phase 6, demos 9-10), the
 Matching Agent (Phase 7, demos 11-12), the Matching Model Selection Engine (Phase 8, demo 13) and the
-skill-gap report (Phase 9, demo 14).
+skill-gap report (Phase 9, demo 14), the Learning Agent (Phase 10, demo 15), the Explainability
+Agent (Phase 11, demo 16: `demo.py 16 [S00001:J0974289 ...]`), and Phase 12: the persisted trace of a resume
+upload (demo 17) and cohort benchmarking (demo 18: `demo.py 18 [S00001:J0918392 ...]`).
 
 Start the stack first:   docker compose up -d --wait
 Then run:                .venv/bin/python scripts/demo.py           (all demos)
@@ -395,6 +397,87 @@ def demo_learning_recommendations(student_ids=("S00001",)) -> None:
         print(f"  saved: {d['saved']} | {d['note']}")
 
 
+PHASE9_PAIRS = ("S00073:J0002158", "S00001:J0974289", "S00023:J0071584")  # the Phase 9 report pairs
+
+
+def demo_match_explanations(pairs=PHASE9_PAIRS) -> None:
+    title(16, "Phase 11: explaining a match (SHAP evidence, LLM prose, every line validated)")
+    for pair in pairs:
+        sid, jid = pair.split(":")
+        resp = call("POST", "/requests", {"actor": "student", "request_kind": "question",
+                                          "request_text": "Why does this job match me?", "task_type": "explain_match",
+                                          "student_id": sid, "job_id": jid})
+        ea = resp["results"].get("explainability_agent", {})
+        if ea.get("status") not in ("success", "partial") or not isinstance(ea.get("data"), dict):
+            print(f"  {sid} x {jid}: Explainability Agent {ea.get('status')} "
+                  f"({ea.get('termination_reason') or ea.get('skip_reason')}) {ea.get('error_codes')}")
+            continue
+        e = ea["data"]["match_explanation"]
+        g = e["generation"]
+        print(f"\n  {sid} x {jid} {e['job_title']} | {e['model_versions']['matching_model_version']} | "
+              f"{e['contributions']['explainer']} ({e['contributions']['output_space']}) | agent {ea['status']}")
+        print(f"  source: {e['source']} | LLM {g['llm']} | attempts {g['llm_attempts']} | validations "
+              f"{[(v['attempt'], v['valid'], len(v['errors'])) for v in g['validations']]}"
+              + (f" | fallback: {g['fallback_reason']}" if g["fallback_reason"] else ""))
+        for v in g["validations"]:
+            for err in v["errors"][:6]:
+                print(f"      attempt {v['attempt']} error: {err}")
+        print("  " + e["text"].replace("\n", "\n  "))
+        print("  model evidence behind it (SHAP, " + e["contributions"]["output_space"] + "): "
+              + ", ".join(f"{i['source']['feature']} {i['source']['shap']:+.3f}" for i in e["evidence"]["model"]))
+
+
+def demo_trace() -> None:
+    title(17, "Phase 12: the persisted execution trace of one resume upload (agent_runs + agent_messages)")
+    resp = call("POST", "/requests", {"actor": "student", "request_kind": "resume_upload", "resume_text": DEMO_RESUME})
+    print(f"  request {resp['request_id']}: {resp['status']} ({resp['duration_ms']:.0f} ms), persisted={resp['persisted']}")
+    trace = call("GET", f"/requests/{resp['request_id']}/trace")
+    if "http_error" in trace:
+        print(f"  no trace: HTTP {trace['http_error']} {trace['detail']}")
+        return
+    print("  " + trace["text"].replace("\n", "\n  "))
+    leaked = [v for v in ("Priya", "Sharma", "priya.sharma@example.com", "98200 12345", "9820012345")
+              if v.lower() in json.dumps(trace).lower()]
+    print(f"  resume PII in the trace: {leaked or 'none'}")
+
+
+COHORT_PAIRS = ("S00001:J0918392", "S00262:J0890205")  # each student's top-ranked job (Phase 12 report)
+
+
+def demo_cohort(pairs=COHORT_PAIRS) -> None:
+    title(18, "Phase 12: cohort benchmarking (aggregates only; the Profile Agent's cohort_benchmark tool)")
+    for pair in pairs:
+        sid, _, jid = pair.partition(":")
+        resp = call("POST", "/requests", {"actor": "student", "request_kind": "question",
+                                          "request_text": "How do I compare with my peers?",
+                                          "task_type": "cohort_benchmark", "student_id": sid, "job_id": jid or None})
+        pa = resp.get("results", {}).get("profile_agent", {})
+        c = pa.get("data", {}).get("cohort_benchmark") if isinstance(pa.get("data"), dict) else None
+        if not isinstance(c, dict):
+            print(f"  {sid}: no cohort benchmark ({pa.get('status')}, {resp.get('errors')})")
+            continue
+        applied = ", ".join(f"{f['name']}={f['value']}" for f in c["filters"] if f["applied"])
+        print(f"\n  {sid} vs {c['job_id']} | filters: {applied} | relaxed: {c['relaxed'] or 'none'} | "
+              f"cohort {c['cohort_size']} -> {c['comparable_size']} most similar ({c['similarity']['section']} "
+              f"embedding, mean cosine {c['similarity']['mean']})")
+        s = c["suitability"]
+        if isinstance(s, dict):
+            print(f"  suitability for {s['job_title']}: student {s['student_score']:.4f} | cohort average "
+                  f"{s['cohort_average']:.4f}, median {s['cohort_median']:.4f} | percentile {s['percentile']}")
+        cov = c["skill_coverage"]
+        if isinstance(cov, dict):
+            print(f"  skill coverage {cov['coverage']}: has {cov['covered']} | lacks {cov['missing']}")
+        g = c["relative_skill_gap"]
+        if isinstance(g, dict):
+            print(f"  relative gap: missing {g['student_missing_count']} of the job's skills vs cohort average "
+                  f"{g['cohort_average_missing_count']} | fewer missing than {g['fewer_missing_than_percentile']}% of peers")
+            for k in ("distinctive_gaps", "shared_gaps", "advantages"):
+                print(f"    {k}: " + (", ".join(f"{r['skill']} ({r['peers_with_share']:.0%} of peers have it)"
+                                                for r in g[k]) or "none"))
+        for note in c["notes"][:1]:
+            print(f"  note: {note}")
+
+
 if __name__ == "__main__":
     only = int(sys.argv[1]) if len(sys.argv) > 1 else None
     rid = None
@@ -419,4 +502,10 @@ if __name__ == "__main__":
         demo_skill_gap_report()
     if only in (None, 15):
         demo_learning_recommendations(tuple(sys.argv[2:]) or ("S00001",))
+    if only in (None, 16):
+        demo_match_explanations(tuple(sys.argv[2:]) or PHASE9_PAIRS)
+    if only in (None, 17):
+        demo_trace()
+    if only in (None, 18):
+        demo_cohort(tuple(sys.argv[2:]) or COHORT_PAIRS)
     print()

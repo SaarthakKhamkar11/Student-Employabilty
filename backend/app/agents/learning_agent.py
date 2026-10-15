@@ -41,6 +41,10 @@ class LearningAgent(BaseAgent):
     implemented = True
     implemented_in_phase = 10
 
+    def trace_model_versions(self, data: dict) -> dict[str, str]:
+        embedding = (data.get("ranking") or {}).get("embedding")
+        return {"embedding": embedding} if embedding else {}
+
     def max_steps(self) -> int:
         return len(PIPELINE) + 2
 
