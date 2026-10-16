@@ -2,7 +2,7 @@
 
 **Rule:** update this file at the end of every phase. That means the status table, the "Pick up here" block, and a new entry in the Phase log. **From Phase 6 on, also extend `scripts/demo.py`** with a live demo of the phase's new capability, and run it once against the backend, and refresh the owner's progress dashboard (a private claude.ai artifact: aggregates only, real measured numbers, with the same caveats as the reports). Anyone taking over should be able to read only this file and know exactly where to start.
 
-Last updated: **2026-10-15** · Last completed phase: **Phase 13 (Frontend: auth + student, company, admin/research dashboards)** · Next: **Phase 14 (Evaluation framework)**. Both human-label selections are made. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **Logistic Regression** on E5 features-v2 (re-selected 2026-10-15), Baseline 3 for the TF-IDF fallback (ADR 0015).
+Last updated: **2026-10-16** · Last completed phase: **Phase 14 (Evaluation framework)** · Next: **Phase 15 (Feedback loop)**. Embeddings: **E5** (primary); TF-IDF is the baseline and automatic fallback only (ADR 0012). Matching: **Logistic Regression** on E5 features-v2, Baseline 3 for the TF-IDF fallback (ADR 0015). Research answers: [`docs/RESEARCH_FINDINGS.md`](docs/RESEARCH_FINDINGS.md) (ADR 0021).
 
 **Latest code: `main`** holds Phases 1–8 (Phase 8 committed directly on `main` as `7e680b6`). Phase 9 is also committed. Phases 6–7 were committed on `phase-6-7-embeddings-matching` and fast-forwarded into `main` on 2026-10-10. The per-phase branches `phase-1-audit`, `phase-2-3-supervisor`, `phase-4-5-profile-job-agents` and `phase-6-7-embeddings-matching` are kept for history.
 
@@ -10,7 +10,60 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
 
 ---
 
-## ▶ Pick up here: Phase 14 (Evaluation framework)
+## ▶ Pick up here: Phase 15 (Feedback loop)
+
+**Done on 2026-10-16: Phase 14 (evaluation framework, ADR [0021](docs/adr/0021-evaluation-framework.md)).**
+- **Part A, baselines** (`src/evaluation/baseline_comparison.py`, `config/baseline_comparison.yaml`, fixed before the
+  run). All five spec §34 baselines on the identical 180 human-labelled **test** pairs (held back since Phase 6, used
+  here for the first time). Test NDCG@5:
+
+  | Baseline | Test NDCG@5 |
+  |---|---|
+  | B1 keyword | 0.691 |
+  | B2 TF-IDF | 0.682 |
+  | B3 structured | 0.693 |
+  | B4 E5 | 0.720 |
+  | B5 hybrid (production LR) | 0.738 |
+
+  - **No pre-registered difference is statistically distinguishable.** RQ2 and RQ3: "higher, not distinguishable".
+  - E5's validation lead over TF-IDF (+0.154, distinguishable) shrank to +0.038 on test.
+  - The validation numbers reproduce Phase 6/8 exactly (8/8).
+- **Part B:** [`docs/RESEARCH_FINDINGS.md`](docs/RESEARCH_FINDINGS.md) answers RQ1–RQ9, each with its source file.
+- **Part C, leakage** (`src/pipeline/leakage_report.py` → `results/leakage_report.md`).
+  - **Zero findings:** 0 duplicate or near-duplicate students, 0 students in two splits (all 7 label and feature
+    files), 0 human pairs in training, no model-made labels.
+  - **Jobs:** 4,990 postings / 376 texts; 51 Phase 5 near-duplicates.
+  - **Target leakage against the WEAK training labels:** `career_interest_alignment` AUC 0.954 on weak vs 0.794 on
+    human test; `branch_match` 0.819 vs 0.599. The second reads `config/weak_label_rules.yaml` itself.
+- **Part D, performance** (`src/evaluation/performance_benchmark.py` → `results/performance_benchmark.md`). Production
+  agents ran in throwaway `phase14_bench_*` databases (dropped afterwards), with no LLM and no YouTube.
+  - **Sizes:** 286×4,990 real; 1,000×1,000 and 5,000×1,000 with **synthetic** students
+    (`src/pipeline/synthetic_scaleup.py`; Phase 1 had no generator).
+  - **Student request median:** 1.3–1.9 s end to end, of which the Matching Agent is 1.2–1.8 s. Supervisor overhead
+    is 3–5 ms.
+  - **Ingestion:** E5 embedding 93–336 ms per entity. Peak RSS 2.3–2.5 GB.
+  - **Tested ceiling:** 5,000×1,000.
+- **Also:**
+  - RQ9 route audit (`src/evaluation/trace_route_audit.py`): 67/67 traced requests (re-run 2026-10-16) ran exactly their task's agents.
+  - The Phase 6 recorder fix (`metric_rows`).
+  - `scripts/demo.py 19`.
+  - 14 new tests (`test_phase14_evaluation.py`).
+  - Updated the stale E5 matching row in `docs/MODEL_EVALUATION.md`.
+- **Tests:** 397 passed, 21 skipped, 1 failed (the known TF-IDF hash pin). Explainability tests: 20/20 in 5 runs.
+
+**Open items found in Phase 14:**
+- 🐞 **Explanations fail for pairs with more than 12 missing job skills.** The structured fallback emits one gap line
+  per skill, but `ProseDraft.potential_gaps` allows at most 12 (ValidationError, agent `failed`). **Hit live by 5 requests** (mostly company candidate ranking). 244 of the 107,536
+  labelled pairs (0.23%) can hit it. The fix needs a decision on how the validator's coverage rule treats omitted
+  gaps.
+- **The live DB holds one contradictory row:** `experiment_metrics` (`emb-20261014T145548Z-human`, `custom`,
+  `not_feasible`) although slot E was evaluated. The recorder no longer writes it; deleting the existing row is the
+  owner's call.
+- **The test split is now used.** A new unbiased estimate needs newly labelled students. Training on human labels is
+  the only way to remove the weak-label leakage.
+- **First-request course embedding** in the Learning Agent (~12–15 s live) could be precomputed at load.
+
+**Done on 2026-10-15 (later): Phase 13 review fixes (owner's walkthrough of the student and company dashboards).**
 
 **Done on 2026-10-15 (later): Phase 13 review fixes (owner's walkthrough of the student and company dashboards).**
 - **Resume PDFs lost every word gap** (pdfplumber's fixed 3 pt tolerance vs tightly set LaTeX resumes:
@@ -70,7 +123,7 @@ Source of truth for scope: [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md). Phase 1
 
 **Open items found in Phase 13 (for Phase 14 / 16):**
 - The Phase 6 recorder writes **no `experiment_metrics` rows for slot E (domain-adapted E5)** although its report JSON has
-  them, so the leaderboard shows it as "Not yet evaluated". Fix `record_experiment` in Phase 14.
+  them, so the leaderboard shows it as "Not yet evaluated". Fix `record_experiment` in Phase 14. **Resolved in Phase 14:** the slot E rows were in fact stored; the defects were the RUNNABLE loop and an unconditional "custom: not feasible" row (`metric_rows`).
 - `relevance_judgments` is empty in this database (the labels are read from `data/benchmark/human_labels.csv`).
 - The stored-run PII scrubber redacts every JSON key named `name` (cohort filter names read `[REDACTED]` in stored runs).
 - The Learning Agent's `compute_course_similarity` takes 23-30 s on this CPU and can hit the 30 s tool timeout (one retry).
@@ -233,8 +286,8 @@ Open items owned by the project owner:
 | 11 | Explainability Agent + SHAP | ✅ Done (2026-10-15): SHAP per model type (TreeSHAP for LightGBM), global + per-match explanations, LLM lines validated against cited evidence or replaced by the structured evidence (ADR 0019). Live Gemini prose blocked by the free-tier quota |
 | 12 | Agent state/tracing | ✅ Done (2026-10-15): runtime spans persisted to `agent_runs` + `agent_messages`, `get_agent_trace` / `GET /requests/{id}/trace`, request-scoped PII redaction proved by grep; cohort benchmarking (aggregates only) as a tool of the Matching and Profile agents (ADR 0020) |
 | 13 | Frontend + research dashboard | ✅ Done (2026-10-15): React app (`frontend/`), JWT auth on one `users` store, role-protected `/student` `/company` `/admin` APIs over the real Supervisor, confirmation steps, shortlist → `feedback_events`, live leaderboards/SHAP/traces |
-| 14 | Evaluation framework | ⏭ Next |
-| 15 | Feedback loop | Not started |
+| 14 | Evaluation framework | ✅ Done (2026-10-16): 5 baselines on the held-out test split (no distinguishable differences), `docs/RESEARCH_FINDINGS.md` (RQ1–RQ9), leakage report on real data, performance at 286×4,990 / 1k×1k / 5k×1k (partially synthetic) (ADR 0021) |
+| 15 | Feedback loop | ⏭ Next |
 | 16 | Security hardening | Not started |
 | 17 | Testing | Not started |
 | 18 | Documentation | Not started |
@@ -262,13 +315,15 @@ config/learning.yaml          Phase 10: top_k, min_relevance per embedding model
 config/explainability.yaml    Phase 11: model-evidence share/count, positive-similarity percentile, global split and sample sizes
 config/cohort.yaml            Phase 12: cohort filters' relax order, comparable top_n + embedding section, privacy minimums
 src/parsing/                  section_parser.py (+ parse_job_sections, P5), resume_text_parser.py
-src/pipeline/                 ingest_placement_cell.py, ingest_kaggle_resumes.py, ingest_real_jobs.py,
+src/pipeline/                 P14: leakage_report.py (Part C), synthetic_scaleup.py (benchmark-only scale-up data);
+                              ingest_placement_cell.py, ingest_kaggle_resumes.py, ingest_real_jobs.py,
                               validate_and_report.py, build_unified_dataset.py
 src/embeddings/               embedding_model_benchmark.py (5 models: texts, scoring, isolated cost measurement),
                               model_evaluation_engine.py (Phase 6 table, weights, sensitivity, best-model lines),
                               tfidf_baseline.py (re-implemented in Phase 4; corpus texts frozen in Phase 6)
                               domain_adapt.py (slot E: E5 fine-tuned on train-split weak labels; evaluated, not selected)
-src/evaluation/               splits.py (fixed per-student splits), relevance_labels.py (loader + hard rules),
+src/evaluation/               P14: baseline_comparison.py (Part A), performance_benchmark.py (Part D), trace_route_audit.py (RQ9);
+                              splits.py (fixed per-student splits), relevance_labels.py (loader + hard rules),
                               retrieval_metrics.py (P/R/MRR/NDCG/Hit@K, bootstrap CIs), labelling_pool.py, weak_labels.py
 src/scoring/                  Phase 8: matching_models.py (build/train/save/load/score/SHAP per candidate; isolated
                               measurement worker), matching_model_selection_engine.py (the Phase 8 table, scenarios,
@@ -468,6 +523,27 @@ Windows. Inside Docker it is still `postgres:5432`.
 ---
 
 ## Phase log
+
+### Phase 14: Evaluation framework (2026-10-16) ✅
+
+Full numbers: `results/baseline_comparison.md`, `results/leakage_report.md`, `results/performance_benchmark.md`,
+`results/trace_route_audit.md`; answers in `docs/RESEARCH_FINDINGS.md`; decisions in ADR 0021.
+
+| Piece | Where | Notes |
+|---|---|---|
+| Baselines | `src/evaluation/baseline_comparison.py`, `config/baseline_comparison.yaml` | B1 keyword (new, agents' own extraction + `normalize_skills`); B2/B4 via Phase 6 `score_matrix`; B3 via Phase 7 `weighted_baseline_v1`; B5 = the production model from `config/matching_model.yaml`. Same 180 test pairs, NDCG@5 primary, paired-bootstrap verdicts; validation reproduces Phase 6/8 (8/8) |
+| Leakage | `src/pipeline/leakage_report.py` | 6 spec §26 checks with real counts; single-feature AUC vs weak and human labels for all 20 features; read-only DB counts |
+| Performance | `src/evaluation/performance_benchmark.py` (`run --size real/1k/5k`, `report`, `drop`) | Real agents in throwaway DBs, latencies from Phase 12 spans; no LLM / YouTube |
+| Scale-up data | `src/pipeline/synthetic_scaleup.py` | Seeded recombination within source + branch, `is_synthetic=True`, never written to `data/` |
+| RQ9 | `src/evaluation/trace_route_audit.py` | Executed + skipped agents vs `FALLBACK_ROUTES` per traced request |
+| Fix | `src/embeddings/model_evaluation_engine.py` | `metric_rows`: the report's own models; no "custom: not feasible" when slot E ran |
+| Tests / demo | `backend/tests/test_phase14_evaluation.py` (14), `scripts/demo.py 19` | Demo 19 ran live: cohort → profile only; learning → profile, matching, learning |
+
+**Deviations from the Phase 14 prompt:**
+- No Phase 1 synthetic-generation script existed, so one was written (ADR 0021).
+- The feature vector has 20 features, not 19. All 20 were reviewed.
+- The smallest size is the real 286×4,990, not 100×100.
+
 
 ### Phase 12: Agent tracing + cohort analytics (2026-10-15) ✅
 

@@ -735,19 +735,14 @@ def write_outputs(report: dict) -> dict[str, str]:
     return {"json": base + ".json", "markdown": base + ".md", "latest": latest + ".md"}
 
 
-def record_experiment(dsn: str, report: dict) -> None:
-    """Store the run in experiment_runs / experiment_metrics (spec §25)."""
-    import psycopg
-    from psycopg.types.json import Jsonb
-
+def metric_rows(report: dict) -> list[tuple]:
+    """experiment_metrics rows (model_name, model_version, metric, split, value, status) for a finished report."""
     ev = report["config"]["evaluation"]
-    labels = report["labels"]
-    split_info = {s: {"students": report["splits"]["students"][s],
-                      "label_pairs": labels.get("split_breakdown", {}).get(s, {}).get("pairs", 0),
-                      "evaluated": s == ev["selection_split"] and labels["provided"]} for s in SPLITS}
     q = report["quality"].get(ev["primary_protocol"], {})
     rows = []
-    for key in RUNNABLE:
+    # the report's own models, not this process's RUNNABLE: --record-existing of a run that evaluated slot E
+    # (e5_domain) must store its rows even when PHASE6_DOMAIN_MODEL isn't set now (Phase 13 finding, fixed in Phase 14)
+    for key in report["models"]:
         version = report["models"][key]["version"]
         for kk in ev["ks"]:
             for metric in ("mrr", f"ndcg@{kk}", f"recall@{kk}", f"precision@{kk}", f"hit_rate@{kk}"):
@@ -763,7 +758,22 @@ def record_experiment(dsn: str, report: dict) -> None:
         overall = report["scenarios"]["balanced"]["overall"]
         rows.append((key, version, "overall_score_balanced", "n/a", overall[key] if overall else None,
                      "measured" if overall else "not_yet_evaluated"))
-    rows.append(("custom", "none", "overall_score_balanced", "n/a", None, "not_feasible"))
+    if "custom" in report.get("not_run", {}):  # slot E ran (e5_domain): it is evaluated, not "not feasible"
+        rows.append(("custom", "none", "overall_score_balanced", "n/a", None, "not_feasible"))
+    return rows
+
+
+def record_experiment(dsn: str, report: dict) -> None:
+    """Store the run in experiment_runs / experiment_metrics (spec §25)."""
+    import psycopg
+    from psycopg.types.json import Jsonb
+
+    ev = report["config"]["evaluation"]
+    labels = report["labels"]
+    split_info = {s: {"students": report["splits"]["students"][s],
+                      "label_pairs": labels.get("split_breakdown", {}).get(s, {}).get("pairs", 0),
+                      "evaluated": s == ev["selection_split"] and labels["provided"]} for s in SPLITS}
+    rows = metric_rows(report)
     with psycopg.connect(dsn, connect_timeout=5) as conn, conn.transaction():
         conn.execute(
             "INSERT INTO experiment_runs (experiment_id, kind, started_at, finished_at, dataset_version, dataset_size, "
@@ -773,10 +783,10 @@ def record_experiment(dsn: str, report: dict) -> None:
             (report["experiment_id"], report["kind"], report["started_at"], report["finished_at"],
              report["dataset_version"], Jsonb(report["dataset_size"]), Jsonb(split_info["train"]),
              Jsonb(split_info["validation"]), Jsonb(split_info["test"]), ev["seed"], report["config"]["text_view"],
-             "comparison: " + ", ".join(RUNNABLE), "; ".join(f"{k}={v['version']}" for k, v in report["models"].items()),
+             "comparison: " + ", ".join(report["models"]), "; ".join(f"{k}={v['version']}" for k, v in report["models"].items()),
              "none (cosine-similarity ranking)", Jsonb(report["config"]),
              Jsonb({"quality": report["quality"], "criteria": report["criteria"]}), report["runtime_seconds"],
-             Jsonb({k: report["costs"]["models"][k]["memory_mb"] for k in RUNNABLE}), Jsonb(report["costs"]["hardware"]),
+             Jsonb({k: report["costs"]["models"][k]["memory_mb"] for k in report["models"]}), Jsonb(report["costs"]["hardware"]),
              Jsonb({k: v for k, v in labels.items() if k != "manifest"} | {"validity_line": report["validity"]}),
              "Phase 6 embedding selection run. TF-IDF is the floor; custom model not feasible; hybrid is Phase 7/14.",
              "Synthetic templated job corpus; validation split only; laptop costs; see the report's Limitations.",

@@ -1,0 +1,523 @@
+{
+ "generated_at": "2026-10-15T14:14:32+00:00",
+ "dataset_version": "students:636d394f399c jobs:42c7d78b48c1",
+ "label_files": {
+  "human_labels": "0a4f1215d043",
+  "weak_labels": "085a07c100d3",
+  "labelling_pool": "3f1b1557bd55"
+ },
+ "students": {
+  "students": 286,
+  "exact_duplicate_rows": {
+   "groups": 0,
+   "students_in_groups": 0,
+   "groups_across_splits": 0,
+   "groups_with_a_human_labelled_student_and_a_train_student": 0,
+   "examples": []
+  },
+  "identical_model_text": {
+   "groups": 0,
+   "students_in_groups": 0,
+   "groups_across_splits": 0,
+   "groups_with_a_human_labelled_student_and_a_train_student": 0,
+   "examples": []
+  },
+  "near_duplicate_text": {
+   "groups": 0,
+   "students_in_groups": 0,
+   "groups_across_splits": 0,
+   "groups_with_a_human_labelled_student_and_a_train_student": 0,
+   "examples": [],
+   "pairs": 0,
+   "threshold": 0.9
+  },
+  "empty_model_text": []
+ },
+ "jobs": {
+  "jobs": 4990,
+  "exact_duplicate_rows": {
+   "groups": 0,
+   "jobs_in_groups": 0
+  },
+  "identical_model_text": {
+   "distinct_texts": 376,
+   "groups": 376,
+   "jobs_in_groups": 4990,
+   "largest_group": 53,
+   "texts_shared_by_more_than_one_role": 0
+  },
+  "phase5_near_duplicates": {
+   "flagged_postings": 51,
+   "groups": 50,
+   "rule": "same company + same title + 3-shingle Jaccard >= 0.9 (job-dedup-v2)"
+  },
+  "near_identical_across_roles": {
+   "pairs": 0,
+   "threshold": 0.9,
+   "examples": []
+  },
+  "students_with_two_postings_of_one_role_in_their_judged_list": 0,
+  "labelled_jobs": {
+   "validation": 90,
+   "test": 87
+  }
+ },
+ "splits": {
+  "split_rule": "student-sha256-v1: a pure function of student_id, so a student can't be in two splits",
+  "student_splits_csv_mismatches": [],
+  "per_file": {
+   "human_labels": {
+    "students": 30,
+    "students_in_more_than_one_split": 0,
+    "rows_whose_split_differs_from_the_fixed_split": 0,
+    "pairs_by_split": {
+     "test": 180,
+     "validation": 180
+    }
+   },
+   "weak_labels": {
+    "students": 286,
+    "students_in_more_than_one_split": 0,
+    "rows_whose_split_differs_from_the_fixed_split": 0,
+    "pairs_by_split": {
+     "train": 67680,
+     "validation": 21432,
+     "test": 18424
+    }
+   },
+   "labelling_pool": {
+    "students": 30,
+    "students_in_more_than_one_split": 0,
+    "rows_whose_split_differs_from_the_fixed_split": 0,
+    "pairs_by_split": {
+     "validation": 180,
+     "test": 180
+    }
+   },
+   "features:features-v1-intfloat_e5-base-v2@f52bf8ec8c71": {
+    "students": 286,
+    "students_in_more_than_one_split": 0,
+    "rows_whose_split_differs_from_the_fixed_split": 0,
+    "pairs_by_split": {
+     "train": 67680,
+     "validation": 21432,
+     "test": 18424
+    }
+   },
+   "features:features-v1-tfidf-953a75d166d8": {
+    "students": 286,
+    "students_in_more_than_one_split": 0,
+    "rows_whose_split_differs_from_the_fixed_split": 0,
+    "pairs_by_split": {
+     "train": 67680,
+     "validation": 21432,
+     "test": 18424
+    }
+   },
+   "features:features-v2-intfloat_e5-base-v2@f52bf8ec8c71": {
+    "students": 286,
+    "students_in_more_than_one_split": 0,
+    "rows_whose_split_differs_from_the_fixed_split": 0,
+    "pairs_by_split": {
+     "train": 67680,
+     "validation": 21432,
+     "test": 18424
+    }
+   },
+   "features:features-v2-tfidf-953a75d166d8": {
+    "students": 286,
+    "students_in_more_than_one_split": 0,
+    "rows_whose_split_differs_from_the_fixed_split": 0,
+    "pairs_by_split": {
+     "train": 67680,
+     "validation": 21432,
+     "test": 18424
+    }
+   }
+  },
+  "human_labelled_students_in_train": 0,
+  "human_label_pairs_among_training_pairs": 0,
+  "trained_model_manifests": {
+   "mms-20261011T104041Z-nolabels": {
+    "training_split": "train",
+    "label_source": "weakly_labelled",
+    "feature_matrix": "features-v1-tfidf-953a75d166d8.csv.gz"
+   },
+   "mms-20261014T150744Z-nolabels": {
+    "training_split": "train",
+    "label_source": "weakly_labelled",
+    "feature_matrix": "features-v1-intfloat_e5-base-v2@f52bf8ec8c71.csv.gz"
+   },
+   "mms-20261015T123632Z-nolabels": {
+    "training_split": "train",
+    "label_source": "weakly_labelled",
+    "feature_matrix": "features-v2-intfloat_e5-base-v2@f52bf8ec8c71.csv.gz"
+   },
+   "mms-20261015T124629Z-nolabels": {
+    "training_split": "train",
+    "label_source": "weakly_labelled",
+    "feature_matrix": "features-v2-tfidf-953a75d166d8.csv.gz"
+   }
+  },
+  "content_duplicates_of_human_labelled_students_in_train": 0,
+  "jobs_shared_across_splits": {
+   "note": "jobs are the shared corpus being ranked; splits are by student (src/evaluation/splits.py)",
+   "test_judged_jobs": 87,
+   "also_in_train_training_pairs": 87,
+   "also_a_positive_in_train_training_pairs": 63
+  }
+ },
+ "synthetic": {
+  "synthetic_students": 0,
+  "synthetic_students_by_split": {},
+  "label_or_feature_student_ids_not_in_students_unified": [],
+  "jobs_have_is_synthetic_column": false,
+  "job_corpus_note": "jobs.csv carries no is_synthetic flag; the Phase 1 audit (I-7) found it templated and probably synthetic (376 distinct role texts, qualifications assigned near-uniformly)"
+ },
+ "target_leakage": {
+  "features": [
+   {
+    "feature": "skill_match_score",
+    "reads": "student skills + profile text vs job skills (inferred required/preferred)",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.7417558244229516,
+    "auc_human_validation": 0.7986153846153846,
+    "auc_human_test": 0.7051983584131327
+   },
+   {
+    "feature": "required_skill_match_score",
+    "reads": "same, required skills only",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.7085581280522466,
+    "auc_human_validation": 0.7384615384615385,
+    "auc_human_test": 0.6450828393372854
+   },
+   {
+    "feature": "preferred_skill_match_score",
+    "reads": "same, preferred skills only",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0346,
+    "auc_weak_labels_train": 0.6770855442054725,
+    "auc_human_validation": 0.7538582677165355,
+    "auc_human_test": 0.6975781249999999
+   },
+   {
+    "feature": "semantic_similarity",
+    "reads": "E5 section-weighted similarity (skills, experience, projects), calibrated percentile",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.8803641576525553,
+    "auc_human_validation": 0.8021538461538462,
+    "auc_human_test": 0.7865177078583371
+   },
+   {
+    "feature": "education_match",
+    "reads": "student degree level vs job minimum (qualification_required)",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.2167,
+    "auc_weak_labels_train": 0.49299958260337756,
+    "auc_human_validation": 0.4180243525981821,
+    "auc_human_test": 0.49908800729594166
+   },
+   {
+    "feature": "degree_match",
+    "reads": "student degree vs job degree (randomly assigned in jobs.csv, Phase 6)",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.2167,
+    "auc_weak_labels_train": 0.4977586835052936,
+    "auc_human_validation": 0.4939975990396158,
+    "auc_human_test": 0.49293205654354766
+   },
+   {
+    "feature": "branch_match",
+    "reads": "student branch -> families (config branch_rules) vs job role -> families",
+    "shares_an_input_with_the_weak_labels": "job role families are read from config/weak_label_rules.yaml: the SAME regexes that generate the weak training labels",
+    "missing_share_train": 0.4548,
+    "auc_weak_labels_train": 0.8188374811140569,
+    "auc_human_validation": 0.5757575757575757,
+    "auc_human_test": 0.5990566037735849
+   },
+   {
+    "feature": "experience_match",
+    "reads": "stated experience vs job minimum (experience_required)",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.4811422590670136,
+    "auc_human_validation": 0.49069230769230765,
+    "auc_human_test": 0.4654202766377869
+   },
+   {
+    "feature": "experience_gap",
+    "reads": "years short of the job minimum",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.5493216201750127,
+    "auc_human_validation": 0.5203076923076922,
+    "auc_human_test": 0.45865633074935397
+   },
+   {
+    "feature": "project_relevance",
+    "reads": "E5 projects vs job description, percentile",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.5833,
+    "auc_weak_labels_train": 0.7646850347759985,
+    "auc_human_validation": 0.7658982511923688,
+    "auc_human_test": 0.71
+   },
+   {
+    "feature": "certification_relevance",
+    "reads": "E5 certifications vs job skills, percentile",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.6056,
+    "auc_weak_labels_train": 0.795637629362723,
+    "auc_human_validation": 0.520923520923521,
+    "auc_human_test": 0.6935185185185185
+   },
+   {
+    "feature": "career_interest_alignment",
+    "reads": "E5 of the student's stated interest + DOMAIN vs job title + role, percentile",
+    "shares_an_input_with_the_weak_labels": "the student's `domain` is the weak labels' student-side input, and the job title/role their job-side input",
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.9535878652841572,
+    "auc_human_validation": 0.7873846153846153,
+    "auc_human_test": 0.7941936464508283
+   },
+   {
+    "feature": "transferable_skill_score",
+    "reads": "related (embedding) skills covering missing required skills",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0061,
+    "auc_weak_labels_train": 0.6759654830039566,
+    "auc_human_validation": 0.6740662438336857,
+    "auc_human_test": 0.6385833333333332
+   },
+   {
+    "feature": "matched_skill_count",
+    "reads": "job skills the profile names",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.6135253038243068,
+    "auc_human_validation": 0.6976923076923076,
+    "auc_human_test": 0.6434108527131782
+   },
+   {
+    "feature": "missing_skill_count",
+    "reads": "job skills the profile doesn't name",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.4801982440635489,
+    "auc_human_validation": 0.4881538461538461,
+    "auc_human_test": 0.47256421948624416
+   },
+   {
+    "feature": "required_skill_count",
+    "reads": "number of inferred required skills of the JOB (job-only)",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.4698853579297211,
+    "auc_human_validation": 0.3566923076923077,
+    "auc_human_test": 0.46716826265389877
+   },
+   {
+    "feature": "matched_skill_ratio",
+    "reads": "matched / all job skills",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.6142624569003075,
+    "auc_human_validation": 0.6968461538461539,
+    "auc_human_test": 0.6349749202006383
+   },
+   {
+    "feature": "preferred_skill_ratio",
+    "reads": "matched preferred / preferred",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.0346,
+    "auc_weak_labels_train": 0.5622250041860073,
+    "auc_human_validation": 0.6574015748031495,
+    "auc_human_test": 0.5977343749999999
+   },
+   {
+    "feature": "role_similarity",
+    "reads": "E5 past experience vs job title + role, percentile",
+    "shares_an_input_with_the_weak_labels": null,
+    "missing_share_train": 0.2167,
+    "auc_weak_labels_train": 0.8470822403983236,
+    "auc_human_validation": 0.719562243502052,
+    "auc_human_test": 0.7626068376068377
+   },
+   {
+    "feature": "domain_similarity",
+    "reads": "E5 of branch + DOMAIN vs the full job text, percentile",
+    "shares_an_input_with_the_weak_labels": "reads the student's `domain`, the weak labels' student-side input",
+    "missing_share_train": 0.0,
+    "auc_weak_labels_train": 0.9028465505723805,
+    "auc_human_validation": 0.7310769230769231,
+    "auc_human_test": 0.769265845873233
+   }
+  ],
+  "branch_plus_interest": {
+   "auc_weak_labels_train": 0.9771288945317849,
+   "auc_human_validation": 0.7955384615384615,
+   "auc_human_test": 0.828469372245022
+  },
+  "train_pairs": 67680,
+  "train_positives": 1830,
+  "human_pairs": {
+   "validation": 180,
+   "test": 180
+  },
+  "human_positives": {
+   "validation": 50,
+   "test": 51
+  },
+  "outcome_columns_in_data": [],
+  "columns": {
+   "students": [
+    "student_id",
+    "degree",
+    "branch",
+    "graduation_year",
+    "gender",
+    "avg_cgpa_sem5",
+    "achievements",
+    "career_interests",
+    "domain",
+    "internship_raw",
+    "technical_projects",
+    "skills_raw",
+    "certifications",
+    "country",
+    "source_dataset",
+    "is_synthetic",
+    "synthetic_fields"
+   ],
+   "jobs": [
+    "job_id",
+    "source_job_id",
+    "experience_required",
+    "qualification_required",
+    "salary_range",
+    "location",
+    "country",
+    "work_type",
+    "job_title",
+    "role",
+    "job_portal",
+    "job_description",
+    "skills",
+    "responsibilities",
+    "company_name",
+    "gender_preference"
+   ]
+  },
+  "feature_matrix": "features-v2-intfloat_e5-base-v2@f52bf8ec8c71",
+  "production_model": "logistic_regression (artifacts mms-20261015T123632Z-nolabels)"
+ },
+ "label_provenance": {
+  "human_labels": {
+   "manifest": true,
+   "generated_by": "human",
+   "models_used_for_labels": [],
+   "label_sources_in_file": [
+    "human_reviewed"
+   ],
+   "pool_models": null
+  },
+  "weak_labels": {
+   "manifest": true,
+   "generated_by": "rules",
+   "models_used_for_labels": [],
+   "label_sources_in_file": [
+    "weakly_labelled"
+   ],
+   "pool_models": null
+  },
+  "labelling_pool": {
+   "manifest": true,
+   "generated_by": null,
+   "models_used_for_labels": null,
+   "label_sources_in_file": null,
+   "pool_models": {
+    "tfidf": "tfidf-3ec097a5876e",
+    "sbert": "sentence-transformers/all-mpnet-base-v2@e8c3b32edf54",
+    "e5": "intfloat/e5-base-v2@f52bf8ec8c71",
+    "bge": "BAAI/bge-base-en-v1.5@a5beb1e3e68b",
+    "minilm": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4"
+   }
+  },
+  "human_pairs_outside_the_pool": 0,
+  "circularity_guard": {
+   "emb-20261014T145548Z-human": {
+    "split": "validation",
+    "level": "OK",
+    "tau": {
+     "tfidf": 0.311,
+     "sbert": 0.359,
+     "e5": 0.481,
+     "bge": 0.471,
+     "minilm": 0.363,
+     "e5_domain": 0.566
+    }
+   },
+   "mms-20261015T124013Z-human": {
+    "split": "validation",
+    "level": "OK",
+    "tau": {
+     "logistic_regression": 0.501,
+     "decision_tree": 0.516,
+     "random_forest": 0.531,
+     "gradient_boosting": 0.518,
+     "xgboost": 0.485,
+     "lightgbm": 0.523,
+     "weighted_baseline_v1": 0.401
+    }
+   },
+   "mms-20261015T124901Z-human": {
+    "split": "validation",
+    "level": "OK",
+    "tau": {
+     "logistic_regression": 0.505,
+     "decision_tree": 0.492,
+     "random_forest": 0.471,
+     "gradient_boosting": 0.506,
+     "xgboost": 0.501,
+     "lightgbm": 0.519,
+     "weighted_baseline_v1": 0.387
+    }
+   },
+   "base-20261015T141402Z-human (test)": {
+    "split": "test",
+    "level": "OK",
+    "tau": {
+     "b1_keyword": 0.499,
+     "b2_tfidf": 0.369,
+     "b3_structured": 0.443,
+     "b4_semantic": 0.45,
+     "b5_hybrid": 0.47
+    }
+   },
+   "base-20261015T141402Z-human (validation)": {
+    "split": "validation",
+    "level": "OK",
+    "tau": {
+     "b1_keyword": 0.361,
+     "b2_tfidf": 0.311,
+     "b3_structured": 0.401,
+     "b4_semantic": 0.481,
+     "b5_hybrid": 0.501
+    }
+   }
+  },
+  "database": {
+   "relevance_judgments": 360,
+   "relevance_judgments_by_source": {
+    "human_reviewed": 360
+   },
+   "feedback_events": 1,
+   "match_results": 0
+  },
+  "code_reading_feedback_or_match_results": {}
+ }
+}

@@ -1,0 +1,69 @@
+# Phase 14 Part A (spec §34): the five baselines compared under ONE framework.
+# Fixed BEFORE the first run on the test split (2026-10-15). Change it here, never in code; the report records
+# this file's SHA-256. Nothing below names a winner: the verdicts come from the rule and the measured numbers.
+version: baseline-comparison-v1
+
+labels: data/benchmark/human_labels.csv   # the Phase 6/8 human benchmark (rubric-v1, 360 pairs, 30 students)
+label_source: human_reviewed
+
+# Splits, in report order. `test` was held back by Phases 6 and 8 for exactly this comparison: no model or weight was
+# chosen on it, so it is the unbiased estimate. `validation` is where Phases 6 and 8 SELECTED E5 and Logistic
+# Regression; it is reported to check that this module reproduces their numbers, never to answer an RQ (it favours
+# the selected models by construction).
+splits: [test, validation]
+answer_split: test
+
+evaluation:
+  ks: [5, 10]
+  relevance_threshold: 2       # grade >= 2 (moderate or strong) is relevant, as in Phases 6 and 8
+  # NDCG@5: a student reads the first few recommendations (Phase 6's reason). With 12 judged jobs per student,
+  # K = 10 ranks 10 of 12 and separates models less; NDCG@10 and MRR are reported alongside, never instead.
+  primary_metric: ndcg@5
+  # Added after the first run (2026-10-15), to show what the primary hides (E5 vs TF-IDF differs on MRR). Reported per
+  # comparison, NEVER decisive: with 2 metrics x 6 comparisons, one CI excluding 0 by a hair is within chance.
+  secondary_metrics: [ndcg@10, mrr]
+  bootstrap_resamples: 2000    # paired bootstrap over students, as in Phases 6 and 8
+  seed: 42
+
+# How every baseline scores a (student, job) pair. Each student's judged jobs are ranked by that score (condensed
+# lists: unjudged jobs never count), ties broken by job_id, missing scores last (src/evaluation/retrieval_metrics.py).
+baselines:
+  b1_keyword:
+    display: "Baseline 1: normalized keyword matching"
+    method: >-
+      Student skills: the Profile Agent's stored-record path (record_skills_text -> extract_skills -> normalize_skills).
+      Job skills: the Job Agent's phrase splitter (split_skill_phrases) -> normalize_skills. A job skill is matched
+      when its normalised name equals a student skill's, or one contains the other as whole words. Score = matched
+      job skills / job skills. No embeddings, no structured features.
+  b2_tfidf:
+    display: "Baseline 2: TF-IDF + cosine similarity"
+    method: "Phase 6 floor, src/embeddings/tfidf_baseline.py via the Phase 6 scorer (score_matrix, full_text protocol)."
+  b3_structured:
+    display: "Baseline 3: structured feature matching"
+    method: >-
+      Phase 7's weighted_baseline_v1 (config/matching_baseline_v1.yaml) on the features-v2 E5 feature matrix, as the
+      Phase 8 engine scores it. NOTE: its 20 features include 6 calibrated E5 similarity percentiles (weight 0.38 of
+      1.00), so it is not free of semantic signal.
+  b4_semantic:
+    display: "Baseline 4: semantic embedding matching"
+    method: "Phase 6's selected model (E5 e5-base-v2) alone, via the Phase 6 scorer (score_matrix, full_text protocol)."
+  b5_hybrid:
+    display: "Baseline 5: hybrid semantic + structured matching"
+    method: >-
+      The production Stage 4 model named by config/matching_model.yaml (the trained Phase 8 model, hash-checked) on
+      the same features-v2 E5 feature matrix: E5 similarity features + structured features + the trained model.
+
+# The comparisons each research question rests on (a - b, primary metric, answer split).
+comparisons:
+  RQ2:
+    - [b4_semantic, b1_keyword]
+    - [b4_semantic, b2_tfidf]
+  RQ3:
+    - [b5_hybrid, b4_semantic]
+  context:
+    - [b2_tfidf, b1_keyword]
+    - [b3_structured, b4_semantic]
+    - [b5_hybrid, b3_structured]
+
+# Verdict rule: "a outperforms b" only when the paired 95% CI of (a - b) on the primary metric excludes 0.
+# A positive point estimate whose CI contains 0 is reported as "higher, not statistically distinguishable".

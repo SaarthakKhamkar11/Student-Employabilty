@@ -3,7 +3,8 @@ Intelligence agents (Phases 3-5), the embedding-selection framework (Phase 6, de
 Matching Agent (Phase 7, demos 11-12), the Matching Model Selection Engine (Phase 8, demo 13) and the
 skill-gap report (Phase 9, demo 14), the Learning Agent (Phase 10, demo 15), the Explainability
 Agent (Phase 11, demo 16: `demo.py 16 [S00001:J0974289 ...]`), and Phase 12: the persisted trace of a resume
-upload (demo 17) and cohort benchmarking (demo 18: `demo.py 18 [S00001:J0918392 ...]`).
+upload (demo 17) and cohort benchmarking (demo 18: `demo.py 18 [S00001:J0918392 ...]`), and Phase 14: per-task
+routing seen in live traces, plus the held-out baseline comparison and leakage headline (demo 19).
 
 Start the stack first:   docker compose up -d --wait
 Then run:                .venv/bin/python scripts/demo.py           (all demos)
@@ -478,6 +479,50 @@ def demo_cohort(pairs=COHORT_PAIRS) -> None:
             print(f"  note: {note}")
 
 
+RESULTS = __import__("pathlib").Path(__file__).resolve().parents[1] / "results"
+
+
+def demo_evaluation(student_id: str = "S00001") -> None:
+    title(19, "Phase 14: the Supervisor runs only what each task needs (live traces) + the held-out baseline table")
+    asks = (("cohort_benchmark", "How do I compare with my peers?"),
+            ("learning_recommendations", "What should I learn next?"))
+    for task, question in asks:
+        resp = call("POST", "/requests", {"actor": "student", "request_kind": "question", "task_type": task,
+                                          "request_text": question, "student_id": student_id})
+        if "http_error" in resp:
+            print(f"  {task}: HTTP {resp['http_error']} {resp['detail']}")
+            continue
+        trace = call("GET", f"/requests/{resp['request_id']}/trace")
+        root = trace.get("trace", {}).get("root", {})
+        ran = [c["name"] for c in root.get("children", []) if c["kind"] == "agent"]
+        skipped = [f"{c['name']} ({c['details'].get('reason', '')})" for c in root.get("children", [])
+                   if c["kind"] == "skipped"]
+        print(f"  {task}: {resp['status']} in {resp['duration_ms']:.0f} ms; agents run: {', '.join(ran) or 'none'}; "
+              f"skipped: {', '.join(skipped) or 'none'}")
+    comparison = RESULTS / "baseline_comparison.json"
+    if comparison.exists():
+        r = json.loads(comparison.read_text(encoding="utf-8"))
+        print(f"  {r['experiment_id']}: test split, {r['quality']['test']['b1_keyword']['pairs']} identical pairs per baseline")
+        for key, q in r["quality"]["test"].items():
+            m = q["mean"]
+            print(f"    {r['baselines'][key]['display']:<52} NDCG@5 {m['ndcg@5']:.3f}  NDCG@10 {m['ndcg@10']:.3f}  "
+                  f"MRR {m['mrr']:.3f}")
+        for rq in ("RQ2", "RQ3"):
+            for c in r["comparisons"]["test"][rq]:
+                print(f"    {rq} {c['a']} - {c['b']}: {c['mean_difference']:+.3f} "
+                      f"({c['ci95'][0]:+.3f} to {c['ci95'][1]:+.3f}) -> {c['verdict']}")
+    else:
+        print("  results/baseline_comparison.json not found: run python -m src.evaluation.baseline_comparison")
+    leakage = RESULTS / "leakage_report.json"
+    if leakage.exists():
+        lr = json.loads(leakage.read_text(encoding="utf-8"))
+        shared = [f["feature"] for f in lr["target_leakage"]["features"] if f["shares_an_input_with_the_weak_labels"]]
+        print(f"  leakage: students in two splits "
+              f"{max(v['students_in_more_than_one_split'] for v in lr['splits']['per_file'].values())}, "
+              f"near-duplicate student groups {lr['students']['near_duplicate_text']['groups']}, features sharing an "
+              f"input with the weak training labels: {', '.join(shared)}")
+
+
 if __name__ == "__main__":
     only = int(sys.argv[1]) if len(sys.argv) > 1 else None
     rid = None
@@ -508,4 +553,6 @@ if __name__ == "__main__":
         demo_trace()
     if only in (None, 18):
         demo_cohort(tuple(sys.argv[2:]) or COHORT_PAIRS)
+    if only in (None, 19):
+        demo_evaluation(*(sys.argv[2:3] or ["S00001"]))
     print()

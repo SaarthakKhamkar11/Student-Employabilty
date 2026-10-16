@@ -1,0 +1,271 @@
+{
+ "generated_at": "2026-10-16T05:40:06+00:00",
+ "requests": 97,
+ "traced_requests": 67,
+ "untraced_requests": 30,
+ "tool_calls": 1432,
+ "tool_retries": 10,
+ "agent_retries": 5,
+ "llm_routed_requests": 0,
+ "median_ms_llm_routed": null,
+ "median_ms_deterministic": 2803.0,
+ "median_llm_routing_ms_per_request": 875.1,
+ "tasks": {
+  "cohort_benchmark": {
+   "requests": 8,
+   "statuses": {
+    "success": 8
+   },
+   "routing": {
+    "deterministic_fallback": 8
+   },
+   "expected_route": [
+    "profile_agent"
+   ],
+   "route_accounted": 8,
+   "requests_running_an_agent_outside_the_route": 0,
+   "executed": {
+    "profile_agent": 8
+   },
+   "skipped": {},
+   "skip_reasons": {},
+   "agents_not_needed": [
+    "explainability_agent",
+    "job_intelligence_agent",
+    "learning_agent",
+    "matching_agent"
+   ],
+   "agents_not_needed_that_ran": [],
+   "median_agent_ms": {
+    "profile_agent": 344.4
+   },
+   "median_request_ms": 928.5
+  },
+  "explain_match": {
+   "requests": 19,
+   "statuses": {
+    "partial": 4,
+    "success": 15
+   },
+   "routing": {
+    "deterministic_fallback": 19
+   },
+   "expected_route": [
+    "profile_agent",
+    "job_intelligence_agent",
+    "matching_agent",
+    "explainability_agent"
+   ],
+   "route_accounted": 19,
+   "requests_running_an_agent_outside_the_route": 0,
+   "executed": {
+    "job_intelligence_agent": 19,
+    "matching_agent": 19,
+    "explainability_agent": 19,
+    "profile_agent": 19
+   },
+   "skipped": {},
+   "skip_reasons": {},
+   "agents_not_needed": [
+    "learning_agent"
+   ],
+   "agents_not_needed_that_ran": [],
+   "median_agent_ms": {
+    "profile_agent": 22.3,
+    "job_intelligence_agent": 446.5,
+    "matching_agent": 852.4,
+    "explainability_agent": 55.2
+   },
+   "median_request_ms": 1429.0
+  },
+  "ingest_job": {
+   "requests": 2,
+   "statuses": {
+    "partial": 2
+   },
+   "routing": {
+    "deterministic_fallback": 2
+   },
+   "expected_route": [
+    "job_intelligence_agent",
+    "matching_agent",
+    "explainability_agent"
+   ],
+   "route_accounted": 2,
+   "requests_running_an_agent_outside_the_route": 0,
+   "executed": {
+    "matching_agent": 2,
+    "explainability_agent": 2,
+    "job_intelligence_agent": 2
+   },
+   "skipped": {},
+   "skip_reasons": {},
+   "agents_not_needed": [
+    "learning_agent",
+    "profile_agent"
+   ],
+   "agents_not_needed_that_ran": [],
+   "median_agent_ms": {
+    "job_intelligence_agent": 2086.2,
+    "matching_agent": 10554.3,
+    "explainability_agent": 579.5
+   },
+   "median_request_ms": 14144.2
+  },
+  "ingest_student_profile": {
+   "requests": 10,
+   "statuses": {
+    "partial": 5,
+    "failed": 2,
+    "success": 3
+   },
+   "routing": {
+    "deterministic_fallback": 10
+   },
+   "expected_route": [
+    "profile_agent",
+    "matching_agent",
+    "learning_agent",
+    "explainability_agent"
+   ],
+   "route_accounted": 10,
+   "requests_running_an_agent_outside_the_route": 0,
+   "executed": {
+    "matching_agent": 8,
+    "learning_agent": 8,
+    "explainability_agent": 8,
+    "profile_agent": 10
+   },
+   "skipped": {
+    "matching_agent": 2,
+    "learning_agent": 2,
+    "explainability_agent": 2
+   },
+   "skip_reasons": {
+    "matching_agent: upstream profile_agent failed": 2,
+    "learning_agent: upstream matching_agent skipped": 2,
+    "explainability_agent: upstream matching_agent skipped": 2
+   },
+   "agents_not_needed": [
+    "job_intelligence_agent"
+   ],
+   "agents_not_needed_that_ran": [],
+   "median_agent_ms": {
+    "matching_agent": 4687.0,
+    "learning_agent": 11265.3,
+    "profile_agent": 356.4,
+    "explainability_agent": 1113.7
+   },
+   "median_request_ms": 11340.1
+  },
+  "learning_recommendations": {
+   "requests": 12,
+   "statuses": {
+    "success": 12
+   },
+   "routing": {
+    "deterministic_fallback": 12
+   },
+   "expected_route": [
+    "profile_agent",
+    "matching_agent",
+    "learning_agent"
+   ],
+   "route_accounted": 12,
+   "requests_running_an_agent_outside_the_route": 0,
+   "executed": {
+    "matching_agent": 12,
+    "learning_agent": 8,
+    "profile_agent": 12
+   },
+   "skipped": {
+    "learning_agent": 4
+   },
+   "skip_reasons": {
+    "learning_agent: not needed: no skill gaps were identified": 4
+   },
+   "agents_not_needed": [
+    "explainability_agent",
+    "job_intelligence_agent"
+   ],
+   "agents_not_needed_that_ran": [],
+   "median_agent_ms": {
+    "profile_agent": 18.2,
+    "matching_agent": 768.5,
+    "learning_agent": 5931.6
+   },
+   "median_request_ms": 2240.5
+  },
+  "rank_candidates_for_job": {
+   "requests": 5,
+   "statuses": {
+    "partial": 5
+   },
+   "routing": {
+    "deterministic_fallback": 5
+   },
+   "expected_route": [
+    "job_intelligence_agent",
+    "matching_agent",
+    "explainability_agent"
+   ],
+   "route_accounted": 5,
+   "requests_running_an_agent_outside_the_route": 0,
+   "executed": {
+    "matching_agent": 5,
+    "explainability_agent": 5,
+    "job_intelligence_agent": 5
+   },
+   "skipped": {},
+   "skip_reasons": {},
+   "agents_not_needed": [
+    "learning_agent",
+    "profile_agent"
+   ],
+   "agents_not_needed_that_ran": [],
+   "median_agent_ms": {
+    "job_intelligence_agent": 40.5,
+    "matching_agent": 11548.2,
+    "explainability_agent": 553.6
+   },
+   "median_request_ms": 12699.6
+  },
+  "recommend_jobs_for_student": {
+   "requests": 11,
+   "statuses": {
+    "partial": 3,
+    "success": 8
+   },
+   "routing": {
+    "deterministic_fallback": 11
+   },
+   "expected_route": [
+    "profile_agent",
+    "matching_agent",
+    "learning_agent",
+    "explainability_agent"
+   ],
+   "route_accounted": 11,
+   "requests_running_an_agent_outside_the_route": 0,
+   "executed": {
+    "matching_agent": 11,
+    "learning_agent": 11,
+    "explainability_agent": 11,
+    "profile_agent": 11
+   },
+   "skipped": {},
+   "skip_reasons": {},
+   "agents_not_needed": [
+    "job_intelligence_agent"
+   ],
+   "agents_not_needed_that_ran": [],
+   "median_agent_ms": {
+    "profile_agent": 15.3,
+    "matching_agent": 1019.5,
+    "learning_agent": 74.5,
+    "explainability_agent": 37.6
+   },
+   "median_request_ms": 1198.9
+  }
+ }
+}

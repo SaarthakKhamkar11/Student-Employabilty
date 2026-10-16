@@ -1,0 +1,8552 @@
+{
+ "stages": {
+  "real": {
+   "resume_parsing_record": {
+    "n": 286,
+    "median": 0.25,
+    "p95": 0.43,
+    "mean": 0.27,
+    "min": 0.2,
+    "max": 0.89,
+    "tools": [
+     "parse_student_sections"
+    ]
+   },
+   "resume_parsing_upload": {
+    "n": 10,
+    "median": 1.04,
+    "p95": 1.25,
+    "mean": 1.03,
+    "min": 0.75,
+    "max": 1.27,
+    "tools": [
+     "extract_text",
+     "parse_resume"
+    ]
+   },
+   "jd_parsing": {
+    "n": 4990,
+    "median": 1.24,
+    "p95": 2.03,
+    "mean": 1.33,
+    "min": 0.78,
+    "max": 5.11,
+    "tools": [
+     "parse_job_description",
+     "extract_requirements",
+     "extract_job_posting"
+    ]
+   },
+   "skill_extraction_student": {
+    "n": 251,
+    "median": 5.91,
+    "p95": 8.11,
+    "mean": 6.07,
+    "min": 3.33,
+    "max": 12.09,
+    "tools": [
+     "extract_skills",
+     "normalize_skills"
+    ]
+   },
+   "skill_extraction_job": {
+    "n": 4990,
+    "median": 6.98,
+    "p95": 11.66,
+    "mean": 7.67,
+    "min": 3.22,
+    "max": 136.54,
+    "tools": [
+     "extract_job_skills",
+     "normalize_skills",
+     "classify_skill_requirements"
+    ]
+   },
+   "embedding_student": {
+    "n": 286,
+    "median": 336.36,
+    "p95": 710.63,
+    "mean": 355.74,
+    "min": 54.98,
+    "max": 1232.67,
+    "tools": [
+     "generate_embedding"
+    ]
+   },
+   "embedding_job": {
+    "n": 4990,
+    "median": 92.73,
+    "p95": 343.95,
+    "mean": 85.1,
+    "min": 1.03,
+    "max": 4874.91,
+    "tools": [
+     "generate_embedding"
+    ]
+   },
+   "similarity_jobs_for_student": {
+    "n": 18,
+    "median": 341.93,
+    "p95": 464.94,
+    "mean": 347.33,
+    "min": 204.14,
+    "max": 743.7,
+    "tools": [
+     "retrieve_jobs",
+     "compute_similarity"
+    ]
+   },
+   "similarity_candidates_for_job": {
+    "n": 10,
+    "median": 100.86,
+    "p95": 196.13,
+    "mean": 122.12,
+    "min": 88.19,
+    "max": 217.89,
+    "tools": [
+     "retrieve_candidates",
+     "compute_similarity"
+    ]
+   },
+   "prediction_jobs_for_student": {
+    "n": 18,
+    "median": 475.95,
+    "p95": 1671.0,
+    "mean": 662.09,
+    "min": 27.6,
+    "max": 2582.66,
+    "tools": [
+     "generate_features",
+     "predict_suitability"
+    ]
+   },
+   "prediction_candidates_for_job": {
+    "n": 10,
+    "median": 240.11,
+    "p95": 456.98,
+    "mean": 231.66,
+    "min": 34.2,
+    "max": 482.33,
+    "tools": [
+     "generate_features",
+     "predict_suitability"
+    ]
+   },
+   "ranking_jobs_for_student": {
+    "n": 18,
+    "median": 0.79,
+    "p95": 0.9,
+    "mean": 0.8,
+    "min": 0.67,
+    "max": 1.03,
+    "tools": [
+     "rank_candidates"
+    ]
+   },
+   "ranking_candidates_for_job": {
+    "n": 10,
+    "median": 0.53,
+    "p95": 0.65,
+    "mean": 0.52,
+    "min": 0.38,
+    "max": 0.66,
+    "tools": [
+     "rank_candidates"
+    ]
+   },
+   "explanation_student": {
+    "n": 18,
+    "median": 30.77,
+    "p95": 269.43,
+    "mean": 117.38,
+    "min": 24.2,
+    "max": 1594.99,
+    "agent": "explainability_agent"
+   },
+   "explanation_company": {
+    "n": 10,
+    "median": 25.43,
+    "p95": 27.68,
+    "mean": 25.23,
+    "min": 22.3,
+    "max": 28.87,
+    "agent": "explainability_agent"
+   },
+   "matching_agent_student": {
+    "n": 20,
+    "median": 1753.8,
+    "p95": 3792.3,
+    "mean": 1836.22,
+    "min": 30.03,
+    "max": 5354.13,
+    "agent": "matching_agent"
+   },
+   "matching_agent_company": {
+    "n": 10,
+    "median": 514.29,
+    "p95": 883.59,
+    "mean": 541.17,
+    "min": 265.61,
+    "max": 909.37,
+    "agent": "matching_agent"
+   },
+   "learning_agent_student": {
+    "n": 18,
+    "median": 77.23,
+    "p95": 1145.14,
+    "mean": 443.36,
+    "min": 42.9,
+    "max": 6565.1,
+    "agent": "learning_agent"
+   },
+   "end_to_end_student": {
+    "n": 20,
+    "median": 1849.43,
+    "p95": 4220.29,
+    "mean": 2272.11,
+    "min": 58.32,
+    "max": 11960.63,
+    "statuses": {
+     "partial": 2,
+     "success": 18
+    }
+   },
+   "end_to_end_upload": {
+    "n": 10,
+    "median": 1217.88,
+    "p95": 1530.19,
+    "mean": 1243.36,
+    "min": 975.92,
+    "max": 1580.23,
+    "statuses": {
+     "success": 10
+    }
+   },
+   "end_to_end_company": {
+    "n": 10,
+    "median": 578.67,
+    "p95": 970.93,
+    "mean": 615.7,
+    "min": 336.59,
+    "max": 1007.47,
+    "statuses": {
+     "success": 10
+    }
+   }
+  },
+  "1k": {
+   "resume_parsing_record": {
+    "n": 1000,
+    "median": 0.32,
+    "p95": 0.64,
+    "mean": 0.37,
+    "min": 0.19,
+    "max": 1.31,
+    "tools": [
+     "parse_student_sections"
+    ]
+   },
+   "resume_parsing_upload": {
+    "n": 10,
+    "median": 1.09,
+    "p95": 1.65,
+    "mean": 1.09,
+    "min": 0.76,
+    "max": 1.91,
+    "tools": [
+     "extract_text",
+     "parse_resume"
+    ]
+   },
+   "jd_parsing": {
+    "n": 1000,
+    "median": 1.17,
+    "p95": 2.21,
+    "mean": 1.32,
+    "min": 0.81,
+    "max": 3.22,
+    "tools": [
+     "parse_job_description",
+     "extract_requirements",
+     "extract_job_posting"
+    ]
+   },
+   "skill_extraction_student": {
+    "n": 881,
+    "median": 5.91,
+    "p95": 8.2,
+    "mean": 6.08,
+    "min": 2.81,
+    "max": 22.61,
+    "tools": [
+     "extract_skills",
+     "normalize_skills"
+    ]
+   },
+   "skill_extraction_job": {
+    "n": 1000,
+    "median": 6.96,
+    "p95": 10.27,
+    "mean": 7.26,
+    "min": 3.53,
+    "max": 26.34,
+    "tools": [
+     "extract_job_skills",
+     "normalize_skills",
+     "classify_skill_requirements"
+    ]
+   },
+   "embedding_student": {
+    "n": 1000,
+    "median": 156.28,
+    "p95": 519.4,
+    "mean": 200.17,
+    "min": 1.1,
+    "max": 1258.14,
+    "tools": [
+     "generate_embedding"
+    ]
+   },
+   "embedding_job": {
+    "n": 1000,
+    "median": 134.42,
+    "p95": 478.37,
+    "mean": 207.95,
+    "min": 1.1,
+    "max": 5807.72,
+    "tools": [
+     "generate_embedding"
+    ]
+   },
+   "similarity_jobs_for_student": {
+    "n": 18,
+    "median": 187.38,
+    "p95": 516.06,
+    "mean": 234.18,
+    "min": 109.09,
+    "max": 800.58,
+    "tools": [
+     "retrieve_jobs",
+     "compute_similarity"
+    ]
+   },
+   "similarity_candidates_for_job": {
+    "n": 10,
+    "median": 202.09,
+    "p95": 352.11,
+    "mean": 222.72,
+    "min": 136.15,
+    "max": 369.33,
+    "tools": [
+     "retrieve_candidates",
+     "compute_similarity"
+    ]
+   },
+   "prediction_jobs_for_student": {
+    "n": 18,
+    "median": 214.65,
+    "p95": 1775.82,
+    "mean": 598.65,
+    "min": 27.07,
+    "max": 3953.09,
+    "tools": [
+     "generate_features",
+     "predict_suitability"
+    ]
+   },
+   "prediction_candidates_for_job": {
+    "n": 10,
+    "median": 341.28,
+    "p95": 653.15,
+    "mean": 368.7,
+    "min": 63.78,
+    "max": 774.54,
+    "tools": [
+     "generate_features",
+     "predict_suitability"
+    ]
+   },
+   "ranking_jobs_for_student": {
+    "n": 18,
+    "median": 0.81,
+    "p95": 1.42,
+    "mean": 0.9,
+    "min": 0.65,
+    "max": 1.46,
+    "tools": [
+     "rank_candidates"
+    ]
+   },
+   "ranking_candidates_for_job": {
+    "n": 10,
+    "median": 0.78,
+    "p95": 0.86,
+    "mean": 0.73,
+    "min": 0.52,
+    "max": 0.87,
+    "tools": [
+     "rank_candidates"
+    ]
+   },
+   "explanation_student": {
+    "n": 18,
+    "median": 32.33,
+    "p95": 227.14,
+    "mean": 101.73,
+    "min": 26.42,
+    "max": 1265.27,
+    "agent": "explainability_agent"
+   },
+   "explanation_company": {
+    "n": 10,
+    "median": 29.24,
+    "p95": 44.89,
+    "mean": 31.52,
+    "min": 24.45,
+    "max": 46.74,
+    "agent": "explainability_agent"
+   },
+   "matching_agent_student": {
+    "n": 20,
+    "median": 1201.76,
+    "p95": 3058.77,
+    "mean": 1588.68,
+    "min": 20.36,
+    "max": 6577.58,
+    "agent": "matching_agent"
+   },
+   "matching_agent_company": {
+    "n": 10,
+    "median": 752.18,
+    "p95": 1105.7,
+    "mean": 786.83,
+    "min": 330.49,
+    "max": 1216.58,
+    "agent": "matching_agent"
+   },
+   "learning_agent_student": {
+    "n": 18,
+    "median": 109.32,
+    "p95": 1120.6,
+    "mean": 465.56,
+    "min": 46.97,
+    "max": 6738.2,
+    "agent": "learning_agent"
+   },
+   "end_to_end_student": {
+    "n": 20,
+    "median": 1312.83,
+    "p95": 3583.14,
+    "mean": 2049.41,
+    "min": 64.28,
+    "max": 13369.46,
+    "statuses": {
+     "partial": 2,
+     "success": 18
+    }
+   },
+   "end_to_end_upload": {
+    "n": 10,
+    "median": 1892.86,
+    "p95": 3204.54,
+    "mean": 1963.75,
+    "min": 1055.57,
+    "max": 3319.82,
+    "statuses": {
+     "partial": 1,
+     "success": 9
+    }
+   },
+   "end_to_end_company": {
+    "n": 10,
+    "median": 845.27,
+    "p95": 1202.4,
+    "mean": 885.37,
+    "min": 417.77,
+    "max": 1318.41,
+    "statuses": {
+     "success": 10
+    }
+   }
+  },
+  "5k": {
+   "resume_parsing_record": {
+    "n": 4000,
+    "median": 0.27,
+    "p95": 0.51,
+    "mean": 0.3,
+    "min": 0.17,
+    "max": 2.12,
+    "tools": [
+     "parse_student_sections"
+    ]
+   },
+   "resume_parsing_upload": {
+    "n": 10,
+    "median": 1.04,
+    "p95": 1.47,
+    "mean": 1.09,
+    "min": 0.84,
+    "max": 1.75,
+    "tools": [
+     "extract_text",
+     "parse_resume"
+    ]
+   },
+   "jd_parsing": {
+    "n": 0,
+    "tools": [
+     "parse_job_description",
+     "extract_requirements",
+     "extract_job_posting"
+    ]
+   },
+   "skill_extraction_student": {
+    "n": 3529,
+    "median": 5.74,
+    "p95": 8.37,
+    "mean": 5.99,
+    "min": 2.5,
+    "max": 44.9,
+    "tools": [
+     "extract_skills",
+     "normalize_skills"
+    ]
+   },
+   "skill_extraction_job": {
+    "n": 0,
+    "tools": [
+     "extract_job_skills",
+     "normalize_skills",
+     "classify_skill_requirements"
+    ]
+   },
+   "embedding_student": {
+    "n": 4000,
+    "median": 147.62,
+    "p95": 285.34,
+    "mean": 151.27,
+    "min": 0.91,
+    "max": 5655.14,
+    "tools": [
+     "generate_embedding"
+    ]
+   },
+   "embedding_job": {
+    "n": 0,
+    "tools": [
+     "generate_embedding"
+    ]
+   },
+   "similarity_jobs_for_student": {
+    "n": 17,
+    "median": 254.65,
+    "p95": 499.8,
+    "mean": 281.76,
+    "min": 108.63,
+    "max": 748.38,
+    "tools": [
+     "retrieve_jobs",
+     "compute_similarity"
+    ]
+   },
+   "similarity_candidates_for_job": {
+    "n": 10,
+    "median": 266.75,
+    "p95": 436.04,
+    "mean": 286.17,
+    "min": 181.13,
+    "max": 457.34,
+    "tools": [
+     "retrieve_candidates",
+     "compute_similarity"
+    ]
+   },
+   "prediction_jobs_for_student": {
+    "n": 17,
+    "median": 641.71,
+    "p95": 1874.42,
+    "mean": 773.17,
+    "min": 25.33,
+    "max": 3072.88,
+    "tools": [
+     "generate_features",
+     "predict_suitability"
+    ]
+   },
+   "prediction_candidates_for_job": {
+    "n": 10,
+    "median": 239.14,
+    "p95": 474.1,
+    "mean": 272.49,
+    "min": 134.92,
+    "max": 512.54,
+    "tools": [
+     "generate_features",
+     "predict_suitability"
+    ]
+   },
+   "ranking_jobs_for_student": {
+    "n": 17,
+    "median": 0.74,
+    "p95": 1.07,
+    "mean": 0.82,
+    "min": 0.64,
+    "max": 1.65,
+    "tools": [
+     "rank_candidates"
+    ]
+   },
+   "ranking_candidates_for_job": {
+    "n": 10,
+    "median": 0.61,
+    "p95": 0.73,
+    "mean": 0.6,
+    "min": 0.46,
+    "max": 0.74,
+    "tools": [
+     "rank_candidates"
+    ]
+   },
+   "explanation_student": {
+    "n": 17,
+    "median": 30.42,
+    "p95": 266.98,
+    "mean": 98.76,
+    "min": 25.2,
+    "max": 1193.34,
+    "agent": "explainability_agent"
+   },
+   "explanation_company": {
+    "n": 10,
+    "median": 23.94,
+    "p95": 27.76,
+    "mean": 24.52,
+    "min": 22.39,
+    "max": 27.92,
+    "agent": "explainability_agent"
+   },
+   "matching_agent_student": {
+    "n": 20,
+    "median": 1803.63,
+    "p95": 3344.49,
+    "mean": 1865.02,
+    "min": 15.22,
+    "max": 6772.89,
+    "agent": "matching_agent"
+   },
+   "matching_agent_company": {
+    "n": 10,
+    "median": 774.03,
+    "p95": 1026.22,
+    "mean": 784.54,
+    "min": 535.35,
+    "max": 1043.52,
+    "agent": "matching_agent"
+   },
+   "learning_agent_student": {
+    "n": 17,
+    "median": 91.14,
+    "p95": 1465.94,
+    "mean": 479.5,
+    "min": 43.19,
+    "max": 6827.94,
+    "agent": "learning_agent"
+   },
+   "end_to_end_student": {
+    "n": 20,
+    "median": 1938.07,
+    "p95": 3802.72,
+    "mean": 2347.23,
+    "min": 39.09,
+    "max": 13829.75,
+    "statuses": {
+     "partial": 3,
+     "success": 17
+    }
+   },
+   "end_to_end_upload": {
+    "n": 10,
+    "median": 1756.33,
+    "p95": 2259.99,
+    "mean": 1462.36,
+    "min": 42.49,
+    "max": 2421.01,
+    "statuses": {
+     "partial": 2,
+     "success": 8
+    }
+   },
+   "end_to_end_company": {
+    "n": 10,
+    "median": 1152.45,
+    "p95": 1485.1,
+    "mean": 1171.44,
+    "min": 945.21,
+    "max": 1523.85,
+    "statuses": {
+     "success": 10
+    }
+   }
+  }
+ },
+ "runs": {
+  "real": {
+   "size": "real",
+   "started_at": "2026-10-15T13:34:57+00:00",
+   "database": "phase14_bench_real",
+   "students": 286,
+   "real_students": 286,
+   "synthetic_students": 0,
+   "jobs": 4990,
+   "jobs_are_real": true,
+   "raw_rows_seconds": 0.5,
+   "job_seed": {
+    "rows": 4990,
+    "near_duplicates": 51
+   },
+   "rss_after_ingest_mb": 1852.6,
+   "rss_ingest_added_mb": 1690.4,
+   "bulk_similarity": {
+    "students": 286,
+    "jobs": 4990,
+    "pairs": 1427140,
+    "dimension": 768,
+    "fetch_vectors_seconds": 1.01,
+    "matrix_ms": {
+     "n": 5,
+     "median": 7.83,
+     "p95": 23.57,
+     "mean": 11.93,
+     "min": 7.69,
+     "max": 27.14
+    },
+    "top50_ms": {
+     "n": 5,
+     "median": 15.4,
+     "p95": 26.23,
+     "mean": 18.21,
+     "min": 14.88,
+     "max": 28.43
+    },
+    "pairs_per_second": 182370129,
+    "vectors_mb": 15.5,
+    "matrix_mb": 5.4,
+    "rss_added_mb": 38.3
+   },
+   "samples": {
+    "student_requests": [
+     "S00021",
+     "S00025",
+     "S00027",
+     "S00041",
+     "S00051",
+     "S00094",
+     "S00096",
+     "S00098",
+     "S00212",
+     "S00232",
+     "S00243",
+     "S00255",
+     "S00257",
+     "S00271",
+     "S00282",
+     "S00293",
+     "S00295",
+     "S00302",
+     "S00307",
+     "S00315"
+    ],
+    "synthetic_in_student_sample": 0,
+    "upload_rows": [
+     "S00058",
+     "S00074",
+     "S00083",
+     "S00200",
+     "S00204",
+     "S00209",
+     "S00235",
+     "S00236",
+     "S00330",
+     "S00355"
+    ],
+    "synthetic_in_upload_sample": 0,
+    "company_requests": [
+     "J0017435",
+     "J0042501",
+     "J0107584",
+     "J0774445",
+     "J0786434",
+     "J0834102",
+     "J0901526",
+     "J0958086",
+     "J0973409",
+     "J1014579"
+    ],
+    "seed": 14
+   },
+   "student_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 12004.1,
+      "trace_ms": 11960.634,
+      "agents": {
+       "profile_agent": {
+        "ms": 35.32,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 5354.133,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 6565.102,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 1594.995,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 3316.4,
+      "trace_ms": 3268.077,
+      "agents": {
+       "profile_agent": {
+        "ms": 33.275,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 3126.484,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 103.99,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.387,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 3849.6,
+      "trace_ms": 3812.905,
+      "agents": {
+       "profile_agent": {
+        "ms": 29.213,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 3710.098,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 69.513,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 35.502,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1610.2,
+      "trace_ms": 1571.87,
+      "agents": {
+       "profile_agent": {
+        "ms": 33.569,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1432.453,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 101.797,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.325,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2274.6,
+      "trace_ms": 2228.506,
+      "agents": {
+       "profile_agent": {
+        "ms": 34.659,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2142.143,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 47.564,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.563,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1300.6,
+      "trace_ms": 1254.909,
+      "agents": {
+       "profile_agent": {
+        "ms": 28.79,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1123.283,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 99.084,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 33.138,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2152.6,
+      "trace_ms": 2110.187,
+      "agents": {
+       "profile_agent": {
+        "ms": 28.911,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1985.807,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 91.574,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.963,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1167.1,
+      "trace_ms": 1126.517,
+      "agents": {
+       "profile_agent": {
+        "ms": 27.595,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1009.451,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 85.908,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.301,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1750.9,
+      "trace_ms": 1712.021,
+      "agents": {
+       "profile_agent": {
+        "ms": 27.177,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1616.422,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 64.514,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 32.89,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1470.3,
+      "trace_ms": 1437.698,
+      "agents": {
+       "profile_agent": {
+        "ms": 24.886,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1347.728,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 61.668,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 24.205,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2445.5,
+      "trace_ms": 2374.915,
+      "agents": {
+       "profile_agent": {
+        "ms": 44.384,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2138.269,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 188.68,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 33.001,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 77.8,
+      "trace_ms": 58.316,
+      "agents": {
+       "profile_agent": {
+        "ms": 26.681,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 30.033,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     },
+     {
+      "status": "success",
+      "wall_ms": 1586.0,
+      "trace_ms": 1545.625,
+      "agents": {
+       "profile_agent": {
+        "ms": 37.919,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1440.981,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 62.437,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.178,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2047.8,
+      "trace_ms": 2012.254,
+      "agents": {
+       "profile_agent": {
+        "ms": 23.197,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1933.983,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 51.347,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 32.342,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2425.0,
+      "trace_ms": 2390.79,
+      "agents": {
+       "profile_agent": {
+        "ms": 29.351,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2281.705,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 76.17,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.581,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2210.5,
+      "trace_ms": 2172.259,
+      "agents": {
+       "profile_agent": {
+        "ms": 35.277,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2054.543,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 78.297,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 31.927,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 954.4,
+      "trace_ms": 918.001,
+      "agents": {
+       "profile_agent": {
+        "ms": 37.172,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 748.672,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 128.032,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 33.652,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2023.0,
+      "trace_ms": 1986.843,
+      "agents": {
+       "profile_agent": {
+        "ms": 29.851,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1891.176,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 61.977,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.816,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1425.7,
+      "trace_ms": 1374.665,
+      "agents": {
+       "profile_agent": {
+        "ms": 25.79,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1302.39,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 42.904,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 26.081,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 141.5,
+      "trace_ms": 125.137,
+      "agents": {
+       "profile_agent": {
+        "ms": 69.016,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 54.699,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     }
+    ],
+    "per_tool_ms": {
+     "load_student_record": [
+      7.429,
+      7.453,
+      7.014,
+      7.437,
+      8.362,
+      5.574,
+      5.975,
+      5.711,
+      6.74,
+      7.324,
+      6.31,
+      7.721,
+      8.716,
+      7.041,
+      6.747,
+      8.231,
+      6.802,
+      8.032,
+      6.023,
+      6.468
+     ],
+     "detect_pii": [
+      0.615,
+      0.463,
+      0.504,
+      0.53,
+      0.917,
+      0.495,
+      0.501,
+      0.432,
+      0.397,
+      0.48,
+      0.448,
+      0.57,
+      0.565,
+      0.479,
+      0.483,
+      0.605,
+      0.459,
+      0.612,
+      0.435,
+      0.472
+     ],
+     "parse_student_sections": [
+      0.439,
+      0.276,
+      0.274,
+      0.278,
+      0.407,
+      0.241,
+      0.238,
+      0.303,
+      0.24,
+      0.365,
+      0.209,
+      0.275,
+      0.418,
+      0.249,
+      0.24,
+      0.688,
+      0.306,
+      0.384,
+      0.241,
+      0.291
+     ],
+     "extract_skills": [
+      0.302,
+      0.307,
+      0.355,
+      0.249,
+      0.369,
+      0.252,
+      0.302,
+      0.243,
+      0.222,
+      0.284,
+      0.238,
+      0.307,
+      0.4,
+      0.22,
+      0.297,
+      0.525,
+      0.295,
+      0.439,
+      0.278,
+      0.26
+     ],
+     "normalize_skills": [
+      5.275,
+      5.261,
+      2.7,
+      5.415,
+      3.533,
+      2.44,
+      2.893,
+      2.819,
+      2.876,
+      20.001,
+      5.475,
+      4.138,
+      5.855,
+      5.624,
+      2.559,
+      37.801
+     ],
+     "extract_profile": [
+      0.569,
+      0.472,
+      0.52,
+      0.554,
+      0.654,
+      0.438,
+      0.56,
+      0.385,
+      0.435,
+      0.429,
+      0.479,
+      0.5,
+      0.899,
+      0.427,
+      0.49,
+      0.491,
+      0.685,
+      0.538,
+      0.43,
+      1.016
+     ],
+     "generate_embedding": [
+      1.357,
+      1.417,
+      1.293,
+      1.451,
+      1.392,
+      1.123,
+      1.316,
+      1.19,
+      1.198,
+      1.252,
+      1.139,
+      1.402,
+      1.455,
+      1.229,
+      1.422,
+      1.541,
+      1.473,
+      1.465,
+      1.116,
+      2.496
+     ],
+     "validate_profile": [
+      0.878,
+      0.656,
+      0.673,
+      0.628,
+      1.169,
+      0.698,
+      1.161,
+      0.592,
+      0.441,
+      0.437,
+      0.484,
+      0.549,
+      0.564,
+      0.426,
+      0.678,
+      0.708,
+      1.047,
+      0.588,
+      0.593,
+      1.306
+     ],
+     "save_profile": [
+      16.96,
+      15.758,
+      14.606,
+      15.792,
+      16.387,
+      16.344,
+      14.733,
+      14.91,
+      13.579,
+      13.43,
+      14.086,
+      14.232,
+      18.128,
+      12.319,
+      13.82,
+      15.482,
+      18.643,
+      16.657,
+      13.109,
+      17.306
+     ],
+     "filter_eligible": [
+      566.115,
+      88.783,
+      88.951,
+      53.483,
+      160.003,
+      107.17,
+      191.704,
+      72.046,
+      31.386,
+      27.205,
+      48.066,
+      29.682,
+      41.782,
+      31.678,
+      67.543,
+      58.432,
+      51.496,
+      30.366,
+      68.772,
+      54.349
+     ],
+     "retrieve_jobs": [
+      104.103,
+      96.206,
+      117.767,
+      105.483,
+      102.452,
+      106.214,
+      114.421,
+      93.059,
+      145.022,
+      93.613,
+      137.094,
+      172.81,
+      94.19,
+      229.74,
+      130.046,
+      231.241,
+      94.941,
+      127.674
+     ],
+     "compute_similarity": [
+      639.594,
+      240.441,
+      261.535,
+      181.723,
+      222.11,
+      110.262,
+      163.666,
+      111.079,
+      248.242,
+      253.607,
+      278.658,
+      199.004,
+      205.247,
+      98.005,
+      229.257,
+      143.76,
+      267.196,
+      102.416
+     ],
+     "generate_features": [
+      2435.342,
+      1498.592,
+      1221.902,
+      382.325,
+      550.544,
+      229.724,
+      686.752,
+      352.1,
+      750.998,
+      19.906,
+      1489.874,
+      617.457,
+      22.178,
+      193.821,
+      620.818,
+      218.418,
+      27.116,
+      298.485
+     ],
+     "predict_suitability": [
+      147.313,
+      11.532,
+      8.463,
+      9.327,
+      9.708,
+      8.435,
+      7.735,
+      7.695,
+      9.509,
+      7.692,
+      9.48,
+      11.519,
+      8.202,
+      8.952,
+      9.388,
+      9.553,
+      8.863,
+      7.883
+     ],
+     "rank_candidates": [
+      0.833,
+      0.796,
+      0.747,
+      0.802,
+      0.791,
+      0.874,
+      0.766,
+      0.673,
+      0.767,
+      0.77,
+      0.851,
+      1.033,
+      0.699,
+      0.818,
+      0.87,
+      0.792,
+      0.757,
+      0.799
+     ],
+     "identify_skill_gaps": [
+      255.372,
+      329.445,
+      234.502,
+      141.917,
+      545.982,
+      201.972,
+      500.886,
+      120.996,
+      67.397,
+      676.838,
+      149.516,
+      98.591,
+      81.287,
+      79.592,
+      129.843,
+      63.068,
+      577.515,
+      117.418
+     ],
+     "cohort_benchmark": [
+      1197.142,
+      856.848,
+      1772.684,
+      554.427,
+      547.256,
+      355.556,
+      316.837,
+      249.049,
+      359.991,
+      265.563,
+      22.0,
+      295.085,
+      1487.291,
+      1600.282,
+      872.641,
+      28.178,
+      881.492,
+      575.719
+     ],
+     "prioritize_gaps": [
+      0.935,
+      0.939,
+      0.885,
+      0.952,
+      0.729,
+      0.78,
+      0.786,
+      0.631,
+      0.956,
+      0.714,
+      0.759,
+      0.902,
+      0.856,
+      1.084,
+      0.851,
+      0.869,
+      0.819,
+      0.95
+     ],
+     "retrieve_courses": [
+      53.165,
+      74.105,
+      48.969,
+      67.121,
+      32.157,
+      71.35,
+      61.519,
+      53.71,
+      45.558,
+      40.488,
+      105.372,
+      44.689,
+      36.938,
+      54.091,
+      57.61,
+      88.776,
+      39.952,
+      26.553
+     ],
+     "compute_course_similarity": [
+      6493.343,
+      8.356,
+      3.03,
+      8.362,
+      1.865,
+      5.925,
+      6.693,
+      6.874,
+      2.952,
+      4.01,
+      8.961,
+      3.584,
+      2.033,
+      5.321,
+      5.231,
+      13.271,
+      3.257,
+      1.796
+     ],
+     "rank_courses": [
+      2.28,
+      2.402,
+      1.206,
+      3.353,
+      0.623,
+      2.593,
+      3.145,
+      3.457,
+      1.055,
+      1.48,
+      3.107,
+      1.084,
+      0.727,
+      1.624,
+      1.378,
+      3.527,
+      1.366,
+      0.66
+     ],
+     "explain_recommendations": [
+      0.539,
+      0.531,
+      0.38,
+      0.642,
+      0.305,
+      0.529,
+      0.797,
+      0.636,
+      0.322,
+      0.39,
+      0.513,
+      0.352,
+      0.332,
+      0.591,
+      0.401,
+      0.653,
+      0.536,
+      0.342
+     ],
+     "save_learning_recommendations": [
+      12.455,
+      14.465,
+      13.199,
+      17.854,
+      10.866,
+      15.091,
+      15.187,
+      17.13,
+      12.178,
+      12.721,
+      66.631,
+      10.122,
+      9.225,
+      11.412,
+      10.828,
+      16.285,
+      14.127,
+      11.505
+     ],
+     "get_model_prediction": [
+      1.163,
+      1.276,
+      1.216,
+      1.257,
+      1.076,
+      1.072,
+      1.165,
+      0.9,
+      1.318,
+      1.014,
+      1.036,
+      1.26,
+      1.228,
+      1.501,
+      1.199,
+      1.184,
+      1.19,
+      1.328
+     ],
+     "get_shap_values": [
+      1552.082,
+      6.903,
+      6.648,
+      7.37,
+      7.089,
+      6.27,
+      6.28,
+      5.587,
+      7.849,
+      5.831,
+      6.049,
+      6.932,
+      7.428,
+      7.308,
+      7.194,
+      7.935,
+      6.808,
+      6.415
+     ],
+     "get_feature_contributions": [
+      0.926,
+      0.425,
+      0.821,
+      0.462,
+      0.48,
+      0.483,
+      0.589,
+      0.688,
+      0.72,
+      0.366,
+      0.536,
+      0.547,
+      0.686,
+      0.662,
+      0.961,
+      0.66,
+      0.626,
+      0.578
+     ],
+     "generate_evidence": [
+      26.822,
+      13.88,
+      19.735,
+      14.002,
+      14.721,
+      14.28,
+      13.348,
+      13.774,
+      17.466,
+      12.826,
+      15.007,
+      14.434,
+      17.792,
+      14.882,
+      16.792,
+      17.035,
+      14.383,
+      13.525
+     ],
+     "generate_explanation": [
+      0.389,
+      0.302,
+      0.537,
+      0.245,
+      0.263,
+      0.314,
+      0.267,
+      0.283,
+      0.34,
+      0.206,
+      0.295,
+      0.273,
+      0.312,
+      0.411,
+      0.324,
+      0.321,
+      0.256,
+      0.265
+     ],
+     "get_match_explanation": [
+      11.651,
+      6.283,
+      5.283,
+      5.824,
+      4.889,
+      9.294,
+      8.248,
+      4.936,
+      3.957,
+      3.056,
+      8.776,
+      3.566,
+      3.578,
+      4.638,
+      4.218,
+      5.144,
+      3.473,
+      2.962
+     ]
+    },
+    "per_agent_ms": {
+     "profile_agent": [
+      35.32,
+      33.275,
+      29.213,
+      33.569,
+      34.659,
+      28.79,
+      28.911,
+      27.595,
+      27.177,
+      24.886,
+      44.384,
+      26.681,
+      37.919,
+      23.197,
+      29.351,
+      35.277,
+      37.172,
+      29.851,
+      25.79,
+      69.016
+     ],
+     "matching_agent": [
+      5354.133,
+      3126.484,
+      3710.098,
+      1432.453,
+      2142.143,
+      1123.283,
+      1985.807,
+      1009.451,
+      1616.422,
+      1347.728,
+      2138.269,
+      30.033,
+      1440.981,
+      1933.983,
+      2281.705,
+      2054.543,
+      748.672,
+      1891.176,
+      1302.39,
+      54.699
+     ],
+     "learning_agent": [
+      6565.102,
+      103.99,
+      69.513,
+      101.797,
+      47.564,
+      99.084,
+      91.574,
+      85.908,
+      64.514,
+      61.668,
+      188.68,
+      62.437,
+      51.347,
+      76.17,
+      78.297,
+      128.032,
+      61.977,
+      42.904
+     ],
+     "explainability_agent": [
+      1594.995,
+      30.387,
+      35.502,
+      30.325,
+      29.563,
+      33.138,
+      30.963,
+      27.301,
+      32.89,
+      24.205,
+      33.001,
+      28.178,
+      32.342,
+      30.581,
+      31.927,
+      33.652,
+      27.816,
+      26.081
+     ]
+    },
+    "wall_seconds": 46.5
+   },
+   "upload_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 1374.5,
+      "trace_ms": 1337.983,
+      "agents": {
+       "profile_agent": {
+        "ms": 23.874,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1211.673,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 97.985,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 31.133,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1271.5,
+      "trace_ms": 1218.388,
+      "agents": {
+       "profile_agent": {
+        "ms": 28.732,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1096.219,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 89.367,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.693,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1515.2,
+      "trace_ms": 1469.035,
+      "agents": {
+       "profile_agent": {
+        "ms": 220.958,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1152.792,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 90.978,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.61,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1013.4,
+      "trace_ms": 975.921,
+      "agents": {
+       "profile_agent": {
+        "ms": 20.268,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 862.352,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 89.709,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.812,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1062.2,
+      "trace_ms": 1028.951,
+      "agents": {
+       "profile_agent": {
+        "ms": 35.003,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 949.602,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 40.597,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.244,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1047.3,
+      "trace_ms": 1009.515,
+      "agents": {
+       "profile_agent": {
+        "ms": 22.572,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 897.257,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 85.336,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.009,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1624.6,
+      "trace_ms": 1580.227,
+      "agents": {
+       "profile_agent": {
+        "ms": 25.234,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1454.171,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 96.813,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 26.248,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1240.7,
+      "trace_ms": 1202.055,
+      "agents": {
+       "profile_agent": {
+        "ms": 53.03,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1097.84,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 47.398,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.912,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1449.7,
+      "trace_ms": 1394.182,
+      "agents": {
+       "profile_agent": {
+        "ms": 24.496,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1254.991,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 110.909,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 33.681,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1264.1,
+      "trace_ms": 1217.372,
+      "agents": {
+       "profile_agent": {
+        "ms": 28.036,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1131.306,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 54.316,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.733,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     }
+    ],
+    "per_tool_ms": {
+     "extract_text": [
+      0.532,
+      0.611,
+      0.629,
+      0.512,
+      0.423,
+      0.735,
+      0.596,
+      0.376,
+      0.674,
+      0.633
+     ],
+     "detect_pii": [
+      0.369,
+      0.635,
+      0.361,
+      0.395,
+      0.606,
+      0.475,
+      0.542,
+      0.389,
+      0.498,
+      0.362
+     ],
+     "parse_resume": [
+      0.379,
+      0.614,
+      0.291,
+      0.572,
+      0.372,
+      0.534,
+      0.602,
+      0.371,
+      0.483,
+      0.357
+     ],
+     "extract_skills": [
+      0.51,
+      0.527,
+      0.273,
+      0.314,
+      0.362,
+      0.431,
+      0.454,
+      0.383,
+      0.369,
+      0.353
+     ],
+     "normalize_skills": [
+      4.455,
+      7.019,
+      3.081,
+      3.027,
+      14.808,
+      3.181,
+      4.314,
+      34.522,
+      4.749,
+      10.104
+     ],
+     "extract_profile": [
+      0.446,
+      0.609,
+      0.403,
+      0.418,
+      0.519,
+      0.551,
+      0.56,
+      0.946,
+      0.427,
+      0.373
+     ],
+     "generate_embedding": [
+      1.08,
+      1.357,
+      193.377,
+      1.263,
+      1.049,
+      1.411,
+      1.381,
+      1.501,
+      1.25,
+      1.007
+     ],
+     "validate_profile": [
+      0.602,
+      0.978,
+      1.351,
+      0.512,
+      0.65,
+      0.823,
+      0.58,
+      0.603,
+      0.628,
+      0.475
+     ],
+     "save_profile": [
+      14.224,
+      15.061,
+      19.552,
+      12.377,
+      15.161,
+      13.371,
+      14.984,
+      12.775,
+      14.498,
+      13.501
+     ],
+     "filter_eligible": [
+      88.336,
+      117.566,
+      80.725,
+      52.621,
+      65.607,
+      82.899,
+      55.002,
+      63.357,
+      50.863,
+      53.51
+     ],
+     "retrieve_jobs": [
+      103.313,
+      101.082,
+      107.777,
+      143.536,
+      123.139,
+      130.176,
+      112.406,
+      146.161,
+      139.371,
+      147.48
+     ],
+     "compute_similarity": [
+      40.534,
+      41.629,
+      42.553,
+      29.99,
+      77.36,
+      27.103,
+      166.893,
+      95.187,
+      70.073,
+      75.36
+     ],
+     "generate_features": [
+      114.442,
+      225.263,
+      129.427,
+      68.26,
+      139.646,
+      162.225,
+      704.461,
+      252.563,
+      252.382,
+      224.766
+     ],
+     "predict_suitability": [
+      8.705,
+      8.836,
+      8.471,
+      7.963,
+      9.155,
+      9.165,
+      8.369,
+      7.468,
+      7.898,
+      10.02
+     ],
+     "rank_candidates": [
+      0.78,
+      0.759,
+      0.699,
+      0.902,
+      0.799,
+      0.703,
+      0.703,
+      0.731,
+      0.736,
+      0.873
+     ],
+     "identify_skill_gaps": [
+      228.724,
+      276.387,
+      317.051,
+      87.812,
+      153.077,
+      163.435,
+      138.02,
+      145.021,
+      128.537,
+      146.216
+     ],
+     "cohort_benchmark": [
+      623.757,
+      321.619,
+      462.47,
+      468.76,
+      377.528,
+      318.611,
+      265.126,
+      384.406,
+      602.306,
+      469.417
+     ],
+     "prioritize_gaps": [
+      0.985,
+      0.836,
+      0.986,
+      0.905,
+      0.893,
+      0.784,
+      0.851,
+      0.737,
+      0.847,
+      0.888
+     ],
+     "retrieve_courses": [
+      52.74,
+      62.379,
+      65.109,
+      62.108,
+      25.719,
+      56.678,
+      66.604,
+      32.431,
+      79.749,
+      39.323
+     ],
+     "compute_course_similarity": [
+      13.08,
+      5.618,
+      6.056,
+      6.117,
+      1.881,
+      6.49,
+      6.543,
+      2.072,
+      8.475,
+      2.452
+     ],
+     "rank_courses": [
+      4.866,
+      2.303,
+      2.207,
+      1.976,
+      0.64,
+      2.824,
+      2.352,
+      0.675,
+      2.556,
+      0.914
+     ],
+     "explain_recommendations": [
+      0.967,
+      0.522,
+      0.551,
+      0.445,
+      0.324,
+      0.628,
+      0.418,
+      0.331,
+      0.446,
+      0.287
+     ],
+     "save_learning_recommendations": [
+      21.064,
+      14.515,
+      13.397,
+      15.403,
+      9.997,
+      14.953,
+      17.183,
+      9.93,
+      15.751,
+      9.163
+     ],
+     "get_model_prediction": [
+      1.296,
+      1.169,
+      1.329,
+      1.244,
+      1.356,
+      1.136,
+      1.166,
+      1.132,
+      1.13,
+      1.283
+     ],
+     "get_shap_values": [
+      6.921,
+      7.092,
+      7.054,
+      8.215,
+      7.387,
+      7.499,
+      6.462,
+      7.565,
+      7.705,
+      8.073
+     ],
+     "get_feature_contributions": [
+      0.425,
+      0.609,
+      0.51,
+      0.455,
+      0.514,
+      0.508,
+      0.552,
+      0.802,
+      0.977,
+      0.457
+     ],
+     "generate_evidence": [
+      16.665,
+      12.824,
+      14.582,
+      15.463,
+      12.186,
+      15.096,
+      13.238,
+      13.707,
+      16.938,
+      15.42
+     ],
+     "generate_explanation": [
+      0.398,
+      0.244,
+      0.301,
+      0.224,
+      0.176,
+      0.271,
+      0.198,
+      0.517,
+      0.248,
+      0.524
+     ],
+     "get_match_explanation": [
+      4.319,
+      5.48,
+      4.654,
+      4.046,
+      2.667,
+      4.42,
+      3.648,
+      3.067,
+      5.547,
+      2.903
+     ]
+    },
+    "per_agent_ms": {
+     "profile_agent": [
+      23.874,
+      28.732,
+      220.958,
+      20.268,
+      35.003,
+      22.572,
+      25.234,
+      53.03,
+      24.496,
+      28.036
+     ],
+     "matching_agent": [
+      1211.673,
+      1096.219,
+      1152.792,
+      862.352,
+      949.602,
+      897.257,
+      1454.171,
+      1097.84,
+      1254.991,
+      1131.306
+     ],
+     "learning_agent": [
+      97.985,
+      89.367,
+      90.978,
+      89.709,
+      40.597,
+      85.336,
+      96.813,
+      47.398,
+      110.909,
+      54.316
+     ],
+     "explainability_agent": [
+      31.133,
+      28.693,
+      29.61,
+      30.812,
+      25.244,
+      30.009,
+      26.248,
+      27.912,
+      33.681,
+      29.733
+     ]
+    },
+    "wall_seconds": 13.0
+   },
+   "company_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 966.5,
+      "trace_ms": 926.273,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 41.729,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 852.089,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.866,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1043.0,
+      "trace_ms": 1007.465,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 68.265,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 909.372,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 26.119,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 389.6,
+      "trace_ms": 350.512,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 39.678,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 281.883,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.655,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 607.4,
+      "trace_ms": 571.273,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 34.935,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 508.429,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 24.654,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 838.2,
+      "trace_ms": 789.457,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 37.618,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 722.356,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 26.228,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 628.9,
+      "trace_ms": 586.059,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 40.653,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 520.157,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 22.305,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 397.0,
+      "trace_ms": 358.248,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 38.808,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 291.464,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 24.329,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 378.2,
+      "trace_ms": 336.586,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 41.988,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 265.61,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.211,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 900.8,
+      "trace_ms": 864.355,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 40.657,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 794.158,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.721,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 402.1,
+      "trace_ms": 366.796,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 74.388,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 266.223,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 23.195,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     }
+    ],
+    "per_tool_ms": {
+     "load_job_record": [
+      7.157,
+      12.575,
+      6.169,
+      5.603,
+      6.903,
+      6.381,
+      6.217,
+      6.944,
+      6.793,
+      6.461
+     ],
+     "detect_pii": [
+      0.42,
+      0.795,
+      0.354,
+      0.364,
+      0.42,
+      0.552,
+      0.52,
+      0.478,
+      0.57,
+      0.395
+     ],
+     "parse_job_description": [
+      0.266,
+      0.588,
+      0.27,
+      0.224,
+      0.378,
+      0.325,
+      0.322,
+      0.352,
+      0.286,
+      0.287
+     ],
+     "extract_job_skills": [
+      0.382,
+      0.641,
+      0.289,
+      0.256,
+      0.323,
+      0.342,
+      0.255,
+      0.307,
+      0.291,
+      0.276
+     ],
+     "normalize_skills": [
+      6.505,
+      6.786,
+      5.058,
+      2.406,
+      3.385,
+      5.727,
+      5.321,
+      5.662,
+      5.286,
+      36.411
+     ],
+     "classify_skill_requirements": [
+      1.425,
+      2.319,
+      0.894,
+      0.998,
+      0.99,
+      0.788,
+      0.906,
+      1.212,
+      1.21,
+      2.133
+     ],
+     "extract_requirements": [
+      0.22,
+      1.026,
+      0.241,
+      0.187,
+      0.272,
+      0.225,
+      0.214,
+      0.268,
+      0.241,
+      0.366
+     ],
+     "check_duplicates": [
+      6.148,
+      14.521,
+      6.007,
+      6.044,
+      6.142,
+      6.418,
+      5.983,
+      7.101,
+      6.274,
+      6.875
+     ],
+     "extract_job_posting": [
+      0.71,
+      1.014,
+      0.555,
+      0.589,
+      0.558,
+      0.551,
+      0.593,
+      0.609,
+      0.693,
+      0.509
+     ],
+     "generate_embedding": [
+      1.261,
+      1.908,
+      1.228,
+      1.361,
+      1.247,
+      1.167,
+      1.23,
+      1.362,
+      1.271,
+      1.219
+     ],
+     "validate_job_posting": [
+      0.879,
+      1.154,
+      0.7,
+      0.848,
+      0.672,
+      0.762,
+      0.734,
+      0.769,
+      0.849,
+      0.67
+     ],
+     "save_job": [
+      15.055,
+      22.663,
+      16.639,
+      14.881,
+      15.088,
+      16.057,
+      15.293,
+      15.514,
+      15.55,
+      17.375
+     ],
+     "filter_eligible": [
+      14.36,
+      16.709,
+      17.822,
+      15.902,
+      13.981,
+      15.244,
+      14.454,
+      19.251,
+      15.198,
+      13.885
+     ],
+     "retrieve_candidates": [
+      59.889,
+      49.532,
+      47.953,
+      49.349,
+      51.59,
+      60.517,
+      47.214,
+      54.007,
+      49.845,
+      49.275
+     ],
+     "compute_similarity": [
+      158.004,
+      92.716,
+      40.239,
+      50.687,
+      48.618,
+      109.007,
+      54.308,
+      43.829,
+      65.224,
+      39.361
+     ],
+     "generate_features": [
+      349.381,
+      386.712,
+      34.644,
+      265.063,
+      473.621,
+      197.485,
+      61.905,
+      29.729,
+      416.06,
+      28.437
+     ],
+     "predict_suitability": [
+      5.243,
+      5.743,
+      6.259,
+      8.574,
+      8.708,
+      9.097,
+      9.379,
+      4.476,
+      9.928,
+      6.164
+     ],
+     "rank_candidates": [
+      0.376,
+      0.381,
+      0.579,
+      0.511,
+      0.638,
+      0.664,
+      0.585,
+      0.404,
+      0.537,
+      0.529
+     ],
+     "identify_skill_gaps": [
+      262.329,
+      355.2,
+      131.812,
+      115.546,
+      122.895,
+      125.358,
+      100.999,
+      111.641,
+      234.675,
+      126.13
+     ],
+     "get_model_prediction": [
+      0.791,
+      0.705,
+      0.802,
+      0.744,
+      0.777,
+      0.681,
+      0.806,
+      0.744,
+      1.182,
+      0.827
+     ],
+     "get_shap_values": [
+      6.262,
+      4.925,
+      6.409,
+      5.187,
+      5.864,
+      4.969,
+      5.756,
+      5.342,
+      4.895,
+      5.539
+     ],
+     "get_feature_contributions": [
+      0.455,
+      0.361,
+      0.397,
+      0.404,
+      0.479,
+      0.405,
+      0.472,
+      0.676,
+      0.361,
+      0.396
+     ],
+     "generate_evidence": [
+      14.645,
+      13.249,
+      13.746,
+      13.77,
+      14.266,
+      12.487,
+      13.04,
+      13.955,
+      13.694,
+      12.674
+     ],
+     "generate_explanation": [
+      0.254,
+      0.24,
+      0.19,
+      0.214,
+      0.206,
+      0.18,
+      0.183,
+      0.208,
+      0.209,
+      0.188
+     ],
+     "get_match_explanation": [
+      5.416,
+      5.696,
+      3.255,
+      3.48,
+      3.789,
+      2.829,
+      3.252,
+      3.373,
+      4.555,
+      2.77
+     ]
+    },
+    "per_agent_ms": {
+     "job_intelligence_agent": [
+      41.729,
+      68.265,
+      39.678,
+      34.935,
+      37.618,
+      40.653,
+      38.808,
+      41.988,
+      40.657,
+      74.388
+     ],
+     "matching_agent": [
+      852.089,
+      909.372,
+      281.883,
+      508.429,
+      722.356,
+      520.157,
+      291.464,
+      265.61,
+      794.158,
+      266.223
+     ],
+     "explainability_agent": [
+      28.866,
+      26.119,
+      25.655,
+      24.654,
+      26.228,
+      22.305,
+      24.329,
+      25.211,
+      25.721,
+      23.195
+     ]
+    },
+    "wall_seconds": 6.7
+   },
+   "rss_requests_added_mb": 341.6,
+   "database_facts": {
+    "database_size_mb": 190.5,
+    "embeddings_size_mb": 148.2,
+    "students": 296,
+    "students_with_profile": 296,
+    "jobs": 4990,
+    "jobs_with_posting": 4990,
+    "embedding_rows": 62528
+   },
+   "memory": {
+    "rss_start_mb": 149.2,
+    "rss_end_mb": 2261.1,
+    "peak_rss_mb": 2524.6
+   },
+   "finished_at": "2026-10-15T13:49:05+00:00",
+   "environment": {
+    "python": "3.11.17",
+    "system": "Linux 5.15.167.4-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "logical_cpus": 16,
+    "ram_gb_visible": 7.6,
+    "torch": "2.8.0+cpu",
+    "torch_threads": 8,
+    "embedding_model": "e5_base_v2",
+    "llm": "none (deterministic routing for explicit tasks; structured explanation fallback)",
+    "youtube": "disabled (curated catalogue only)",
+    "ingest_workers": 1,
+    "request_concurrency": 1
+   },
+   "ingest_jobs": {
+    "entities": 4990,
+    "wall_seconds": 665.3,
+    "throughput_per_s": 7.5,
+    "statuses": {
+     "success": 4990
+    },
+    "agent_ms": {
+     "n": 4990,
+     "median": 141.8,
+     "p95": 389.83,
+     "mean": 132.99,
+     "min": 32.7,
+     "max": 4934.32
+    },
+    "per_tool_ms": {
+     "load_job_record": {
+      "n": 4990,
+      "median": 7.13,
+      "p95": 10.07,
+      "mean": 7.45,
+      "min": 5.32,
+      "max": 23.98
+     },
+     "detect_pii": {
+      "n": 4990,
+      "median": 0.47,
+      "p95": 0.81,
+      "mean": 0.51,
+      "min": 0.28,
+      "max": 1.82
+     },
+     "parse_job_description": {
+      "n": 4990,
+      "median": 0.3,
+      "p95": 0.56,
+      "mean": 0.33,
+      "min": 0.17,
+      "max": 2.73
+     },
+     "extract_job_skills": {
+      "n": 4990,
+      "median": 0.32,
+      "p95": 0.54,
+      "mean": 0.34,
+      "min": 0.18,
+      "max": 1.33
+     },
+     "normalize_skills": {
+      "n": 4990,
+      "median": 5.44,
+      "p95": 9.98,
+      "mean": 6.11,
+      "min": 2.1,
+      "max": 135.03
+     },
+     "classify_skill_requirements": {
+      "n": 4990,
+      "median": 1.13,
+      "p95": 2.0,
+      "mean": 1.22,
+      "min": 0.47,
+      "max": 9.13
+     },
+     "extract_requirements": {
+      "n": 4990,
+      "median": 0.26,
+      "p95": 0.48,
+      "mean": 0.29,
+      "min": 0.15,
+      "max": 1.23
+     },
+     "check_duplicates": {
+      "n": 4990,
+      "median": 7.05,
+      "p95": 10.32,
+      "mean": 7.39,
+      "min": 5.17,
+      "max": 23.12
+     },
+     "extract_job_posting": {
+      "n": 4990,
+      "median": 0.66,
+      "p95": 1.14,
+      "mean": 0.71,
+      "min": 0.43,
+      "max": 4.14
+     },
+     "generate_embedding": {
+      "n": 4990,
+      "median": 92.73,
+      "p95": 343.95,
+      "mean": 85.1,
+      "min": 1.03,
+      "max": 4874.91
+     },
+     "validate_job_posting": {
+      "n": 4990,
+      "median": 1.21,
+      "p95": 1.99,
+      "mean": 1.26,
+      "min": 0.53,
+      "max": 7.48
+     },
+     "save_job": {
+      "n": 4990,
+      "median": 19.97,
+      "p95": 28.72,
+      "mean": 20.58,
+      "min": 12.46,
+      "max": 182.77
+     }
+    }
+   },
+   "ingest_students": {
+    "entities": 286,
+    "wall_seconds": 112.3,
+    "throughput_per_s": 2.55,
+    "statuses": {
+     "success": 286
+    },
+    "agent_ms": {
+     "n": 286,
+     "median": 371.45,
+     "p95": 752.27,
+     "mean": 392.5,
+     "min": 81.87,
+     "max": 1274.24
+    },
+    "per_tool_ms": {
+     "load_student_record": {
+      "n": 286,
+      "median": 6.21,
+      "p95": 8.8,
+      "mean": 6.55,
+      "min": 5.45,
+      "max": 9.83
+     },
+     "detect_pii": {
+      "n": 286,
+      "median": 0.46,
+      "p95": 0.73,
+      "mean": 0.49,
+      "min": 0.32,
+      "max": 1.11
+     },
+     "parse_student_sections": {
+      "n": 286,
+      "median": 0.25,
+      "p95": 0.43,
+      "mean": 0.27,
+      "min": 0.2,
+      "max": 0.89
+     },
+     "extract_skills": {
+      "n": 286,
+      "median": 0.26,
+      "p95": 0.42,
+      "mean": 0.28,
+      "min": 0.18,
+      "max": 0.68
+     },
+     "normalize_skills": {
+      "n": 251,
+      "median": 5.58,
+      "p95": 7.8,
+      "mean": 5.79,
+      "min": 3.04,
+      "max": 11.83
+     },
+     "extract_profile": {
+      "n": 286,
+      "median": 0.43,
+      "p95": 0.71,
+      "mean": 0.46,
+      "min": 0.3,
+      "max": 1.03
+     },
+     "generate_embedding": {
+      "n": 286,
+      "median": 336.36,
+      "p95": 710.63,
+      "mean": 355.74,
+      "min": 54.98,
+      "max": 1232.67
+     },
+     "validate_profile": {
+      "n": 286,
+      "median": 1.3,
+      "p95": 2.1,
+      "mean": 1.34,
+      "min": 0.69,
+      "max": 2.55
+     },
+     "save_profile": {
+      "n": 286,
+      "median": 20.33,
+      "p95": 25.44,
+      "mean": 20.94,
+      "min": 15.0,
+      "max": 131.58
+     }
+    }
+   }
+  },
+  "1k": {
+   "size": "1k",
+   "started_at": "2026-10-15T13:49:08+00:00",
+   "database": "phase14_bench_scaled",
+   "students": 1000,
+   "real_students": 286,
+   "synthetic_students": 714,
+   "jobs": 1000,
+   "jobs_are_real": true,
+   "raw_rows_seconds": 0.2,
+   "job_seed": {
+    "rows": 1000,
+    "near_duplicates": 1
+   },
+   "rss_after_ingest_mb": 1854.0,
+   "rss_ingest_added_mb": 1698.4,
+   "bulk_similarity": {
+    "students": 1000,
+    "jobs": 1000,
+    "pairs": 1000000,
+    "dimension": 768,
+    "fetch_vectors_seconds": 0.42,
+    "matrix_ms": {
+     "n": 5,
+     "median": 137.77,
+     "p95": 155.31,
+     "mean": 136.05,
+     "min": 112.91,
+     "max": 159.34
+    },
+    "top50_ms": {
+     "n": 5,
+     "median": 10.88,
+     "p95": 26.16,
+     "mean": 16.19,
+     "min": 10.17,
+     "max": 27.16
+    },
+    "pairs_per_second": 7258318,
+    "vectors_mb": 5.9,
+    "matrix_mb": 3.8,
+    "rss_added_mb": 40.0
+   },
+   "samples": {
+    "student_requests": [
+     "S00073",
+     "S00088",
+     "S00093",
+     "S00227",
+     "S00261",
+     "S10049",
+     "S10058",
+     "S10070",
+     "S10181",
+     "S10258",
+     "S10287",
+     "S10349",
+     "S10357",
+     "S10407",
+     "S10428",
+     "S10472",
+     "S10511",
+     "S10531",
+     "S10564",
+     "S10711"
+    ],
+    "synthetic_in_student_sample": 15,
+    "upload_rows": [
+     "S00280",
+     "S00339",
+     "S10011",
+     "S10136",
+     "S10148",
+     "S10174",
+     "S10264",
+     "S10269",
+     "S10602",
+     "S10689"
+    ],
+    "synthetic_in_upload_sample": 8,
+    "company_requests": [
+     "J0015495",
+     "J0039043",
+     "J0108770",
+     "J0758625",
+     "J0765686",
+     "J0812129",
+     "J0891779",
+     "J0948056",
+     "J0970792",
+     "J1012127"
+    ],
+    "seed": 14
+   },
+   "student_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 13419.3,
+      "trace_ms": 13369.457,
+      "agents": {
+       "profile_agent": {
+        "ms": 47.348,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 6577.581,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 6738.204,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 1265.274,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1646.1,
+      "trace_ms": 1573.755,
+      "agents": {
+       "profile_agent": {
+        "ms": 39.846,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1405.115,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 124.082,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 43.942,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 3132.1,
+      "trace_ms": 3068.072,
+      "agents": {
+       "profile_agent": {
+        "ms": 60.201,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2873.572,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 129.259,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 43.024,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 129.8,
+      "trace_ms": 103.178,
+      "agents": {
+       "profile_agent": {
+        "ms": 62.33,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 37.828,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     },
+     {
+      "status": "success",
+      "wall_ms": 1575.4,
+      "trace_ms": 1126.9,
+      "agents": {
+       "profile_agent": {
+        "ms": 48.877,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1001.766,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 71.744,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 33.14,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1899.1,
+      "trace_ms": 1845.532,
+      "agents": {
+       "profile_agent": {
+        "ms": 38.514,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1691.587,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 111.271,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 32.777,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1473.6,
+      "trace_ms": 1425.121,
+      "agents": {
+       "profile_agent": {
+        "ms": 33.735,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1264.723,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 121.69,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.947,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 543.8,
+      "trace_ms": 506.482,
+      "agents": {
+       "profile_agent": {
+        "ms": 30.135,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 408.926,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 63.393,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.908,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 85.8,
+      "trace_ms": 64.284,
+      "agents": {
+       "profile_agent": {
+        "ms": 42.002,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 20.361,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     },
+     {
+      "status": "success",
+      "wall_ms": 2547.8,
+      "trace_ms": 2508.051,
+      "agents": {
+       "profile_agent": {
+        "ms": 28.856,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2384.023,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 90.71,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 34.427,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 972.2,
+      "trace_ms": 924.772,
+      "agents": {
+       "profile_agent": {
+        "ms": 29.26,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 797.507,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 93.227,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 39.041,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2680.6,
+      "trace_ms": 2640.412,
+      "agents": {
+       "profile_agent": {
+        "ms": 37.791,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2475.417,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 122.756,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 42.567,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1302.4,
+      "trace_ms": 1247.265,
+      "agents": {
+       "profile_agent": {
+        "ms": 30.83,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1093.512,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 118.663,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 32.663,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1145.9,
+      "trace_ms": 1094.874,
+      "agents": {
+       "profile_agent": {
+        "ms": 37.858,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 960.016,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 92.907,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.644,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1113.7,
+      "trace_ms": 1068.9,
+      "agents": {
+       "profile_agent": {
+        "ms": 37.661,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 919.723,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 107.387,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 32.005,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1336.1,
+      "trace_ms": 1295.336,
+      "agents": {
+       "profile_agent": {
+        "ms": 28.308,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1151.111,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 111.251,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 31.832,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1374.2,
+      "trace_ms": 1330.327,
+      "agents": {
+       "profile_agent": {
+        "ms": 27.297,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1252.406,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 46.971,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 26.422,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2478.3,
+      "trace_ms": 2419.947,
+      "agents": {
+       "profile_agent": {
+        "ms": 27.923,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2326.015,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 62.583,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.466,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1023.6,
+      "trace_ms": 980.276,
+      "agents": {
+       "profile_agent": {
+        "ms": 26.676,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 835.927,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 113.802,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.298,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2435.4,
+      "trace_ms": 2395.223,
+      "agents": {
+       "profile_agent": {
+        "ms": 34.458,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2296.526,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 60.162,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.744,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     }
+    ],
+    "per_tool_ms": {
+     "load_student_record": [
+      9.576,
+      7.031,
+      9.292,
+      11.92,
+      9.404,
+      8.757,
+      8.544,
+      8.703,
+      6.359,
+      6.151,
+      5.826,
+      8.529,
+      6.226,
+      7.594,
+      6.127,
+      7.355,
+      5.904,
+      6.15,
+      5.884,
+      6.727
+     ],
+     "detect_pii": [
+      0.896,
+      0.471,
+      0.943,
+      1.049,
+      0.688,
+      0.69,
+      0.694,
+      0.576,
+      0.487,
+      0.5,
+      0.388,
+      0.881,
+      0.512,
+      0.591,
+      0.534,
+      0.777,
+      0.517,
+      0.468,
+      0.448,
+      0.515
+     ],
+     "parse_student_sections": [
+      0.502,
+      0.257,
+      0.392,
+      0.527,
+      0.538,
+      0.318,
+      0.506,
+      0.334,
+      0.242,
+      0.221,
+      0.271,
+      0.319,
+      0.281,
+      0.286,
+      0.267,
+      0.515,
+      0.253,
+      0.228,
+      0.252,
+      0.362
+     ],
+     "extract_skills": [
+      0.439,
+      0.247,
+      0.342,
+      0.5,
+      0.641,
+      0.268,
+      0.361,
+      0.281,
+      0.296,
+      0.232,
+      0.229,
+      0.332,
+      0.329,
+      0.266,
+      0.238,
+      0.433,
+      0.237,
+      0.23,
+      0.306,
+      0.393
+     ],
+     "normalize_skills": [
+      5.787,
+      9.234,
+      4.416,
+      7.637,
+      7.942,
+      4.682,
+      16.76,
+      4.768,
+      5.737,
+      3.922,
+      3.421,
+      6.394,
+      5.286,
+      2.673,
+      2.755,
+      2.406,
+      6.479
+     ],
+     "extract_profile": [
+      0.754,
+      0.394,
+      0.696,
+      1.028,
+      0.922,
+      0.637,
+      0.578,
+      0.469,
+      0.518,
+      0.487,
+      0.405,
+      0.683,
+      0.526,
+      0.624,
+      0.476,
+      0.45,
+      0.442,
+      0.474,
+      0.407,
+      0.615
+     ],
+     "generate_embedding": [
+      1.942,
+      1.264,
+      1.883,
+      2.995,
+      1.852,
+      1.745,
+      1.457,
+      1.498,
+      1.211,
+      1.144,
+      1.046,
+      1.631,
+      1.479,
+      1.626,
+      1.252,
+      1.271,
+      1.247,
+      1.387,
+      1.241,
+      1.443
+     ],
+     "validate_profile": [
+      1.478,
+      0.571,
+      1.027,
+      1.596,
+      0.65,
+      0.776,
+      0.477,
+      0.584,
+      0.593,
+      0.587,
+      0.416,
+      1.342,
+      0.64,
+      0.612,
+      0.644,
+      0.472,
+      0.627,
+      0.702,
+      0.588,
+      0.899
+     ],
+     "save_profile": [
+      24.411,
+      19.338,
+      39.76,
+      32.41,
+      24.661,
+      19.254,
+      19.979,
+      16.696,
+      14.546,
+      13.829,
+      14.079,
+      18.784,
+      16.417,
+      18.585,
+      21.68,
+      15.82,
+      14.415,
+      14.607,
+      14.217,
+      15.837
+     ],
+     "filter_eligible": [
+      216.849,
+      22.265,
+      36.089,
+      37.095,
+      23.649,
+      29.268,
+      18.478,
+      16.23,
+      19.905,
+      25.203,
+      17.213,
+      59.788,
+      18.093,
+      29.773,
+      24.266,
+      18.849,
+      20.292,
+      24.464,
+      27.315,
+      39.026
+     ],
+     "retrieve_jobs": [
+      69.447,
+      53.504,
+      64.42,
+      61.649,
+      58.002,
+      52.212,
+      41.527,
+      59.827,
+      43.716,
+      48.131,
+      47.032,
+      80.734,
+      49.515,
+      36.976,
+      58.107,
+      53.978,
+      47.536,
+      45.932
+     ],
+     "compute_similarity": [
+      731.136,
+      142.576,
+      401.434,
+      152.395,
+      61.43,
+      126.471,
+      97.144,
+      264.541,
+      82.21,
+      184.209,
+      71.319,
+      76.613,
+      59.686,
+      252.001,
+      167.673,
+      218.636,
+      61.549,
+      91.901
+     ],
+     "generate_features": [
+      3780.863,
+      407.204,
+      1381.002,
+      302.266,
+      175.525,
+      24.269,
+      21.611,
+      1321.931,
+      232.87,
+      604.933,
+      85.57,
+      121.366,
+      111.835,
+      18.95,
+      98.686,
+      1232.988,
+      102.167,
+      416.384
+     ],
+     "predict_suitability": [
+      172.229,
+      12.362,
+      10.597,
+      13.287,
+      9.566,
+      9.091,
+      7.949,
+      8.257,
+      11.335,
+      11.109,
+      9.678,
+      9.778,
+      7.909,
+      8.117,
+      8.807,
+      8.822,
+      8.207,
+      8.155
+     ],
+     "rank_candidates": [
+      1.411,
+      1.128,
+      0.943,
+      1.456,
+      0.848,
+      0.752,
+      0.653,
+      0.679,
+      1.043,
+      1.082,
+      0.839,
+      0.924,
+      0.782,
+      0.684,
+      0.738,
+      0.655,
+      0.748,
+      0.786
+     ],
+     "identify_skill_gaps": [
+      449.182,
+      186.349,
+      314.561,
+      119.044,
+      214.841,
+      68.883,
+      70.318,
+      149.723,
+      91.459,
+      423.852,
+      183.5,
+      236.384,
+      195.528,
+      359.146,
+      199.181,
+      142.842,
+      173.915,
+      354.835
+     ],
+     "cohort_benchmark": [
+      1150.355,
+      575.567,
+      660.869,
+      323.384,
+      1138.78,
+      961.335,
+      150.466,
+      549.508,
+      313.01,
+      1138.466,
+      673.903,
+      400.792,
+      466.456,
+      452.573,
+      695.659,
+      640.065,
+      411.121,
+      1335.609
+     ],
+     "prioritize_gaps": [
+      0.94,
+      1.231,
+      1.014,
+      0.965,
+      0.885,
+      0.875,
+      0.897,
+      1.123,
+      1.356,
+      1.111,
+      0.712,
+      0.921,
+      1.197,
+      1.487,
+      0.887,
+      0.957,
+      0.803,
+      0.932
+     ],
+     "retrieve_courses": [
+      66.052,
+      85.667,
+      97.413,
+      49.208,
+      81.379,
+      77.516,
+      43.195,
+      66.926,
+      66.944,
+      88.023,
+      88.35,
+      67.084,
+      78.685,
+      75.724,
+      32.372,
+      43.294,
+      73.705,
+      35.386
+     ],
+     "compute_course_similarity": [
+      6647.614,
+      6.805,
+      8.747,
+      3.662,
+      7.064,
+      8.884,
+      3.759,
+      5.833,
+      5.687,
+      8.163,
+      7.677,
+      5.746,
+      6.97,
+      8.923,
+      2.387,
+      3.342,
+      10.409,
+      3.959
+     ],
+     "rank_courses": [
+      2.515,
+      2.08,
+      2.553,
+      1.277,
+      3.59,
+      4.395,
+      1.405,
+      1.966,
+      1.504,
+      3.414,
+      2.234,
+      1.961,
+      2.127,
+      3.673,
+      0.933,
+      1.061,
+      5.189,
+      1.662
+     ],
+     "explain_recommendations": [
+      0.798,
+      0.482,
+      0.683,
+      0.404,
+      0.503,
+      1.223,
+      0.438,
+      0.371,
+      0.539,
+      0.69,
+      0.525,
+      0.408,
+      0.45,
+      0.69,
+      0.325,
+      0.299,
+      0.813,
+      0.41
+     ],
+     "save_learning_recommendations": [
+      16.783,
+      23.9,
+      15.393,
+      14.423,
+      14.956,
+      23.37,
+      11.813,
+      11.868,
+      14.538,
+      17.658,
+      16.335,
+      14.334,
+      15.106,
+      16.434,
+      8.799,
+      12.168,
+      18.317,
+      16.126
+     ],
+     "get_model_prediction": [
+      1.198,
+      1.423,
+      1.39,
+      1.418,
+      1.225,
+      1.138,
+      1.288,
+      1.656,
+      1.806,
+      1.434,
+      1.017,
+      1.278,
+      1.539,
+      2.038,
+      1.255,
+      1.46,
+      1.145,
+      1.253
+     ],
+     "get_shap_values": [
+      1194.605,
+      9.605,
+      9.194,
+      8.472,
+      6.938,
+      6.333,
+      7.138,
+      8.545,
+      8.949,
+      8.007,
+      6.861,
+      6.898,
+      6.923,
+      7.769,
+      6.514,
+      7.475,
+      6.457,
+      7.247
+     ],
+     "get_feature_contributions": [
+      0.879,
+      0.766,
+      0.817,
+      0.977,
+      0.583,
+      0.815,
+      0.579,
+      0.74,
+      1.17,
+      1.05,
+      0.446,
+      0.575,
+      0.626,
+      0.651,
+      0.583,
+      0.65,
+      0.435,
+      0.675
+     ],
+     "generate_evidence": [
+      34.799,
+      22.18,
+      21.955,
+      17.03,
+      16.436,
+      15.349,
+      14.717,
+      16.909,
+      19.934,
+      19.494,
+      17.349,
+      14.372,
+      16.079,
+      14.892,
+      13.625,
+      14.958,
+      14.523,
+      14.276
+     ],
+     "generate_explanation": [
+      0.988,
+      0.324,
+      0.489,
+      0.294,
+      0.336,
+      0.284,
+      0.26,
+      0.271,
+      0.318,
+      0.365,
+      0.306,
+      0.295,
+      0.26,
+      0.259,
+      0.209,
+      0.486,
+      0.251,
+      0.2
+     ],
+     "get_match_explanation": [
+      28.819,
+      7.669,
+      7.335,
+      3.783,
+      6.069,
+      3.709,
+      2.659,
+      5.036,
+      5.423,
+      10.568,
+      5.295,
+      4.954,
+      5.37,
+      4.958,
+      3.227,
+      3.301,
+      5.256,
+      3.992
+     ]
+    },
+    "per_agent_ms": {
+     "profile_agent": [
+      47.348,
+      39.846,
+      60.201,
+      62.33,
+      48.877,
+      38.514,
+      33.735,
+      30.135,
+      42.002,
+      28.856,
+      29.26,
+      37.791,
+      30.83,
+      37.858,
+      37.661,
+      28.308,
+      27.297,
+      27.923,
+      26.676,
+      34.458
+     ],
+     "matching_agent": [
+      6577.581,
+      1405.115,
+      2873.572,
+      37.828,
+      1001.766,
+      1691.587,
+      1264.723,
+      408.926,
+      20.361,
+      2384.023,
+      797.507,
+      2475.417,
+      1093.512,
+      960.016,
+      919.723,
+      1151.111,
+      1252.406,
+      2326.015,
+      835.927,
+      2296.526
+     ],
+     "learning_agent": [
+      6738.204,
+      124.082,
+      129.259,
+      71.744,
+      111.271,
+      121.69,
+      63.393,
+      90.71,
+      93.227,
+      122.756,
+      118.663,
+      92.907,
+      107.387,
+      111.251,
+      46.971,
+      62.583,
+      113.802,
+      60.162
+     ],
+     "explainability_agent": [
+      1265.274,
+      43.942,
+      43.024,
+      33.14,
+      32.777,
+      28.947,
+      27.908,
+      34.427,
+      39.041,
+      42.567,
+      32.663,
+      29.644,
+      32.005,
+      31.832,
+      26.422,
+      29.466,
+      29.298,
+      28.744
+     ]
+    },
+    "wall_seconds": 42.6
+   },
+   "upload_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 1395.1,
+      "trace_ms": 1348.111,
+      "agents": {
+       "profile_agent": {
+        "ms": 17.446,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1254.613,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 71.515,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 34.383,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 3105.0,
+      "trace_ms": 3063.637,
+      "agents": {
+       "profile_agent": {
+        "ms": 31.342,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2931.557,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 96.346,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.169,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1312.8,
+      "trace_ms": 1258.936,
+      "agents": {
+       "profile_agent": {
+        "ms": 16.706,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1170.885,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 67.532,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.213,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 3365.1,
+      "trace_ms": 3319.825,
+      "agents": {
+       "profile_agent": {
+        "ms": 22.95,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2240.988,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 137.202,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 523.211,
+        "status": "failed"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1096.1,
+      "trace_ms": 1055.569,
+      "agents": {
+       "profile_agent": {
+        "ms": 22.182,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 953.902,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 74.959,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 40.599,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1685.3,
+      "trace_ms": 1632.948,
+      "agents": {
+       "profile_agent": {
+        "ms": 30.179,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1502.946,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 95.575,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 34.271,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1963.2,
+      "trace_ms": 1917.611,
+      "agents": {
+       "profile_agent": {
+        "ms": 237.126,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1616.855,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 58.799,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 32.387,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2092.9,
+      "trace_ms": 2021.081,
+      "agents": {
+       "profile_agent": {
+        "ms": 31.009,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1876.692,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 107.959,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 36.776,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2211.9,
+      "trace_ms": 2151.723,
+      "agents": {
+       "profile_agent": {
+        "ms": 36.505,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1986.439,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 123.754,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 32.82,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1922.5,
+      "trace_ms": 1868.103,
+      "agents": {
+       "profile_agent": {
+        "ms": 38.15,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1708.937,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 115.076,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 48.287,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     }
+    ],
+    "per_tool_ms": {
+     "extract_text": [
+      0.464,
+      0.728,
+      0.482,
+      0.396,
+      0.417,
+      0.643,
+      0.537,
+      0.685,
+      0.797,
+      0.589
+     ],
+     "detect_pii": [
+      0.344,
+      0.795,
+      0.388,
+      0.323,
+      0.357,
+      0.508,
+      0.397,
+      0.545,
+      0.434,
+      0.435
+     ],
+     "parse_resume": [
+      0.646,
+      1.183,
+      0.365,
+      0.359,
+      0.403,
+      0.436,
+      0.315,
+      0.407,
+      0.524,
+      0.509
+     ],
+     "extract_skills": [
+      0.278,
+      0.872,
+      0.307,
+      0.252,
+      0.272,
+      0.514,
+      0.299,
+      0.408,
+      0.389,
+      0.408
+     ],
+     "extract_profile": [
+      0.337,
+      0.67,
+      0.398,
+      0.394,
+      0.409,
+      0.675,
+      0.475,
+      0.73,
+      0.738,
+      0.619
+     ],
+     "generate_embedding": [
+      1.302,
+      1.581,
+      1.131,
+      1.027,
+      1.133,
+      1.414,
+      206.737,
+      1.746,
+      1.744,
+      1.642
+     ],
+     "validate_profile": [
+      0.423,
+      0.913,
+      0.389,
+      0.459,
+      0.6,
+      1.101,
+      1.228,
+      1.101,
+      0.641,
+      0.722
+     ],
+     "save_profile": [
+      12.946,
+      18.546,
+      12.49,
+      15.722,
+      13.099,
+      19.249,
+      21.211,
+      20.498,
+      23.914,
+      27.548
+     ],
+     "filter_eligible": [
+      14.415,
+      29.991,
+      15.356,
+      17.305,
+      20.512,
+      56.269,
+      29.436,
+      47.583,
+      28.26,
+      26.13
+     ],
+     "retrieve_jobs": [
+      40.081,
+      63.143,
+      36.742,
+      56.559,
+      49.338,
+      60.066,
+      50.002,
+      62.277,
+      81.025,
+      84.898
+     ],
+     "compute_similarity": [
+      129.945,
+      248.644,
+      75.362,
+      160.247,
+      24.489,
+      50.922,
+      45.909,
+      52.961,
+      153.76,
+      154.598
+     ],
+     "generate_features": [
+      18.849,
+      1874.983,
+      29.869,
+      858.651,
+      163.49,
+      295.243,
+      166.169,
+      365.959,
+      749.589,
+      342.976
+     ],
+     "predict_suitability": [
+      7.152,
+      8.65,
+      8.08,
+      7.879,
+      7.18,
+      8.68,
+      8.183,
+      15.427,
+      12.931,
+      12.136
+     ],
+     "rank_candidates": [
+      0.692,
+      0.732,
+      0.683,
+      0.696,
+      0.793,
+      0.715,
+      0.667,
+      1.313,
+      1.161,
+      1.276
+     ],
+     "identify_skill_gaps": [
+      123.015,
+      251.088,
+      60.182,
+      116.515,
+      194.861,
+      563.167,
+      300.232,
+      680.751,
+      204.044,
+      195.764
+     ],
+     "cohort_benchmark": [
+      915.986,
+      450.932,
+      940.719,
+      1019.812,
+      489.938,
+      464.785,
+      1012.282,
+      644.834,
+      751.462,
+      886.437
+     ],
+     "prioritize_gaps": [
+      1.172,
+      0.933,
+      0.993,
+      0.915,
+      1.373,
+      0.814,
+      0.955,
+      0.989,
+      1.185,
+      1.169
+     ],
+     "retrieve_courses": [
+      49.937,
+      71.511,
+      49.041,
+      97.998,
+      53.564,
+      69.555,
+      37.546,
+      42.377,
+      82.557,
+      75.582
+     ],
+     "compute_course_similarity": [
+      4.405,
+      7.224,
+      4.045,
+      12.608,
+      3.121,
+      7.022,
+      2.402,
+      2.296,
+      7.424,
+      4.98
+     ],
+     "rank_courses": [
+      1.271,
+      2.107,
+      1.265,
+      4.92,
+      1.469,
+      2.063,
+      0.793,
+      0.891,
+      3.8,
+      1.889
+     ],
+     "explain_recommendations": [
+      0.404,
+      0.427,
+      0.332,
+      0.673,
+      0.509,
+      0.48,
+      0.38,
+      0.536,
+      0.733,
+      0.833
+     ],
+     "save_learning_recommendations": [
+      12.371,
+      11.494,
+      10.133,
+      15.24,
+      13.136,
+      12.812,
+      15.07,
+      59.332,
+      24.033,
+      27.655
+     ],
+     "get_model_prediction": [
+      1.673,
+      1.256,
+      1.431,
+      1.211,
+      0.824,
+      1.802,
+      1.086,
+      1.336,
+      1.343,
+      1.521,
+      1.62
+     ],
+     "get_shap_values": [
+      10.813,
+      7.017,
+      8.009,
+      6.475,
+      4.837,
+      11.712,
+      6.758,
+      7.868,
+      10.043,
+      7.964,
+      10.536
+     ],
+     "get_feature_contributions": [
+      0.821,
+      0.622,
+      0.58,
+      0.615,
+      0.33,
+      1.521,
+      0.523,
+      0.643,
+      0.787,
+      0.789,
+      1.309
+     ],
+     "generate_evidence": [
+      16.505,
+      14.839,
+      14.912,
+      14.016,
+      12.127,
+      19.943,
+      16.004,
+      16.707,
+      17.641,
+      16.431,
+      25.742
+     ],
+     "generate_explanation": [
+      0.53,
+      0.261,
+      0.266,
+      0.274,
+      0.211,
+      0.675,
+      0.277,
+      0.322,
+      0.322,
+      0.309,
+      0.347
+     ],
+     "get_match_explanation": [
+      2.767,
+      5.076,
+      2.881,
+      3.287,
+      3.074,
+      3.464,
+      8.201,
+      4.134,
+      5.119,
+      4.466,
+      6.793
+     ],
+     "normalize_skills": [
+      4.766,
+      3.198,
+      4.71,
+      4.343,
+      4.571,
+      3.493,
+      5.971,
+      4.446
+     ]
+    },
+    "per_agent_ms": {
+     "profile_agent": [
+      17.446,
+      31.342,
+      16.706,
+      22.95,
+      22.182,
+      30.179,
+      237.126,
+      31.009,
+      36.505,
+      38.15
+     ],
+     "matching_agent": [
+      1254.613,
+      2931.557,
+      1170.885,
+      2240.988,
+      953.902,
+      1502.946,
+      1616.855,
+      1876.692,
+      1986.439,
+      1708.937
+     ],
+     "learning_agent": [
+      71.515,
+      96.346,
+      67.532,
+      137.202,
+      74.959,
+      95.575,
+      58.799,
+      107.959,
+      123.754,
+      115.076
+     ],
+     "explainability_agent": [
+      34.383,
+      30.169,
+      29.213,
+      527.869,
+      523.211,
+      40.599,
+      34.271,
+      32.387,
+      36.776,
+      32.82,
+      48.287
+     ]
+    },
+    "wall_seconds": 20.3
+   },
+   "company_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 1356.5,
+      "trace_ms": 1318.406,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 70.105,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1216.583,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.353,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1118.4,
+      "trace_ms": 1060.608,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 56.472,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 970.187,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.543,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 839.0,
+      "trace_ms": 798.378,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 61.395,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 703.859,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.931,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1097.1,
+      "trace_ms": 1040.327,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 51.833,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 951.678,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 31.867,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 849.6,
+      "trace_ms": 803.169,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 91.029,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 665.037,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 42.618,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1075.5,
+      "trace_ms": 1030.38,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 58.917,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 935.346,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 31.87,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 858.0,
+      "trace_ms": 802.11,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 73.825,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 675.005,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 46.743,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 934.8,
+      "trace_ms": 887.365,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 58.277,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 800.499,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.021,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 471.0,
+      "trace_ms": 417.775,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 56.692,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 330.49,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 26.832,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 734.4,
+      "trace_ms": 695.209,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 48.004,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 619.646,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 24.445,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     }
+    ],
+    "per_tool_ms": {
+     "load_job_record": [
+      9.822,
+      7.124,
+      8.482,
+      9.016,
+      8.109,
+      9.018,
+      10.055,
+      7.326,
+      8.055,
+      6.633
+     ],
+     "detect_pii": [
+      0.742,
+      0.482,
+      0.54,
+      0.63,
+      0.73,
+      0.802,
+      0.594,
+      0.602,
+      0.49,
+      0.466
+     ],
+     "parse_job_description": [
+      0.551,
+      0.368,
+      0.36,
+      0.465,
+      0.492,
+      0.715,
+      0.349,
+      0.278,
+      0.321,
+      0.287
+     ],
+     "extract_job_skills": [
+      0.574,
+      0.456,
+      0.356,
+      0.429,
+      0.438,
+      0.828,
+      0.304,
+      0.298,
+      0.409,
+      0.309
+     ],
+     "normalize_skills": [
+      4.635,
+      2.216,
+      6.223,
+      4.402,
+      6.976,
+      4.84,
+      4.196,
+      5.472,
+      3.29,
+      5.064
+     ],
+     "classify_skill_requirements": [
+      1.339,
+      1.519,
+      1.163,
+      1.714,
+      2.417,
+      1.007,
+      1.278,
+      1.168,
+      0.763,
+      1.125
+     ],
+     "extract_requirements": [
+      0.338,
+      0.25,
+      0.348,
+      0.343,
+      1.0,
+      0.361,
+      0.517,
+      0.248,
+      0.243,
+      0.266
+     ],
+     "check_duplicates": [
+      9.296,
+      7.494,
+      9.283,
+      8.799,
+      18.46,
+      9.961,
+      10.572,
+      7.468,
+      8.384,
+      6.757
+     ],
+     "extract_job_posting": [
+      1.478,
+      0.754,
+      0.772,
+      0.835,
+      1.503,
+      0.801,
+      1.228,
+      0.648,
+      0.702,
+      0.746
+     ],
+     "generate_embedding": [
+      2.512,
+      1.683,
+      2.14,
+      1.716,
+      3.008,
+      1.735,
+      1.921,
+      1.498,
+      1.739,
+      1.551
+     ],
+     "validate_job_posting": [
+      1.425,
+      0.912,
+      1.082,
+      1.062,
+      1.695,
+      0.861,
+      1.081,
+      0.8,
+      1.042,
+      0.883
+     ],
+     "save_job": [
+      34.783,
+      31.67,
+      28.49,
+      20.386,
+      43.41,
+      25.845,
+      39.743,
+      30.925,
+      29.473,
+      22.401
+     ],
+     "filter_eligible": [
+      31.372,
+      39.788,
+      36.917,
+      35.531,
+      26.214,
+      33.898,
+      44.057,
+      33.634,
+      27.383,
+      31.84
+     ],
+     "retrieve_candidates": [
+      92.795,
+      74.812,
+      75.214,
+      91.351,
+      74.852,
+      115.566,
+      89.61,
+      71.603,
+      75.088,
+      103.39
+     ],
+     "compute_similarity": [
+      238.266,
+      66.506,
+      124.171,
+      163.893,
+      122.106,
+      253.764,
+      141.929,
+      133.185,
+      61.066,
+      58.005
+     ],
+     "generate_features": [
+      761.24,
+      494.579,
+      309.659,
+      378.575,
+      306.005,
+      435.499,
+      202.079,
+      355.17,
+      54.054,
+      282.459
+     ],
+     "predict_suitability": [
+      13.296,
+      10.214,
+      8.606,
+      11.281,
+      11.674,
+      10.814,
+      11.765,
+      9.125,
+      9.725,
+      11.174
+     ],
+     "rank_candidates": [
+      0.852,
+      0.805,
+      0.518,
+      0.782,
+      0.785,
+      0.858,
+      0.867,
+      0.631,
+      0.626,
+      0.624
+     ],
+     "identify_skill_gaps": [
+      75.475,
+      279.446,
+      146.243,
+      266.706,
+      119.834,
+      81.866,
+      180.436,
+      194.467,
+      99.926,
+      129.45
+     ],
+     "get_model_prediction": [
+      0.805,
+      0.771,
+      0.827,
+      0.985,
+      0.92,
+      0.842,
+      1.244,
+      0.71,
+      0.727,
+      0.73
+     ],
+     "get_shap_values": [
+      6.434,
+      5.83,
+      6.593,
+      6.954,
+      10.081,
+      6.576,
+      9.28,
+      5.36,
+      6.427,
+      5.335
+     ],
+     "get_feature_contributions": [
+      0.513,
+      0.45,
+      0.494,
+      0.709,
+      0.883,
+      0.61,
+      1.152,
+      0.39,
+      0.54,
+      0.489
+     ],
+     "generate_evidence": [
+      15.605,
+      14.878,
+      15.187,
+      16.416,
+      23.259,
+      18.144,
+      26.412,
+      13.285,
+      14.766,
+      13.648
+     ],
+     "generate_explanation": [
+      0.253,
+      0.218,
+      0.231,
+      0.269,
+      0.478,
+      0.268,
+      0.437,
+      0.209,
+      0.216,
+      0.188
+     ],
+     "get_match_explanation": [
+      2.747,
+      6.239,
+      4.602,
+      5.383,
+      5.437,
+      4.116,
+      6.47,
+      4.147,
+      3.17,
+      3.238
+     ]
+    },
+    "per_agent_ms": {
+     "job_intelligence_agent": [
+      70.105,
+      56.472,
+      61.395,
+      51.833,
+      91.029,
+      58.917,
+      73.825,
+      58.277,
+      56.692,
+      48.004
+     ],
+     "matching_agent": [
+      1216.583,
+      970.187,
+      703.859,
+      951.678,
+      665.037,
+      935.346,
+      675.005,
+      800.499,
+      330.49,
+      619.646
+     ],
+     "explainability_agent": [
+      27.353,
+      29.543,
+      28.931,
+      31.867,
+      42.618,
+      31.87,
+      46.743,
+      25.021,
+      26.832,
+      24.445
+     ]
+    },
+    "wall_seconds": 9.5
+   },
+   "rss_requests_added_mb": 196.4,
+   "database_facts": {
+    "database_size_mb": 73.2,
+    "embeddings_size_mb": 49.4,
+    "students": 1010,
+    "students_with_profile": 1010,
+    "jobs": 1000,
+    "jobs_with_posting": 1000,
+    "embedding_rows": 20991
+   },
+   "memory": {
+    "rss_start_mb": 147.7,
+    "rss_end_mb": 2093.6,
+    "peak_rss_mb": 2424.3
+   },
+   "finished_at": "2026-10-15T13:58:42+00:00",
+   "environment": {
+    "python": "3.11.17",
+    "system": "Linux 5.15.167.4-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "logical_cpus": 16,
+    "ram_gb_visible": 7.6,
+    "torch": "2.8.0+cpu",
+    "torch_threads": 8,
+    "embedding_model": "e5_base_v2",
+    "llm": "none (deterministic routing for explicit tasks; structured explanation fallback)",
+    "youtube": "disabled (curated catalogue only)",
+    "ingest_workers": 1,
+    "request_concurrency": 1
+   },
+   "ingest_jobs": {
+    "entities": 1000,
+    "wall_seconds": 257.8,
+    "throughput_per_s": 3.88,
+    "statuses": {
+     "success": 1000
+    },
+    "agent_ms": {
+     "n": 1000,
+     "median": 184.11,
+     "p95": 531.41,
+     "mean": 257.45,
+     "min": 34.09,
+     "max": 5866.5
+    },
+    "per_tool_ms": {
+     "load_job_record": {
+      "n": 1000,
+      "median": 7.11,
+      "p95": 11.16,
+      "mean": 7.67,
+      "min": 5.5,
+      "max": 17.91
+     },
+     "detect_pii": {
+      "n": 1000,
+      "median": 0.46,
+      "p95": 0.86,
+      "mean": 0.51,
+      "min": 0.3,
+      "max": 1.25
+     },
+     "parse_job_description": {
+      "n": 1000,
+      "median": 0.29,
+      "p95": 0.6,
+      "mean": 0.33,
+      "min": 0.18,
+      "max": 0.95
+     },
+     "extract_job_skills": {
+      "n": 1000,
+      "median": 0.31,
+      "p95": 0.59,
+      "mean": 0.35,
+      "min": 0.18,
+      "max": 1.8
+     },
+     "normalize_skills": {
+      "n": 1000,
+      "median": 5.43,
+      "p95": 8.48,
+      "mean": 5.7,
+      "min": 2.17,
+      "max": 25.04
+     },
+     "classify_skill_requirements": {
+      "n": 1000,
+      "median": 1.14,
+      "p95": 2.0,
+      "mean": 1.22,
+      "min": 0.52,
+      "max": 3.29
+     },
+     "extract_requirements": {
+      "n": 1000,
+      "median": 0.25,
+      "p95": 0.51,
+      "mean": 0.28,
+      "min": 0.15,
+      "max": 1.04
+     },
+     "check_duplicates": {
+      "n": 1000,
+      "median": 6.87,
+      "p95": 11.0,
+      "mean": 7.42,
+      "min": 5.35,
+      "max": 16.36
+     },
+     "extract_job_posting": {
+      "n": 1000,
+      "median": 0.63,
+      "p95": 1.22,
+      "mean": 0.71,
+      "min": 0.45,
+      "max": 1.65
+     },
+     "generate_embedding": {
+      "n": 1000,
+      "median": 134.42,
+      "p95": 478.37,
+      "mean": 207.95,
+      "min": 1.1,
+      "max": 5807.72
+     },
+     "validate_job_posting": {
+      "n": 1000,
+      "median": 1.56,
+      "p95": 2.11,
+      "mean": 1.52,
+      "min": 0.57,
+      "max": 4.81
+     },
+     "save_job": {
+      "n": 1000,
+      "median": 20.94,
+      "p95": 29.14,
+      "mean": 22.0,
+      "min": 12.89,
+      "max": 162.49
+     }
+    }
+   },
+   "ingest_students": {
+    "entities": 1000,
+    "wall_seconds": 241.8,
+    "throughput_per_s": 4.14,
+    "statuses": {
+     "success": 1000
+    },
+    "agent_ms": {
+     "n": 1000,
+     "median": 196.82,
+     "p95": 564.89,
+     "mean": 241.52,
+     "min": 21.54,
+     "max": 1317.77
+    },
+    "per_tool_ms": {
+     "load_student_record": {
+      "n": 1000,
+      "median": 7.75,
+      "p95": 11.68,
+      "mean": 8.12,
+      "min": 5.47,
+      "max": 25.66
+     },
+     "detect_pii": {
+      "n": 1000,
+      "median": 0.56,
+      "p95": 1.04,
+      "mean": 0.62,
+      "min": 0.32,
+      "max": 1.94
+     },
+     "parse_student_sections": {
+      "n": 1000,
+      "median": 0.32,
+      "p95": 0.64,
+      "mean": 0.37,
+      "min": 0.19,
+      "max": 1.31
+     },
+     "extract_skills": {
+      "n": 1000,
+      "median": 0.32,
+      "p95": 0.59,
+      "mean": 0.35,
+      "min": 0.17,
+      "max": 1.05
+     },
+     "normalize_skills": {
+      "n": 881,
+      "median": 5.56,
+      "p95": 7.88,
+      "mean": 5.73,
+      "min": 2.56,
+      "max": 22.25
+     },
+     "extract_profile": {
+      "n": 1000,
+      "median": 0.54,
+      "p95": 0.99,
+      "mean": 0.59,
+      "min": 0.31,
+      "max": 2.2
+     },
+     "generate_embedding": {
+      "n": 1000,
+      "median": 156.28,
+      "p95": 519.4,
+      "mean": 200.17,
+      "min": 1.1,
+      "max": 1258.14
+     },
+     "validate_profile": {
+      "n": 1000,
+      "median": 1.38,
+      "p95": 2.19,
+      "mean": 1.42,
+      "min": 0.39,
+      "max": 5.46
+     },
+     "save_profile": {
+      "n": 1000,
+      "median": 21.98,
+      "p95": 33.1,
+      "mean": 23.3,
+      "min": 11.98,
+      "max": 151.35
+     }
+    }
+   }
+  },
+  "5k": {
+   "size": "5k",
+   "started_at": "2026-10-15T13:59:11+00:00",
+   "database": "phase14_bench_scaled",
+   "students": 5000,
+   "real_students": 286,
+   "synthetic_students": 4714,
+   "jobs": 1000,
+   "jobs_are_real": true,
+   "raw_rows_seconds": 0.5,
+   "job_seed": {
+    "rows": 1000,
+    "near_duplicates": 1
+   },
+   "rss_after_ingest_mb": 1654.4,
+   "rss_ingest_added_mb": 1486.7,
+   "bulk_similarity": {
+    "students": 5010,
+    "jobs": 1000,
+    "pairs": 5010000,
+    "dimension": 768,
+    "fetch_vectors_seconds": 1.2,
+    "matrix_ms": {
+     "n": 5,
+     "median": 58.23,
+     "p95": 84.76,
+     "mean": 60.09,
+     "min": 34.14,
+     "max": 91.06
+    },
+    "top50_ms": {
+     "n": 5,
+     "median": 83.34,
+     "p95": 109.16,
+     "mean": 86.6,
+     "min": 60.09,
+     "max": 112.59
+    },
+    "pairs_per_second": 86033584,
+    "vectors_mb": 17.6,
+    "matrix_mb": 19.1,
+    "rss_added_mb": 74.6
+   },
+   "samples": {
+    "student_requests": [
+     "S10081",
+     "S10157",
+     "S10181",
+     "S10463",
+     "S10627",
+     "S11402",
+     "S11450",
+     "S11513",
+     "S12049",
+     "S12452",
+     "S12577",
+     "S12915",
+     "S12970",
+     "S13218",
+     "S13293",
+     "S13513",
+     "S13521",
+     "S13700",
+     "S13854",
+     "S14005"
+    ],
+    "synthetic_in_student_sample": 20,
+    "upload_rows": [
+     "S10719",
+     "S11019",
+     "S11205",
+     "S11821",
+     "S11882",
+     "S12025",
+     "S12470",
+     "S12503",
+     "S14168",
+     "S14603"
+    ],
+    "synthetic_in_upload_sample": 10,
+    "company_requests": [
+     "J0015495",
+     "J0039043",
+     "J0108770",
+     "J0758625",
+     "J0765686",
+     "J0812129",
+     "J0891779",
+     "J0948056",
+     "J0970792",
+     "J1012127"
+    ],
+    "seed": 14
+   },
+   "student_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 13887.9,
+      "trace_ms": 13829.745,
+      "agents": {
+       "profile_agent": {
+        "ms": 223.927,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 6772.892,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 6827.935,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 1193.339,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2666.0,
+      "trace_ms": 2618.705,
+      "agents": {
+       "profile_agent": {
+        "ms": 157.095,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2331.794,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 125.447,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 35.367,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 202.3,
+      "trace_ms": 186.186,
+      "agents": {
+       "profile_agent": {
+        "ms": 164.391,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 20.148,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     },
+     {
+      "status": "success",
+      "wall_ms": 1286.8,
+      "trace_ms": 1246.34,
+      "agents": {
+       "profile_agent": {
+        "ms": 143.226,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1000.214,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 99.15,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.982,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 3283.4,
+      "trace_ms": 3247.909,
+      "agents": {
+       "profile_agent": {
+        "ms": 209.097,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2991.702,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 43.187,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.679,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 3070.1,
+      "trace_ms": 3029.354,
+      "agents": {
+       "profile_agent": {
+        "ms": 51.939,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2899.979,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 73.647,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.673,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2022.5,
+      "trace_ms": 1970.907,
+      "agents": {
+       "profile_agent": {
+        "ms": 40.423,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1855.573,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 71.572,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.756,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 63.8,
+      "trace_ms": 47.393,
+      "agents": {
+       "profile_agent": {
+        "ms": 27.016,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 18.774,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     },
+     {
+      "status": "success",
+      "wall_ms": 3310.4,
+      "trace_ms": 3274.985,
+      "agents": {
+       "profile_agent": {
+        "ms": 31.365,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 3164.045,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 75.53,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.48,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1955.1,
+      "trace_ms": 1905.243,
+      "agents": {
+       "profile_agent": {
+        "ms": 40.351,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1751.693,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 107.812,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 34.213,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1311.1,
+      "trace_ms": 1265.345,
+      "agents": {
+       "profile_agent": {
+        "ms": 32.152,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1138.135,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 91.141,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 31.135,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2149.9,
+      "trace_ms": 2109.736,
+      "agents": {
+       "profile_agent": {
+        "ms": 27.629,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1983.495,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 94.747,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.343,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2211.1,
+      "trace_ms": 2173.141,
+      "agents": {
+       "profile_agent": {
+        "ms": 34.386,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2091.343,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 43.309,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 34.767,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2399.0,
+      "trace_ms": 2358.053,
+      "agents": {
+       "profile_agent": {
+        "ms": 40.733,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2254.296,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 59.564,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.201,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2140.0,
+      "trace_ms": 2095.182,
+      "agents": {
+       "profile_agent": {
+        "ms": 44.828,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1930.26,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 116.276,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 35.392,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1055.7,
+      "trace_ms": 1011.882,
+      "agents": {
+       "profile_agent": {
+        "ms": 36.222,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 880.751,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 91.255,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.424,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1742.9,
+      "trace_ms": 1708.127,
+      "agents": {
+       "profile_agent": {
+        "ms": 27.055,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1620.603,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 56.409,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 32.657,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1365.4,
+      "trace_ms": 1323.877,
+      "agents": {
+       "profile_agent": {
+        "ms": 31.561,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1177.038,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 110.51,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.671,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1543.0,
+      "trace_ms": 1503.422,
+      "agents": {
+       "profile_agent": {
+        "ms": 33.259,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1402.485,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 63.945,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.82,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 55.6,
+      "trace_ms": 39.085,
+      "agents": {
+       "profile_agent": {
+        "ms": 22.586,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 15.218,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     }
+    ],
+    "per_tool_ms": {
+     "load_student_record": [
+      6.957,
+      6.314,
+      8.035,
+      6.105,
+      7.994,
+      6.746,
+      6.339,
+      6.364,
+      6.338,
+      6.363,
+      7.056,
+      6.63,
+      7.609,
+      7.878,
+      6.225,
+      6.579,
+      6.495,
+      6.75,
+      6.69,
+      6.311
+     ],
+     "detect_pii": [
+      0.456,
+      0.495,
+      0.559,
+      0.414,
+      0.693,
+      0.435,
+      0.555,
+      0.509,
+      0.439,
+      0.479,
+      0.543,
+      0.505,
+      0.634,
+      0.475,
+      0.45,
+      0.554,
+      0.48,
+      0.702,
+      0.454,
+      0.37
+     ],
+     "parse_student_sections": [
+      0.258,
+      0.517,
+      0.335,
+      0.218,
+      0.398,
+      0.233,
+      0.305,
+      0.284,
+      0.26,
+      0.278,
+      0.306,
+      0.248,
+      0.261,
+      0.266,
+      0.475,
+      0.267,
+      0.227,
+      0.394,
+      0.297,
+      0.231
+     ],
+     "extract_skills": [
+      0.24,
+      0.421,
+      0.351,
+      0.226,
+      0.347,
+      0.23,
+      0.339,
+      0.365,
+      0.276,
+      0.311,
+      0.309,
+      0.281,
+      0.275,
+      0.324,
+      0.307,
+      0.265,
+      0.278,
+      0.366,
+      0.268,
+      0.212
+     ],
+     "normalize_skills": [
+      3.895,
+      2.819,
+      5.694,
+      4.897,
+      26.574,
+      16.783,
+      4.822,
+      12.485,
+      4.86,
+      2.796,
+      4.432,
+      8.101,
+      19.382,
+      7.107,
+      2.984,
+      4.184,
+      5.257
+     ],
+     "extract_profile": [
+      1.136,
+      0.452,
+      0.593,
+      0.372,
+      0.866,
+      0.522,
+      0.516,
+      0.44,
+      0.391,
+      0.643,
+      0.43,
+      0.446,
+      0.56,
+      0.457,
+      0.581,
+      0.413,
+      0.451,
+      0.454,
+      0.451,
+      0.324
+     ],
+     "generate_embedding": [
+      182.068,
+      121.159,
+      129.108,
+      116.655,
+      165.621,
+      1.102,
+      1.051,
+      1.1,
+      1.111,
+      1.31,
+      1.232,
+      1.248,
+      1.438,
+      1.32,
+      1.284,
+      1.198,
+      1.217,
+      1.215,
+      1.24,
+      0.982
+     ],
+     "validate_profile": [
+      0.971,
+      1.475,
+      1.213,
+      0.914,
+      1.03,
+      0.537,
+      0.401,
+      0.414,
+      0.561,
+      0.873,
+      0.752,
+      0.511,
+      0.714,
+      0.455,
+      0.736,
+      0.525,
+      0.649,
+      0.516,
+      0.594,
+      0.368
+     ],
+     "save_profile": [
+      26.47,
+      22.121,
+      17.296,
+      17.395,
+      25.812,
+      14.594,
+      13.267,
+      16.664,
+      16.246,
+      16.496,
+      15.653,
+      14.117,
+      17.313,
+      20.293,
+      14.356,
+      18.281,
+      13.378,
+      15.937,
+      17.026,
+      13.04
+     ],
+     "filter_eligible": [
+      169.217,
+      33.661,
+      19.797,
+      14.388,
+      25.939,
+      20.974,
+      17.531,
+      18.425,
+      22.359,
+      38.859,
+      37.958,
+      17.251,
+      20.985,
+      20.588,
+      30.311,
+      21.647,
+      21.681,
+      19.94,
+      20.3,
+      14.933
+     ],
+     "retrieve_jobs": [
+      66.225,
+      74.049,
+      32.865,
+      80.794,
+      79.201,
+      46.491,
+      73.96,
+      51.723,
+      65.535,
+      54.935,
+      61.945,
+      63.391,
+      48.211,
+      54.737,
+      50.025,
+      49.337,
+      47.488
+     ],
+     "compute_similarity": [
+      682.155,
+      363.602,
+      162.649,
+      285.412,
+      269.951,
+      208.164,
+      354.41,
+      56.903,
+      58.945,
+      230.281,
+      229.187,
+      261.102,
+      131.13,
+      57.926,
+      148.049,
+      103.52,
+      185.656
+     ],
+     "generate_features": [
+      2944.911,
+      1156.546,
+      17.892,
+      1221.152,
+      1141.804,
+      432.241,
+      1566.046,
+      346.094,
+      158.526,
+      632.353,
+      730.8,
+      861.454,
+      583.641,
+      83.22,
+      648.268,
+      205.619,
+      139.034
+     ],
+     "predict_suitability": [
+      127.967,
+      9.949,
+      7.442,
+      8.594,
+      9.529,
+      11.443,
+      8.754,
+      9.808,
+      8.769,
+      9.354,
+      8.778,
+      9.049,
+      10.224,
+      7.591,
+      9.556,
+      8.635,
+      8.852
+     ],
+     "rank_candidates": [
+      0.838,
+      0.703,
+      0.687,
+      0.684,
+      0.863,
+      1.649,
+      0.926,
+      0.823,
+      0.745,
+      0.76,
+      0.701,
+      0.731,
+      0.922,
+      0.643,
+      0.731,
+      0.685,
+      0.806
+     ],
+     "identify_skill_gaps": [
+      115.728,
+      214.12,
+      82.425,
+      120.06,
+      197.706,
+      100.254,
+      115.456,
+      435.255,
+      240.878,
+      94.13,
+      165.054,
+      84.724,
+      295.766,
+      124.784,
+      173.258,
+      140.909,
+      141.874
+     ],
+     "cohort_benchmark": [
+      2661.01,
+      474.902,
+      678.944,
+      1246.24,
+      1176.316,
+      1034.605,
+      1019.0,
+      808.339,
+      563.921,
+      941.343,
+      870.117,
+      950.385,
+      826.805,
+      526.8,
+      565.422,
+      645.684,
+      855.339
+     ],
+     "prioritize_gaps": [
+      0.848,
+      1.234,
+      0.818,
+      0.852,
+      0.763,
+      0.722,
+      0.778,
+      1.054,
+      0.815,
+      0.831,
+      0.975,
+      0.719,
+      1.036,
+      0.958,
+      1.089,
+      0.867,
+      0.755
+     ],
+     "retrieve_courses": [
+      82.247,
+      92.038,
+      69.295,
+      28.5,
+      50.477,
+      49.461,
+      51.507,
+      72.389,
+      61.447,
+      32.345,
+      24.002,
+      38.873,
+      85.697,
+      66.824,
+      39.447,
+      74.442,
+      42.316
+     ],
+     "compute_course_similarity": [
+      6721.918,
+      8.323,
+      7.207,
+      1.865,
+      3.769,
+      4.582,
+      5.046,
+      6.067,
+      5.811,
+      45.344,
+      1.558,
+      3.361,
+      8.743,
+      6.055,
+      2.853,
+      7.447,
+      3.725
+     ],
+     "rank_courses": [
+      2.653,
+      2.41,
+      3.28,
+      0.682,
+      1.406,
+      1.536,
+      1.414,
+      3.15,
+      2.716,
+      0.793,
+      1.106,
+      1.152,
+      3.776,
+      1.706,
+      1.144,
+      3.233,
+      1.121
+     ],
+     "explain_recommendations": [
+      0.566,
+      0.507,
+      0.465,
+      0.301,
+      0.528,
+      0.349,
+      0.4,
+      0.661,
+      0.62,
+      0.331,
+      0.458,
+      0.342,
+      0.5,
+      0.371,
+      0.38,
+      0.687,
+      0.324
+     ],
+     "save_learning_recommendations": [
+      16.523,
+      17.678,
+      14.983,
+      9.934,
+      14.927,
+      12.818,
+      14.478,
+      20.513,
+      16.458,
+      13.806,
+      14.117,
+      13.633,
+      13.153,
+      12.868,
+      9.983,
+      19.751,
+      14.147
+     ],
+     "get_model_prediction": [
+      1.142,
+      1.538,
+      1.157,
+      1.166,
+      1.068,
+      1.039,
+      1.154,
+      1.467,
+      1.133,
+      1.183,
+      1.446,
+      1.016,
+      1.429,
+      1.316,
+      1.547,
+      1.183,
+      1.081
+     ],
+     "get_shap_values": [
+      1130.209,
+      7.592,
+      6.701,
+      7.23,
+      6.309,
+      6.122,
+      7.449,
+      7.781,
+      6.534,
+      6.896,
+      8.838,
+      6.199,
+      8.006,
+      7.472,
+      8.643,
+      6.76,
+      6.631
+     ],
+     "get_feature_contributions": [
+      1.435,
+      0.861,
+      0.623,
+      0.526,
+      0.567,
+      0.482,
+      0.545,
+      0.718,
+      0.609,
+      0.695,
+      0.743,
+      0.558,
+      0.76,
+      0.709,
+      0.685,
+      0.517,
+      0.507
+     ],
+     "generate_evidence": [
+      37.445,
+      17.098,
+      14.881,
+      14.032,
+      14.153,
+      13.638,
+      15.044,
+      15.784,
+      15.116,
+      15.07,
+      19.552,
+      13.474,
+      17.467,
+      14.35,
+      16.42,
+      14.539,
+      14.759
+     ],
+     "generate_explanation": [
+      0.609,
+      0.327,
+      0.285,
+      0.209,
+      0.347,
+      0.247,
+      0.279,
+      0.301,
+      0.269,
+      0.266,
+      0.261,
+      0.248,
+      0.341,
+      0.254,
+      0.296,
+      0.291,
+      0.241
+     ],
+     "get_match_explanation": [
+      19.042,
+      6.555,
+      4.181,
+      3.485,
+      4.143,
+      3.199,
+      4.89,
+      6.948,
+      6.181,
+      3.141,
+      2.79,
+      2.724,
+      5.864,
+      5.04,
+      3.904,
+      4.228,
+      4.537
+     ]
+    },
+    "per_agent_ms": {
+     "profile_agent": [
+      223.927,
+      157.095,
+      164.391,
+      143.226,
+      209.097,
+      51.939,
+      40.423,
+      27.016,
+      31.365,
+      40.351,
+      32.152,
+      27.629,
+      34.386,
+      40.733,
+      44.828,
+      36.222,
+      27.055,
+      31.561,
+      33.259,
+      22.586
+     ],
+     "matching_agent": [
+      6772.892,
+      2331.794,
+      20.148,
+      1000.214,
+      2991.702,
+      2899.979,
+      1855.573,
+      18.774,
+      3164.045,
+      1751.693,
+      1138.135,
+      1983.495,
+      2091.343,
+      2254.296,
+      1930.26,
+      880.751,
+      1620.603,
+      1177.038,
+      1402.485,
+      15.218
+     ],
+     "learning_agent": [
+      6827.935,
+      125.447,
+      99.15,
+      43.187,
+      73.647,
+      71.572,
+      75.53,
+      107.812,
+      91.141,
+      94.747,
+      43.309,
+      59.564,
+      116.276,
+      91.255,
+      56.409,
+      110.51,
+      63.945
+     ],
+     "explainability_agent": [
+      1193.339,
+      35.367,
+      28.982,
+      27.679,
+      27.673,
+      25.756,
+      30.48,
+      34.213,
+      31.135,
+      28.343,
+      34.767,
+      25.201,
+      35.392,
+      30.424,
+      32.657,
+      28.671,
+      28.82
+     ]
+    },
+    "wall_seconds": 48.0
+   },
+   "upload_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 1895.8,
+      "trace_ms": 1834.914,
+      "agents": {
+       "profile_agent": {
+        "ms": 26.933,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1753.158,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 50.327,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 29.71,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 57.9,
+      "trace_ms": 42.488,
+      "agents": {
+       "profile_agent": {
+        "ms": 22.146,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 18.554,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     },
+     {
+      "status": "success",
+      "wall_ms": 1803.7,
+      "trace_ms": 1761.269,
+      "agents": {
+       "profile_agent": {
+        "ms": 26.594,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1644.101,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 86.065,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.77,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 2099.6,
+      "trace_ms": 2063.184,
+      "agents": {
+       "profile_agent": {
+        "ms": 17.344,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1979.58,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 62.583,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.487,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1299.0,
+      "trace_ms": 1251.792,
+      "agents": {
+       "profile_agent": {
+        "ms": 23.735,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1178.279,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 46.06,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.964,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1993.7,
+      "trace_ms": 1944.173,
+      "agents": {
+       "profile_agent": {
+        "ms": 23.521,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1822.981,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 92.945,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.519,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "partial",
+      "wall_ms": 82.1,
+      "trace_ms": 45.001,
+      "agents": {
+       "profile_agent": {
+        "ms": 22.451,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 20.397,
+        "status": "success"
+       }
+      },
+      "skipped": [
+       "learning_agent",
+       "explainability_agent"
+      ]
+     },
+     {
+      "status": "success",
+      "wall_ms": 2462.7,
+      "trace_ms": 2421.013,
+      "agents": {
+       "profile_agent": {
+        "ms": 32.061,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 2276.683,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 107.718,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 30.754,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1797.9,
+      "trace_ms": 1751.392,
+      "agents": {
+       "profile_agent": {
+        "ms": 24.985,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1627.684,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 94.673,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.694,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1547.7,
+      "trace_ms": 1508.356,
+      "agents": {
+       "profile_agent": {
+        "ms": 27.848,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1381.618,
+        "status": "success"
+       },
+       "learning_agent": {
+        "ms": 93.221,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 28.692,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     }
+    ],
+    "per_tool_ms": {
+     "extract_text": [
+      0.517,
+      0.603,
+      0.508,
+      0.401,
+      0.611,
+      0.657,
+      0.692,
+      0.91,
+      0.583,
+      0.565
+     ],
+     "detect_pii": [
+      0.491,
+      0.444,
+      0.499,
+      0.485,
+      0.441,
+      0.411,
+      0.468,
+      0.859,
+      0.436,
+      0.51
+     ],
+     "parse_resume": [
+      0.596,
+      0.488,
+      0.409,
+      0.439,
+      0.517,
+      0.343,
+      0.359,
+      0.844,
+      0.374,
+      0.456
+     ],
+     "extract_skills": [
+      0.702,
+      0.405,
+      0.325,
+      0.266,
+      0.398,
+      0.331,
+      0.325,
+      0.641,
+      0.317,
+      0.483
+     ],
+     "normalize_skills": [
+      5.587,
+      4.552,
+      2.931,
+      2.76,
+      5.566,
+      5.866,
+      4.057,
+      4.381
+     ],
+     "extract_profile": [
+      0.51,
+      0.579,
+      0.521,
+      0.383,
+      0.461,
+      0.47,
+      0.407,
+      0.742,
+      0.473,
+      0.53
+     ],
+     "generate_embedding": [
+      1.238,
+      1.682,
+      1.394,
+      1.171,
+      1.399,
+      1.147,
+      1.081,
+      1.71,
+      1.413,
+      1.286
+     ],
+     "validate_profile": [
+      0.657,
+      0.538,
+      0.649,
+      0.421,
+      0.616,
+      0.8,
+      0.486,
+      1.322,
+      0.628,
+      0.746
+     ],
+     "save_profile": [
+      15.518,
+      16.302,
+      16.629,
+      12.964,
+      15.42,
+      15.655,
+      12.232,
+      17.778,
+      15.731,
+      17.592
+     ],
+     "filter_eligible": [
+      21.752,
+      18.227,
+      31.444,
+      16.447,
+      19.455,
+      38.322,
+      19.965,
+      54.748,
+      31.61,
+      27.91
+     ],
+     "retrieve_jobs": [
+      65.135,
+      70.68,
+      38.269,
+      51.633,
+      44.976,
+      44.015,
+      64.761,
+      47.542
+     ],
+     "compute_similarity": [
+      122.433,
+      49.671,
+      89.349,
+      25.45,
+      38.161,
+      40.227,
+      45.555,
+      44.836
+     ],
+     "generate_features": [
+      420.594,
+      150.218,
+      20.073,
+      53.328,
+      264.381,
+      401.943,
+      207.936,
+      134.016
+     ],
+     "predict_suitability": [
+      10.086,
+      10.132,
+      7.865,
+      8.014,
+      9.105,
+      7.834,
+      8.206,
+      9.563
+     ],
+     "rank_candidates": [
+      0.85,
+      0.854,
+      0.759,
+      0.672,
+      0.746,
+      0.679,
+      0.775,
+      0.838
+     ],
+     "identify_skill_gaps": [
+      125.691,
+      206.724,
+      195.086,
+      134.576,
+      316.985,
+      659.681,
+      282.581,
+      250.783
+     ],
+     "cohort_benchmark": [
+      983.232,
+      1120.396,
+      1608.43,
+      880.614,
+      1107.401,
+      1064.106,
+      983.27,
+      862.935
+     ],
+     "prioritize_gaps": [
+      0.849,
+      0.864,
+      0.863,
+      0.766,
+      0.927,
+      0.88,
+      0.888,
+      1.025
+     ],
+     "retrieve_courses": [
+      34.236,
+      60.654,
+      44.918,
+      29.685,
+      64.507,
+      68.693,
+      59.238,
+      62.794
+     ],
+     "compute_course_similarity": [
+      2.294,
+      5.81,
+      3.982,
+      1.779,
+      5.83,
+      8.375,
+      8.529,
+      6.37
+     ],
+     "rank_courses": [
+      0.75,
+      1.577,
+      1.169,
+      0.662,
+      1.982,
+      5.136,
+      4.37,
+      2.907
+     ],
+     "explain_recommendations": [
+      0.32,
+      0.407,
+      0.333,
+      0.309,
+      0.716,
+      0.748,
+      0.616,
+      0.651
+     ],
+     "save_learning_recommendations": [
+      10.689,
+      14.098,
+      9.577,
+      11.821,
+      16.429,
+      20.205,
+      17.623,
+      15.922
+     ],
+     "get_model_prediction": [
+      1.24,
+      1.102,
+      1.19,
+      1.085,
+      1.235,
+      1.136,
+      1.193,
+      1.296
+     ],
+     "get_shap_values": [
+      7.663,
+      6.743,
+      6.642,
+      6.958,
+      6.256,
+      6.227,
+      6.432,
+      6.188
+     ],
+     "get_feature_contributions": [
+      0.603,
+      0.475,
+      0.675,
+      0.617,
+      0.409,
+      0.446,
+      0.802,
+      0.794
+     ],
+     "generate_evidence": [
+      15.249,
+      13.99,
+      14.869,
+      13.279,
+      13.762,
+      14.222,
+      14.188,
+      14.545
+     ],
+     "generate_explanation": [
+      0.304,
+      0.306,
+      0.232,
+      0.246,
+      0.275,
+      0.213,
+      0.241,
+      0.285
+     ],
+     "get_match_explanation": [
+      3.492,
+      4.796,
+      2.835,
+      2.763,
+      5.425,
+      7.28,
+      4.719,
+      4.454
+     ]
+    },
+    "per_agent_ms": {
+     "profile_agent": [
+      26.933,
+      22.146,
+      26.594,
+      17.344,
+      23.735,
+      23.521,
+      22.451,
+      32.061,
+      24.985,
+      27.848
+     ],
+     "matching_agent": [
+      1753.158,
+      18.554,
+      1644.101,
+      1979.58,
+      1178.279,
+      1822.981,
+      20.397,
+      2276.683,
+      1627.684,
+      1381.618
+     ],
+     "learning_agent": [
+      50.327,
+      86.065,
+      62.583,
+      46.06,
+      92.945,
+      107.718,
+      94.673,
+      93.221
+     ],
+     "explainability_agent": [
+      29.71,
+      28.77,
+      27.487,
+      25.964,
+      28.519,
+      30.754,
+      28.694,
+      28.692
+     ]
+    },
+    "wall_seconds": 15.2
+   },
+   "company_requests": {
+    "requests": [
+     {
+      "status": "success",
+      "wall_ms": 1232.3,
+      "trace_ms": 1184.863,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 388.655,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 770.211,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 22.394,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1485.7,
+      "trace_ms": 1437.732,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 400.166,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1005.064,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.565,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1254.6,
+      "trace_ms": 1215.068,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 409.91,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 777.855,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 23.967,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1304.1,
+      "trace_ms": 1258.239,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 371.578,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 853.765,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 27.924,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 980.7,
+      "trace_ms": 945.439,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 383.526,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 535.352,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 23.251,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1155.0,
+      "trace_ms": 1120.035,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 365.126,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 728.777,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 23.041,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1062.4,
+      "trace_ms": 1021.623,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 438.603,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 555.303,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 23.799,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1560.1,
+      "trace_ms": 1523.852,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 451.661,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 1043.523,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 25.279,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 982.0,
+      "trace_ms": 945.207,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 299.331,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 618.85,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 23.915,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     },
+     {
+      "status": "success",
+      "wall_ms": 1102.0,
+      "trace_ms": 1062.312,
+      "agents": {
+       "job_intelligence_agent": {
+        "ms": 77.966,
+        "status": "success"
+       },
+       "matching_agent": {
+        "ms": 956.706,
+        "status": "success"
+       },
+       "explainability_agent": {
+        "ms": 24.036,
+        "status": "success"
+       }
+      },
+      "skipped": []
+     }
+    ],
+    "per_tool_ms": {
+     "load_job_record": [
+      6.298,
+      6.099,
+      6.198,
+      7.135,
+      6.792,
+      6.954,
+      8.113,
+      6.493,
+      6.532,
+      6.285
+     ],
+     "detect_pii": [
+      0.431,
+      0.414,
+      0.375,
+      0.469,
+      0.394,
+      0.482,
+      0.47,
+      0.447,
+      0.393,
+      0.4
+     ],
+     "parse_job_description": [
+      0.342,
+      0.251,
+      0.258,
+      0.321,
+      0.247,
+      0.428,
+      0.297,
+      0.27,
+      0.268,
+      0.266
+     ],
+     "extract_job_skills": [
+      0.371,
+      0.325,
+      0.273,
+      0.413,
+      0.246,
+      0.376,
+      0.3,
+      0.275,
+      0.318,
+      0.313
+     ],
+     "normalize_skills": [
+      4.084,
+      2.611,
+      3.852,
+      3.297,
+      3.25,
+      4.358,
+      10.593,
+      4.267,
+      3.538,
+      3.522
+     ],
+     "classify_skill_requirements": [
+      0.923,
+      1.558,
+      0.952,
+      1.483,
+      0.741,
+      0.904,
+      0.801,
+      1.279,
+      0.704,
+      1.056
+     ],
+     "extract_requirements": [
+      0.219,
+      0.22,
+      0.237,
+      0.257,
+      0.266,
+      0.315,
+      0.273,
+      0.231,
+      0.239,
+      0.228
+     ],
+     "check_duplicates": [
+      6.471,
+      5.883,
+      5.861,
+      6.684,
+      6.331,
+      7.387,
+      6.387,
+      6.677,
+      5.984,
+      6.071
+     ],
+     "extract_job_posting": [
+      0.669,
+      0.545,
+      0.77,
+      0.607,
+      0.541,
+      0.606,
+      0.51,
+      0.615,
+      0.506,
+      0.514
+     ],
+     "generate_embedding": [
+      343.604,
+      359.314,
+      367.281,
+      327.882,
+      343.526,
+      318.874,
+      386.648,
+      409.274,
+      258.718,
+      41.174
+     ],
+     "validate_job_posting": [
+      1.214,
+      1.358,
+      1.17,
+      1.329,
+      1.273,
+      0.983,
+      1.084,
+      1.223,
+      1.163,
+      0.902
+     ],
+     "save_job": [
+      22.376,
+      20.145,
+      21.325,
+      20.166,
+      18.354,
+      21.961,
+      21.663,
+      19.07,
+      19.61,
+      15.861
+     ],
+     "filter_eligible": [
+      72.764,
+      93.425,
+      82.621,
+      88.715,
+      82.323,
+      81.83,
+      87.662,
+      73.813,
+      80.297,
+      72.445
+     ],
+     "retrieve_candidates": [
+      137.43,
+      104.587,
+      121.359,
+      88.276,
+      111.322,
+      235.09,
+      113.582,
+      116.936,
+      126.522,
+      183.763
+     ],
+     "compute_similarity": [
+      319.906,
+      102.788,
+      215.499,
+      100.678,
+      101.59,
+      174.915,
+      102.18,
+      200.797,
+      54.607,
+      149.896
+     ],
+     "generate_features": [
+      161.929,
+      504.63,
+      217.702,
+      283.64,
+      131.285,
+      149.335,
+      126.136,
+      404.003,
+      242.218,
+      418.454
+     ],
+     "predict_suitability": [
+      8.206,
+      7.908,
+      10.142,
+      8.442,
+      8.609,
+      8.401,
+      8.789,
+      8.163,
+      8.227,
+      8.677
+     ],
+     "rank_candidates": [
+      0.576,
+      0.462,
+      0.648,
+      0.743,
+      0.64,
+      0.507,
+      0.708,
+      0.591,
+      0.503,
+      0.62
+     ],
+     "identify_skill_gaps": [
+      67.126,
+      187.797,
+      127.439,
+      279.714,
+      96.92,
+      76.17,
+      113.722,
+      236.639,
+      104.047,
+      120.454
+     ],
+     "get_model_prediction": [
+      0.719,
+      0.84,
+      0.817,
+      0.769,
+      0.675,
+      0.755,
+      0.832,
+      0.752,
+      0.754,
+      0.698
+     ],
+     "get_shap_values": [
+      5.295,
+      5.016,
+      4.6,
+      5.777,
+      5.048,
+      4.849,
+      5.613,
+      5.218,
+      5.634,
+      5.264
+     ],
+     "get_feature_contributions": [
+      0.405,
+      0.382,
+      0.442,
+      0.452,
+      0.443,
+      0.381,
+      0.43,
+      0.375,
+      0.441,
+      0.427
+     ],
+     "generate_evidence": [
+      12.684,
+      14.359,
+      13.264,
+      13.621,
+      13.153,
+      12.578,
+      12.839,
+      12.629,
+      12.81,
+      13.662
+     ],
+     "generate_explanation": [
+      0.219,
+      0.246,
+      0.215,
+      0.216,
+      0.198,
+      0.21,
+      0.177,
+      0.204,
+      0.197,
+      0.206
+     ],
+     "get_match_explanation": [
+      2.274,
+      5.474,
+      3.726,
+      5.797,
+      2.953,
+      3.501,
+      3.085,
+      5.195,
+      3.234,
+      3.005
+     ]
+    },
+    "per_agent_ms": {
+     "job_intelligence_agent": [
+      388.655,
+      400.166,
+      409.91,
+      371.578,
+      383.526,
+      365.126,
+      438.603,
+      451.661,
+      299.331,
+      77.966
+     ],
+     "matching_agent": [
+      770.211,
+      1005.064,
+      777.855,
+      853.765,
+      535.352,
+      728.777,
+      555.303,
+      1043.523,
+      618.85,
+      956.706
+     ],
+     "explainability_agent": [
+      22.394,
+      27.565,
+      23.967,
+      27.924,
+      23.251,
+      23.041,
+      23.799,
+      25.279,
+      23.915,
+      24.036
+     ]
+    },
+    "wall_seconds": 12.2
+   },
+   "rss_requests_added_mb": 394.7,
+   "database_facts": {
+    "database_size_mb": 184.6,
+    "embeddings_size_mb": 134.9,
+    "students": 5020,
+    "students_with_profile": 5020,
+    "jobs": 1000,
+    "jobs_with_posting": 1000,
+    "embedding_rows": 56915
+   },
+   "memory": {
+    "rss_start_mb": 153.3,
+    "rss_end_mb": 2105.9,
+    "peak_rss_mb": 2299.7
+   },
+   "finished_at": "2026-10-15T14:13:08+00:00",
+   "environment": {
+    "python": "3.11.17",
+    "system": "Linux 5.15.167.4-microsoft-standard-WSL2",
+    "machine": "x86_64",
+    "logical_cpus": 16,
+    "ram_gb_visible": 7.6,
+    "torch": "2.8.0+cpu",
+    "torch_threads": 8,
+    "embedding_model": "e5_base_v2",
+    "llm": "none (deterministic routing for explicit tasks; structured explanation fallback)",
+    "youtube": "disabled (curated catalogue only)",
+    "ingest_workers": 1,
+    "request_concurrency": 1
+   },
+   "ingest_jobs": {
+    "entities": 0,
+    "wall_seconds": 0.0,
+    "throughput_per_s": 0.0,
+    "statuses": {},
+    "agent_ms": {
+     "n": 0
+    },
+    "per_tool_ms": {}
+   },
+   "ingest_students": {
+    "entities": 4000,
+    "wall_seconds": 759.0,
+    "throughput_per_s": 5.27,
+    "statuses": {
+     "success": 4000
+    },
+    "agent_ms": {
+     "n": 4000,
+     "median": 185.61,
+     "p95": 336.21,
+     "mean": 189.48,
+     "min": 20.37,
+     "max": 5692.99
+    },
+    "per_tool_ms": {
+     "load_student_record": {
+      "n": 4000,
+      "median": 6.55,
+      "p95": 9.87,
+      "mean": 7.07,
+      "min": 5.38,
+      "max": 19.96
+     },
+     "detect_pii": {
+      "n": 4000,
+      "median": 0.47,
+      "p95": 0.84,
+      "mean": 0.51,
+      "min": 0.28,
+      "max": 1.89
+     },
+     "parse_student_sections": {
+      "n": 4000,
+      "median": 0.27,
+      "p95": 0.51,
+      "mean": 0.3,
+      "min": 0.17,
+      "max": 2.12
+     },
+     "extract_skills": {
+      "n": 4000,
+      "median": 0.27,
+      "p95": 0.49,
+      "mean": 0.3,
+      "min": 0.17,
+      "max": 1.1
+     },
+     "normalize_skills": {
+      "n": 3529,
+      "median": 5.44,
+      "p95": 8.05,
+      "mean": 5.69,
+      "min": 2.23,
+      "max": 44.65
+     },
+     "extract_profile": {
+      "n": 4000,
+      "median": 0.44,
+      "p95": 0.79,
+      "mean": 0.49,
+      "min": 0.28,
+      "max": 1.64
+     },
+     "generate_embedding": {
+      "n": 4000,
+      "median": 147.62,
+      "p95": 285.34,
+      "mean": 151.27,
+      "min": 0.91,
+      "max": 5655.14
+     },
+     "validate_profile": {
+      "n": 4000,
+      "median": 1.32,
+      "p95": 2.08,
+      "mean": 1.35,
+      "min": 0.32,
+      "max": 5.63
+     },
+     "save_profile": {
+      "n": 4000,
+      "median": 20.81,
+      "p95": 28.57,
+      "mean": 21.84,
+      "min": 10.99,
+      "max": 202.66
+     }
+    }
+   }
+  }
+ }
+}

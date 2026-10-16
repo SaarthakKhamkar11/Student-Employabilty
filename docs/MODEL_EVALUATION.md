@@ -7,9 +7,14 @@ report in `results/` or from the decision record (ADR) that cites it. Nothing is
 |---|---|---|---|---|
 | Embedding model | **E5 (`intfloat/e5-base-v2`)** | E5 domain-adapted / BGE | Human labels, rule fixed beforehand | `results/embedding_model_evaluation_human_reviewed.md`, [ADR 0012](adr/0012-embedding-model-selection.md) |
 | Embedding fallback | **TF-IDF** (automatic, if E5 can't load) | — | Owner decision | [ADR 0012](adr/0012-embedding-model-selection.md) |
-| Matching model (on E5) | **LightGBM** | Logistic Regression | Human labels, rule fixed beforehand | `results/matching_model_evaluation_human_reviewed.md`, [ADR 0015](adr/0015-matching-model-target-training-and-selection.md) |
-| Matching model (on the TF-IDF fallback) | **Logistic Regression** | LightGBM | Human labels | `results/matching_model_evaluation/mms-20261014T132323Z-human.md` |
-| Explainer | **Exact TreeSHAP** (LightGBM); LinearExplainer (Logistic Regression) | — | Model type | [ADR 0019](adr/0019-explainability-agent.md) |
+| Matching model (on E5) | **Logistic Regression** (features-v2, re-selected 2026-10-15) | LightGBM | Human labels, rule fixed beforehand | `results/matching_model_evaluation/mms-20261015T124013Z-human.md`, [ADR 0015](adr/0015-matching-model-target-training-and-selection.md) |
+| Matching model (on the TF-IDF fallback) | **Baseline 3** (features-v2: the rule kept it) | Logistic Regression | Human labels | `results/matching_model_evaluation/mms-20261015T124901Z-human.md` |
+| Explainer | **LinearExplainer** (Logistic Regression); exact TreeSHAP for tree models | — | Model type | [ADR 0019](adr/0019-explainability-agent.md) |
+
+> **Updated 2026-10-15 (Phase 14).** Section 3 below records the features-v1 runs of 2026-10-14, when LightGBM was
+> selected. After the features-v2 change (Phase 13 review) both paths were retrained and re-selected, giving the
+> rows above. The held-out test-split comparison of all five spec §34 baselines, and the answers to RQ1–RQ9, are in
+> [`docs/RESEARCH_FINDINGS.md`](RESEARCH_FINDINGS.md).
 
 ---
 
