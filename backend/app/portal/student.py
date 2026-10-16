@@ -137,12 +137,17 @@ def _career_paths(matches: list[dict]) -> list[dict]:
     return sorted(paths, key=lambda r: (r["best_rank"], -r["jobs"]))
 
 
+# Jobs ranked per overview run: the dashboard shows the best 10 and rotates the rest in on Refresh
+OVERVIEW_POOL = 20
+
+
 @router.get("/overview")
 async def overview(refresh: bool = False, user: dict = Student):
     sid = _sid(user)
     _need_profile(sid)
     run = await portal().result("recommend_jobs_for_student", actor="student", student_id=sid, refresh=refresh,
-                                also_accept=("ingest_student_profile",), user_id=user["user_id"])
+                                also_accept=("ingest_student_profile",), user_id=user["user_id"],
+                                top_k=OVERVIEW_POOL)
     matches = agent_data(run, "matching_agent", "matches")
     return {"run": run, "career_paths": _career_paths(matches) if isinstance(matches, list) else []}
 

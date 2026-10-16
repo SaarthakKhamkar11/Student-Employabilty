@@ -108,7 +108,8 @@ class Portal:
         return _from_row(row) if row else None
 
     async def result(self, task: str, *, actor: str, student_id: str | None = None, job_id: str | None = None,
-                     refresh: bool = False, also_accept: tuple[str, ...] = (), user_id=None) -> dict[str, Any]:
+                     refresh: bool = False, also_accept: tuple[str, ...] = (), user_id=None,
+                     top_k: int | None = None) -> dict[str, Any]:
         """The stored result of `task` for these ids, or a fresh Supervisor run when none is current."""
         key = (task, student_id, job_id)
         lock = self._locks.setdefault(key, asyncio.Lock())
@@ -118,7 +119,8 @@ class Portal:
                 if found is not None:
                     return found
             request = SupervisorInput(actor=actor, request_kind="question", task_type=task,
-                                      request_text=f"dashboard: {task}", student_id=student_id, job_id=job_id)
+                                      request_text=f"dashboard: {task}", student_id=student_id, job_id=job_id,
+                                      top_k=top_k)
             response = await self.quiet.handle(request, user_id=str(user_id) if user_id else None)
             return from_response(response)
 

@@ -10,6 +10,10 @@ Login (existing users, no OTP):
      POST /auth/login                {email, password, role?} -> access_token
      GET  /auth/me                   Authorization: Bearer <access_token>
 
+Forgot password (existing users):
+     POST /auth/password/forgot      {email}                  -> reset code emailed
+     POST /auth/password/reset       {email, otp, password}   -> password replaced; log in with it
+
 Accounts live in `users` (migration 0009 + 0012). A student's signup also creates the student's own
 `student_profiles` row (degree, branch, graduation year), so the Profile Agent combines those stated facts with the
 resume when it is uploaded (app/agents/profile_agent.py: "the stored record supplies the fields a resume does not
@@ -28,8 +32,8 @@ from .db import get_conn
 from .deps import get_current_user
 from .email_sender import EmailSendError, send_otp_email
 from .otp_store import OtpResult
-from .schemas import (LoginIn, OtpRequestIn, OtpRequestOut, OtpVerifyIn, SignupCompleteIn,
-                      SignupTokenOut, TokenOut, UserOut)
+from .schemas import (LoginIn, MessageOut, OtpRequestIn, OtpRequestOut, OtpVerifyIn, PasswordForgotIn,
+                      PasswordResetIn, SignupCompleteIn, SignupTokenOut, TokenOut, UserOut)
 from .security import (PURPOSE_SIGNUP, create_access_token,
                        create_signup_token, decode_token, generate_otp, hash_otp, hash_password,
                        verify_password)
@@ -181,6 +185,48 @@ def login(body: LoginIn):
         conn.execute("UPDATE users SET last_login_at = now() WHERE user_id = %s", (user["user_id"],))
     token, expires_in = create_access_token(user["user_id"], user["role"])
     return TokenOut(access_token=token, role=user["role"], expires_in=expires_in)
+
+
+# ================================================================ forgot password
+@router.post("/password/forgot", response_model=OtpRequestOut)
+def forgot_password(body: PasswordForgotIn):
+    s = get_settings()
+    email = body.email
+    if not _email_registered(email):
+        # Same product decision as login: say plainly that there is no account
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Account not found. Try signing up instead.")
+    wait = otp_store.resend_wait_seconds(email, otp_store.RESET)
+    if wait > 0:
+        raise _too_many(f"Please wait {wait} seconds before requesting another code.", wait)
+    if otp_store.sends_this_hour(email, otp_store.RESET) >= s.otp_max_sends_per_hour:
+        raise _too_many("Too many codes requested for this email. Try again in an hour.", 3600)
+    otp = generate_otp()
+    otp_store.save_otp(email, hash_otp(email, otp), "reset", otp_store.RESET)
+    try:
+        send_otp_email(email, otp, purpose="reset")
+    except EmailSendError:
+        otp_store.discard_otp(email, otp_store.RESET)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail="Couldn't send the reset email. Please try again.")
+    return OtpRequestOut(message=f"Reset code sent to {email}", expires_in=s.otp_expiry_seconds,
+                         resend_after=s.otp_resend_cooldown_seconds)
+
+
+@router.post("/password/reset", response_model=MessageOut)
+def reset_password(body: PasswordResetIn):
+    result, _, left = otp_store.check_otp(body.email, body.otp, otp_store.RESET)
+    if result is OtpResult.EXPIRED:
+        raise HTTPException(status.HTTP_410_GONE, detail="Code expired or not found. Request a new one.")
+    if result is OtpResult.TOO_MANY_ATTEMPTS:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many wrong attempts. Request a new code.")
+    if result is OtpResult.INVALID:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Incorrect code. {left} attempt(s) left.")
+    with get_conn() as conn:
+        updated = conn.execute("UPDATE users SET password_hash = %s WHERE lower(email) = %s RETURNING user_id",
+                               (hash_password(body.password), body.email)).fetchone()
+    if updated is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Account not found. Try signing up instead.")
+    otp_store.clear_login_failures(body.email)  # a verified reset lifts a lockout from earlier wrong guesses
+    return MessageOut(message="Password updated. Log in with your new password.")
 
 
 # ================================================================ current user

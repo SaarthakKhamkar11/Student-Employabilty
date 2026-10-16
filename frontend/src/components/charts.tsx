@@ -1,7 +1,15 @@
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { cssVar, useTheme } from "../lib/theme";
 
-const AXIS = { fontSize: 11.5, fill: "#64748b" };
-const GRID = "#e6eaee";
+// Axis, grid and label colours come from the theme through CSS (global.css, "charts"); these are fallbacks.
+const AXIS = { fontSize: 11.5 };
+const GRID = "var(--border)";
+
+/** The series colour: the caller's, else the theme accent (re-read when the theme changes). */
+function useSeriesColor(color?: string) {
+  useTheme();
+  return color ?? (cssVar("--accent") || "#0071e3");
+}
 
 interface Point {
   label: string;
@@ -25,8 +33,9 @@ function Tip({ active, payload, unit }: { active?: boolean; payload?: { payload:
 }
 
 /** One smooth area series (the reference style's main visual). Single series: no legend, the card title names it. */
-export function AreaSeries({ points, unit = "%", color = "#3d5a7a", domain }: { points: Point[]; unit?: string; color?: string; domain?: [number, number] }) {
-  const id = `g${color.replace("#", "")}`;
+export function AreaSeries({ points, unit = "%", color: given, domain }: { points: Point[]; unit?: string; color?: string; domain?: [number, number] }) {
+  const color = useSeriesColor(given);
+  const id = `g${color.replace(/[^a-z0-9]/gi, "")}`;
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={points} margin={{ top: 10, right: 12, bottom: 4, left: 0 }}>
@@ -39,8 +48,8 @@ export function AreaSeries({ points, unit = "%", color = "#3d5a7a", domain }: { 
         <CartesianGrid stroke={GRID} strokeDasharray="4 4" vertical={false} />
         <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} interval={0} height={44} tickFormatter={(v: string) => (v.length > 14 ? v.slice(0, 13) + "…" : v)} />
         <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} domain={domain ?? [0, "auto"]} tickFormatter={(v: number) => `${unit === "%" ? v.toFixed(0) : v.toFixed(2)}${unit === "%" ? "%" : ""}`} />
-        <Tooltip content={<Tip unit={unit} />} cursor={{ stroke: "#94a3b8", strokeDasharray: "3 3" }} />
-        <Area isAnimationActive={false} type="monotone" dataKey="value" stroke={color} strokeWidth={2.2} fill={`url(#${id})`} dot={{ r: 4, fill: color, stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+        <Tooltip content={<Tip unit={unit} />} cursor={{ strokeDasharray: "3 3" }} />
+        <Area isAnimationActive={false} type="monotone" dataKey="value" stroke={color} strokeWidth={2.2} fill={`url(#${id})`} dot={{ r: 4, fill: color, strokeWidth: 2 }} activeDot={{ r: 6 }} />
       </AreaChart>
     </ResponsiveContainer>
   );
@@ -50,7 +59,7 @@ export function AreaSeries({ points, unit = "%", color = "#3d5a7a", domain }: { 
 export function HBars({
   points,
   unit = "",
-  color = "#3d5a7a",
+  color: given,
   highlight,
   domain,
   digits = 3,
@@ -62,18 +71,19 @@ export function HBars({
   domain?: [number, number | "auto"];
   digits?: number;
 }) {
+  const color = useSeriesColor(given);
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={points} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 4 }} barCategoryGap={6}>
         <CartesianGrid stroke={GRID} strokeDasharray="4 4" horizontal={false} />
         <XAxis type="number" tick={AXIS} tickLine={false} axisLine={false} domain={domain ?? [0, "auto"]} />
         <YAxis type="category" dataKey="label" tick={AXIS} tickLine={false} axisLine={false} width={150} tickFormatter={(v: string) => (v.length > 22 ? v.slice(0, 21) + "…" : v)} />
-        <Tooltip content={<Tip unit={unit} />} cursor={{ fill: "rgba(15,23,42,0.04)" }} />
+        <Tooltip content={<Tip unit={unit} />} cursor={{ fill: "var(--hover)" }} />
         <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false}>
           {points.map((p) => (
             <Cell key={p.label} fill={color} opacity={highlight && p.label !== highlight ? 0.45 : 1} />
           ))}
-          <LabelList dataKey="value" position="right" style={{ fontSize: 11.5, fill: "#475569" }} formatter={(v: number) => `${v.toFixed(digits)}${unit}`} />
+          <LabelList dataKey="value" position="right" style={{ fontSize: 11.5 }} formatter={(v: number) => `${v.toFixed(digits)}${unit}`} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>

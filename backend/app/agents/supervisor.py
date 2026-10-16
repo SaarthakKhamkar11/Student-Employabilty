@@ -262,7 +262,9 @@ class SupervisorAgent(BaseAgent):
                     return MatchingAgentInput(mode="candidates_for_job", job_id=job_id, student_id=student_id), None
                 if not student_id:
                     return None, "no student_id available for job matching"
-                return MatchingAgentInput(mode="jobs_for_student", student_id=student_id, job_id=job_id), None
+                extra = {"top_k": req.top_k} if req.top_k else {}
+                return MatchingAgentInput(mode="jobs_for_student", student_id=student_id, job_id=job_id,
+                                          **extra), None
             top = _top_match(outcomes)
             if top is None:
                 return None, "no match result available"

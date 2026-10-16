@@ -1,4 +1,5 @@
 """Request/response models for the auth endpoints."""
+import re
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, EmailStr, Field, field_validator, model_validator
@@ -21,6 +22,19 @@ def _clean(v: str | None) -> str | None:
         return None
     v = " ".join(v.split())
     return v or None
+
+
+# One rule for every password (signup, reset, seeded admin); the signup page checks the same regex client-side.
+PASSWORD_RE = re.compile(r"^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{8,}$")
+
+
+def password_rules(v: str) -> str:
+    if len(v.encode("utf-8")) > 72:
+        raise ValueError("password must be at most 72 bytes")
+    if not PASSWORD_RE.match(v):
+        raise ValueError("password must be 8+ characters with at least one capital letter, one number and one "
+                         "special character")
+    return v
 
 
 # ---------------------------------------------------------------- signup step 1 & 2
@@ -115,17 +129,33 @@ class SignupCompleteIn(BaseModel):
     @field_validator("password")
     @classmethod
     def _password_rules(cls, v: str) -> str:
-        if len(v.encode("utf-8")) > 72:
-            raise ValueError("password must be at most 72 bytes")
-        if not any(c.isalpha() for c in v) or not any(c.isdigit() for c in v):
-            raise ValueError("password must contain at least one letter and one number")
-        return v
+        return password_rules(v)
 
     @model_validator(mode="after")
     def _one_profile(self):
         if self.student_profile and self.recruiter_profile:
             raise ValueError("send either student_profile or recruiter_profile, not both")
         return self
+
+
+# ---------------------------------------------------------------- forgot password
+class PasswordForgotIn(BaseModel):
+    email: Email
+
+
+class PasswordResetIn(BaseModel):
+    email: Email
+    otp: str = Field(pattern=r"^\d{6}$", description="6-digit code from the email")
+    password: str = Field(min_length=8)
+
+    @field_validator("password")
+    @classmethod
+    def _password_rules(cls, v: str) -> str:
+        return password_rules(v)
+
+
+class MessageOut(BaseModel):
+    message: str
 
 
 # ---------------------------------------------------------------- login / session

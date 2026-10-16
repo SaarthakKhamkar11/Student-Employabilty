@@ -4,6 +4,7 @@ import { homeFor, useAuth, type Role } from "./lib/auth";
 import { Loading } from "./components/ui";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 
 const StudentApp = lazy(() => import("./pages/student/StudentApp"));
 const StudentOnboarding = lazy(() => import("./pages/student/Onboarding"));
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/student/onboarding" element={<Guard role="student"><StudentOnboarding /></Guard>} />
         <Route path="/student/*" element={<Guard role="student"><StudentApp /></Guard>} />
         <Route path="/company/onboarding" element={<Guard role="recruiter"><CompanyOnboarding /></Guard>} />

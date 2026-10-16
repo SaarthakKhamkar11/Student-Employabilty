@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../lib/auth";
 import { Logo } from "../../components/Shell";
+import { ThemeToggle } from "../../lib/theme";
 import { Card, Steps } from "../../components/ui";
 import { ConfirmJob, PostJob, type Posting } from "./JobEditor";
 
@@ -16,7 +17,7 @@ export default function CompanyOnboarding() {
   const c = me?.company;
   return (
     <div style={{ minHeight: "100vh" }}>
-      <div style={{ background: "var(--sidebar-bg)", padding: "14px 28px" }}><Logo /></div>
+      <div className="onboard-bar"><Logo /><ThemeToggle /></div>
       <div className="content" style={{ margin: "0 auto" }}>
         <div className="page-head"><div><h1>Welcome, {me?.full_name.split(" ")[0]}</h1><p>Set up {c?.name ?? "your company"} and post your first job.</p></div></div>
         <Steps steps={STEPS} current={step} />

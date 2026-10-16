@@ -4,7 +4,7 @@ import { MailCheck } from "lucide-react";
 import { api } from "../../lib/api";
 import { homeFor, useAuth } from "../../lib/auth";
 import { ErrorBox } from "../../components/ui";
-import { AuthLayout, EMAIL_RE, Field, passwordProblem, RoleToggle, type SideRole } from "./AuthLayout";
+import { AuthLayout, EMAIL_RE, Field, PasswordInput, passwordProblem, PasswordRules, RoleToggle, type SideRole } from "./AuthLayout";
 
 const SIZES = ["1-10", "11-50", "51-200", "201-1000", "1001-5000", "5000+"];
 const THIS_YEAR = new Date().getFullYear();
@@ -104,7 +104,7 @@ export default function Signup() {
     return (
       <AuthLayout>
         <div className="row" style={{ marginBottom: 6 }}>
-          <MailCheck size={22} color="var(--brand-strong)" />
+          <MailCheck size={22} color="var(--accent)" />
           <h2>Verify your email</h2>
         </div>
         {info && <div className="alert alert-ok">{info}. It is valid for 10 minutes.</div>}
@@ -143,8 +143,9 @@ export default function Signup() {
             <Field label="Email" error={show("email")}>
               <input type="email" autoComplete="email" value={f.email} onChange={set("email")} />
             </Field>
-            <Field label="Password" error={show("password")} hint="8+ characters with a letter and a number">
-              <input type="password" autoComplete="new-password" value={f.password} onChange={set("password")} />
+            <Field label="Password" error={show("password")}>
+              <PasswordInput autoComplete="new-password" value={f.password} onChange={(v) => setF({ ...f, password: v })} />
+              <PasswordRules pw={f.password} />
             </Field>
             <Field label="College / university" error={show("college")}>
               <input value={f.college} onChange={set("college")} />
@@ -172,8 +173,9 @@ export default function Signup() {
             <Field label="Work email" error={show("email")}>
               <input type="email" autoComplete="email" value={f.email} onChange={set("email")} />
             </Field>
-            <Field label="Password" error={show("password")} hint="8+ characters with a letter and a number">
-              <input type="password" autoComplete="new-password" value={f.password} onChange={set("password")} />
+            <Field label="Password" error={show("password")}>
+              <PasswordInput autoComplete="new-password" value={f.password} onChange={(v) => setF({ ...f, password: v })} />
+              <PasswordRules pw={f.password} />
             </Field>
             <div className="form-grid">
               <Field label="Industry" error={show("industry")}>

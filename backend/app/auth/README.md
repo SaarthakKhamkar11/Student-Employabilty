@@ -11,7 +11,7 @@
    ```json
    {
      "signup_token": "<from step 2>",
-     "password": "mypass123",
+     "password": "MyPass#123",
      "full_name": "Riya Shah",
      "student_profile": { "degree": "B.Tech", "branch": "CSE (Data Science)",
                           "graduation_year": 2027, "gender": "female" }
@@ -25,11 +25,18 @@
 - The frontend sends `Authorization: Bearer <access_token>` on every protected request.
 - `GET /auth/me` returns the logged-in user and their profile.
 
+**Forgot password**
+- `POST /auth/password/forgot` `{ "email": "..." }` → a 6-digit reset code is emailed (same expiry and resend limits
+  as the signup code, counted separately).
+- `POST /auth/password/reset` `{ "email": "...", "otp": "123456", "password": "..." }` → password replaced (the new
+  one follows the same rules); any login lockout for that email is cleared. The user then logs in as usual.
+
 **Built-in protections**
 - Only a hash of the OTP is stored (in Redis), never the code itself. Each OTP works once and is burned after 5 wrong tries.
 - Resending is allowed after 60 s, with a maximum of 5 codes per email per hour.
 - The signup token works once, and it can't be used as a login token (or the other way round).
-- Passwords are stored as bcrypt hashes. They need at least 8 characters with at least one letter and one number.
+- Passwords are stored as bcrypt hashes. They need at least 8 characters with at least one capital letter, one number and one special character
+  (`PASSWORD_RE` in schemas.py; the signup page checks the same regex).
 - Login locks for 15 min after 10 failed attempts. An unknown email gets 404 "Account not found. Try signing up
   instead." and a wrong password 401 "Incorrect password" (a product decision: new users are told to sign up).
 - Emails are lowercased, so `Riya@Gmail.com` and `riya@gmail.com` are the same account.

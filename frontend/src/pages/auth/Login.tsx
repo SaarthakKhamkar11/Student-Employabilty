@@ -1,13 +1,15 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
 import { homeFor, useAuth } from "../../lib/auth";
 import { ErrorBox } from "../../components/ui";
-import { AuthLayout, EMAIL_RE, Field, RoleToggle, type SideRole } from "./AuthLayout";
+import { AuthLayout, EMAIL_RE, Field, PasswordInput, RoleToggle, type SideRole } from "./AuthLayout";
 
 export default function Login() {
   const [role, setRole] = useState<SideRole>("student");
-  const [email, setEmail] = useState("");
+  const loc = useLocation();
+  const after = loc.state as { email?: string; reset?: boolean } | null;
+  const [email, setEmail] = useState(after?.email ?? "");
   const [password, setPassword] = useState("");
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export default function Login() {
       <h2>Welcome back</h2>
       <div className="muted">Log in to your {role === "student" ? "student" : "company"} account.</div>
       <RoleToggle role={role} onChange={(r) => (setRole(r), setError(null))} />
+      {after?.reset && !error && <div className="alert alert-ok">Password updated. Log in with your new password.</div>}
       {error && <ErrorBox error={error} />}
       {notFound && (
         <div className="alert alert-info">
@@ -55,8 +58,9 @@ export default function Login() {
         <Field label={role === "student" ? "Email" : "Work email"} error={touched ? errs.email : undefined}>
           <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
-        <Field label="Password" error={touched ? errs.password : undefined}>
-          <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Field label="Password" error={touched ? errs.password : undefined}
+          aside={<Link className="small" to="/forgot-password" state={{ email }}>Forgot password?</Link>}>
+          <PasswordInput autoComplete="current-password" value={password} onChange={setPassword} />
         </Field>
         <button className="btn btn-primary" style={{ width: "100%", padding: 11 }} disabled={busy}>
           {busy ? <span className="spinner" /> : null} Log in

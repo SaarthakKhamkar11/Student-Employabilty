@@ -133,6 +133,9 @@ class SupervisorInput(Contract):
     task_type: TaskType | None = None  # explicit task from the UI; otherwise the Supervisor decides
     student_id: str | None = None
     job_id: str | None = None
+    # How many jobs to rank for a student (default: the Matching Agent's own). The dashboard asks for a wider pool
+    # so Refresh can rotate unseen recommendations in.
+    top_k: int | None = Field(None, ge=1, le=100)
 
     @property
     def resume_provided(self) -> bool:

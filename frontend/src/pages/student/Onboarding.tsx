@@ -4,6 +4,7 @@ import { FileUp } from "lucide-react";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { Logo } from "../../components/Shell";
+import { ThemeToggle } from "../../lib/theme";
 import { Card, ErrorBox, Loading, Steps } from "../../components/ui";
 import { initialCorrection, ProfileEditor, toPayload, type Correction, type StudentProfileData } from "./ProfileEditor";
 
@@ -98,9 +99,7 @@ export default function StudentOnboarding() {
   const step = profile ? 2 : 1;
   return (
     <div style={{ minHeight: "100vh" }}>
-      <div style={{ background: "var(--sidebar-bg)", padding: "14px 28px" }}>
-        <Logo />
-      </div>
+      <div className="onboard-bar"><Logo /><ThemeToggle /></div>
       <div className="content" style={{ margin: "0 auto" }}>
         <div className="page-head">
           <div>

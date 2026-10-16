@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { LogOut, Search } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { ChevronLeft, LogOut, Search } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { initials } from "../lib/format";
+import { ThemeToggle } from "../lib/theme";
 
 export interface NavEntry {
   to: string;
@@ -13,14 +14,25 @@ export interface NavEntry {
 
 const ROLE_LABEL = { student: "Student", recruiter: "Company", admin: "Admin · Research" } as const;
 
-export function Logo({ light = true }: { light?: boolean }) {
+export function Logo() {
   return (
     <div className="brand">
       <img src="/logo.svg" alt="" />
-      <div className="brand-name" style={light ? undefined : { color: "var(--text)" }}>
+      <div className="brand-name">
         Career<span>Compass</span>
       </div>
     </div>
+  );
+}
+
+/** Back to the previous page; with no in-app history (a direct link), up to the dashboard home. */
+export function BackButton({ home }: { home: string }) {
+  const navigate = useNavigate();
+  const canGoBack = ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0;
+  return (
+    <button type="button" className="icon-btn" title="Back" aria-label="Back" onClick={() => (canGoBack ? navigate(-1) : navigate(home))}>
+      <ChevronLeft size={19} />
+    </button>
   );
 }
 
@@ -30,15 +42,32 @@ export function Shell({
   topRight,
   searchPlaceholder = "Search…",
   onSearch,
+  profileTo,
 }: {
   nav: NavEntry[];
   children: ReactNode;
   topRight?: ReactNode;
   searchPlaceholder?: string;
   onSearch?: (q: string) => void;
+  /** Where the avatar in the top right leads (the account's edit-profile page); omitted, it is not a link. */
+  profileTo?: string;
 }) {
   const { me, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const home = nav[0]?.to ?? "/";
+  const atHome = pathname.replace(/\/$/, "") === home;
+  const who = me && (
+    <>
+      <div className="avatar" aria-hidden>
+        {initials(me.full_name)}
+      </div>
+      <div className="user-meta">
+        <b>{me.full_name}</b>
+        <small>{me.role === "recruiter" && me.company ? `${me.company.name} · Company` : ROLE_LABEL[me.role]}</small>
+      </div>
+    </>
+  );
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -54,36 +83,45 @@ export function Shell({
       </aside>
       <div className="main">
         <header className="topbar">
+          {!atHome && <BackButton home={home} />}
           <label className="search">
             <Search size={15} />
             <input placeholder={searchPlaceholder} onChange={(e) => onSearch?.(e.target.value)} disabled={!onSearch} />
           </label>
           <div className="topbar-right">
             {topRight}
+            <ThemeToggle />
             {me && (
               <>
-                <div className="avatar" aria-hidden>
-                  {initials(me.full_name)}
-                </div>
-                <div className="user-meta">
-                  <b>{me.full_name}</b>
-                  <small>{me.role === "recruiter" && me.company ? `${me.company.name} · Company` : ROLE_LABEL[me.role]}</small>
-                </div>
+                <span className="topbar-sep" />
+                {profileTo ? (
+                  <button type="button" className={`profile-chip ${pathname.startsWith(profileTo) ? "active" : ""}`}
+                    title="Edit profile" onClick={() => navigate(profileTo)}>
+                    {who}
+                  </button>
+                ) : (
+                  <div className="profile-chip">{who}</div>
+                )}
                 <button
-                  className="btn btn-ghost btn-sm"
+                  className="icon-btn"
                   title="Log out"
+                  aria-label="Log out"
                   onClick={() => {
                     logout();
                     navigate("/login");
                   }}
                 >
-                  <LogOut size={15} />
+                  <LogOut size={16} />
                 </button>
               </>
             )}
           </div>
         </header>
-        <main className="content">{children}</main>
+        <main className="content">
+          <div className="page" key={pathname}>
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

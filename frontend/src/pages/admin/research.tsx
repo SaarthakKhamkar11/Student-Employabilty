@@ -139,8 +139,8 @@ export function Beeswarm({ g, features }: { g: GlobalExplanation; features: stri
         const cy = i * rowH + rowH / 2;
         return (
           <g key={f}>
-            <text x={left - 8} y={cy + 4} textAnchor="end" fontSize={11.5} fill="#334155">{f}</text>
-            <line x1={left} x2={W - right} y1={cy} y2={cy} stroke="#eef2f6" />
+            <text x={left - 8} y={cy + 4} textAnchor="end" fontSize={11.5} style={{ fill: "var(--text-2)" }}>{f}</text>
+            <line x1={left} x2={W - right} y1={cy} y2={cy} style={{ stroke: "var(--border)" }} />
             {d.shap.map((s, j) => {
               const v = d.feature_value[j];
               const color = v === null || v === undefined ? "#c0c6cf" : RAMP[Math.min(RAMP.length - 1, Math.floor(((v - vlo) / (vhi - vlo || 1)) * (RAMP.length - 0.001)))]!;
@@ -150,7 +150,7 @@ export function Beeswarm({ g, features }: { g: GlobalExplanation; features: stri
           </g>
         );
       })}
-      {[lo, 0, hi].map((t) => <text key={t} x={x(t)} y={H - 8} textAnchor="middle" fontSize={11} fill="#64748b">{t.toFixed(1)}</text>)}
+      {[lo, 0, hi].map((t) => <text key={t} x={x(t)} y={H - 8} textAnchor="middle" fontSize={11} style={{ fill: "var(--muted)" }}>{t.toFixed(1)}</text>)}
     </svg>
   );
 }

@@ -1,7 +1,7 @@
-import { createContext, useContext, useState } from "react";
-import { Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  Award, BarChart3, BookOpen, Briefcase, Compass, FileText, FolderKanban, GraduationCap, LayoutDashboard, Puzzle,
+  Award, BarChart3, BookOpen, Briefcase, FileText, FolderKanban, GraduationCap, LayoutDashboard, Puzzle,
   Target, User, Users,
 } from "lucide-react";
 import { api } from "../../lib/api";
@@ -10,7 +10,7 @@ import { useApi } from "../../lib/useApi";
 import { dims, isNum, isSentinel, pct } from "../../lib/format";
 import { data, type AiSummary, type CohortBenchmark, type LearningOutput, type MatchExplanation, type MatchingOutput, type MatchResult, type Run } from "../../lib/types";
 import { PageHead, Shell, type NavEntry } from "../../components/Shell";
-import { Card, ChartCard, EmptyState, ErrorBox, KpiCard, ListRow, Loading, NotEvaluated, ScoreBar, StatusTag, Val } from "../../components/ui";
+import { Card, ChartCard, EmptyState, ErrorBox, KpiCard, Loading, NotEvaluated, ScoreBar, StatusTag, Val } from "../../components/ui";
 import { LearningList, MatchSummary, RunMeta, SkillGapView } from "../../components/matchViews";
 import { JobCardList, skillCounts, useJobDetails } from "../../components/jobCards";
 import { AreaSeries, HBars } from "../../components/charts";
@@ -19,12 +19,9 @@ import { type StudentProfileData } from "./ProfileEditor";
 
 const NAV: NavEntry[] = [
   { to: "/student", label: "Overview", icon: <LayoutDashboard size={16} />, end: true },
-  { to: "/student/profile", label: "Profile", icon: <User size={16} /> },
-  { to: "/student/resume", label: "Resume", icon: <FileText size={16} /> },
   { to: "/student/jobs", label: "Jobs", icon: <Briefcase size={16} /> },
   { to: "/student/skill-gaps", label: "Skill Gaps", icon: <Puzzle size={16} /> },
   { to: "/student/learning", label: "Learning", icon: <BookOpen size={16} /> },
-  { to: "/student/career", label: "Career", icon: <Compass size={16} /> },
   { to: "/student/benchmark", label: "Benchmark", icon: <Users size={16} /> },
 ];
 
@@ -42,12 +39,88 @@ interface Overview {
   career_paths: { role: string; jobs: number; best_rank: number; mean_suitability: number; example_titles: string[] }[];
 }
 
-const Ctx = createContext<{ overview: ReturnType<typeof useApi<Overview>>; refresh: () => void; refreshing: boolean } | null>(null);
+interface OverviewCtx {
+  overview: ReturnType<typeof useApi<Overview>>;
+  refresh: () => void;
+  refreshing: boolean;
+  /** The recommendations on show: the best match plus a rotating set from the ranked pool, in rank order. */
+  shown: MatchResult[];
+  /** Jobs the last Refresh rotated in (they fade in). */
+  fresh: ReadonlySet<string>;
+}
+const Ctx = createContext<OverviewCtx | null>(null);
 const useOverview = () => useContext(Ctx)!;
 
 function matchesOf(run: Run | null | undefined): MatchResult[] {
   const m = data<MatchingOutput>(run, "matching_agent")?.matches;
   return Array.isArray(m) ? m : [];
+}
+
+// ------------------------------------------------------------------------------------------------- Refresh rotation
+// The backend ranks a pool of jobs (OVERVIEW_POOL in app/portal/student.py); SHOWN of them are on screen. Each Refresh
+// swaps 1-2 of them (never the best match, which the KPIs describe) for pool jobs not on screen, those never shown
+// first. Which jobs are on screen is kept per browser, so a reload shows the same list.
+const SHOWN = 10;
+
+interface Rotation {
+  shown: string[];
+  retired: string[]; // swapped out, oldest first: they come back only after every other job has had a turn
+}
+
+const rotationKey = (sid: string | null | undefined) => `cc.rotation.${sid ?? "me"}`;
+
+function loadRotation(sid: string | null | undefined): Rotation {
+  try {
+    const r = JSON.parse(localStorage.getItem(rotationKey(sid)) ?? "null");
+    if (r && Array.isArray(r.shown) && Array.isArray(r.retired)) return r;
+  } catch {
+    /* storage blocked or malformed: start from the ranking */
+  }
+  return { shown: [], retired: [] };
+}
+
+function saveRotation(sid: string | null | undefined, r: Rotation) {
+  try {
+    localStorage.setItem(rotationKey(sid), JSON.stringify(r));
+  } catch {
+    /* storage blocked: the rotation lasts until reload */
+  }
+}
+
+/** The ids on screen: the best match, then the remembered ones still in the pool, topped up in rank order. */
+function onScreen(r: Rotation, pool: MatchResult[]): string[] {
+  if (!pool.length) return [];
+  const best = pool[0]!.job_id;
+  const inPool = new Set(pool.map((m) => m.job_id));
+  const ids = [best, ...r.shown.filter((id) => inPool.has(id) && id !== best)];
+  for (const m of pool) {
+    if (ids.length >= SHOWN) break;
+    if (!ids.includes(m.job_id)) ids.push(m.job_id);
+  }
+  return ids.slice(0, SHOWN);
+}
+
+function rotate(r: Rotation, pool: MatchResult[]): { next: Rotation; incoming: string[] } | null {
+  const current = onScreen(r, pool);
+  // never shown first (indexOf -1), then the longest-retired; rank breaks ties
+  const waiting = pool.filter((m) => !current.includes(m.job_id))
+    .sort((a, b) => r.retired.indexOf(a.job_id) - r.retired.indexOf(b.job_id) || a.rank - b.rank);
+  const swappable = current.slice(1);
+  if (!waiting.length || !swappable.length) return null;
+  const n = Math.min(waiting.length, swappable.length, 1 + Math.floor(Math.random() * 2));
+  const out: string[] = [];
+  while (out.length < n) {
+    const id = swappable[Math.floor(Math.random() * swappable.length)]!;
+    if (!out.includes(id)) out.push(id);
+  }
+  const incoming = waiting.slice(0, n).map((m) => m.job_id);
+  return {
+    next: {
+      shown: [...current.filter((id) => !out.includes(id)), ...incoming],
+      retired: [...r.retired.filter((id) => !incoming.includes(id)), ...out],
+    },
+    incoming,
+  };
 }
 
 function title(m: MatchResult) {
@@ -70,12 +143,12 @@ function WithOverview({ children }: { children: (o: Overview) => JSX.Element }) 
 
 // ------------------------------------------------------------------------------------------------- Overview
 function OverviewPage() {
-  const { refresh, refreshing } = useOverview();
+  const { refresh, refreshing, shown, fresh } = useOverview();
   const [chart, setChart] = useState<"jobs" | "dims">("jobs");
   return (
     <WithOverview>
       {(o) => {
-        const matches = matchesOf(o.run);
+        const matches = shown;
         const top = matches[0];
         const emp = top && typeof top.employability === "object" ? top.employability : null;
         const expl = data<{ match_explanation: MatchExplanation | string }>(o.run, "explainability_agent")?.match_explanation;
@@ -94,23 +167,17 @@ function OverviewPage() {
                 <div className="grid kpis">
                   <KpiCard icon={<BarChart3 size={16} />} color="" label="Overall" value={<Val v={emp?.overall} fmt={(v) => `${v.toFixed(0)}`} />}
                     foot={<>out of 100 · for {title(top)}</>} />
-                  {DIMENSIONS.map((d) => (
+                  {DIMENSIONS.filter((d) => isNum(emp?.dimensions[d.key])).map((d) => (
                     <KpiCard key={d.key} icon={d.icon} color="" label={d.label} value={<Val v={emp?.dimensions[d.key]} fmt={(v) => v.toFixed(0)} />}
                       foot="out of 100" />
                   ))}
                 </div>
                 <div className="grid split-main">
                   <Card title="Recommended jobs" sub="Your best matches first. Click a job for its details.">
-                    <JobCardList matches={matches} />
+                    <JobCardList matches={matches} fresh={fresh} />
                   </Card>
                   <MatchSummary match={top} explanation={typeof expl === "object" ? expl : null} careerPaths={o.career_paths} title={`Why ${title(top)}?`} />
                 </div>
-                {emp && Object.entries(emp.dimensions).some(([, v]) => isSentinel(v)) && (
-                  <div className="alert alert-info">
-                    Not scored for this match yet:{" "}
-                    {Object.entries(emp.dimensions).filter(([, v]) => isSentinel(v)).map(([k]) => dims(k)).join(", ")}. Adding these to your profile gives a fuller picture.
-                  </div>
-                )}
                 <div className="grid split-main">
                   <ChartCard
                     title={chart === "jobs" ? "How well your top jobs fit" : `Score breakdown for ${title(top)}`}
@@ -146,16 +213,18 @@ function OverviewPage() {
 // ------------------------------------------------------------------------------------------------- Jobs & match
 function JobsPage() {
   const [q, setQ] = useState("");
+  const { refresh, refreshing, shown, fresh } = useOverview();
   return (
     <WithOverview>
       {(o) => {
-        const matches = matchesOf(o.run).filter((m) => `${title(m)} ${m.summary.role}`.toLowerCase().includes(q.toLowerCase()));
+        const matches = shown.filter((m) => `${title(m)} ${m.summary.role}`.toLowerCase().includes(q.toLowerCase()));
         return (
           <>
-            <PageHead title="Jobs" sub="Your ranked recommendations. Click a job for its details, then View match for the full comparison." />
+            <PageHead title="Jobs" sub="Your ranked recommendations. Click a job for its details, then View match for the full comparison."
+              actions={<RunMeta run={o.run} onRefresh={refresh} refreshing={refreshing} />} />
             <Card title="Recommendations" right={<input className="btn btn-sm" placeholder="Filter by title or role" value={q} onChange={(e) => setQ(e.target.value)} style={{ cursor: "text" }} />}>
               {matches.length ? (
-                <JobCardList matches={matches} />
+                <JobCardList matches={matches} fresh={fresh} />
               ) : (
                 <EmptyState title="No jobs to show" />
               )}
@@ -207,10 +276,10 @@ function MatchPage() {
                   <Card title="Score breakdown" sub="Out of 100">
                     {emp ? (
                       <div className="stack" style={{ gap: 8 }}>
-                        {Object.entries(emp.dimensions).map(([k, v]) => (
+                        {Object.entries(emp.dimensions).filter((e): e is [string, number] => isNum(e[1])).map(([k, v]) => (
                           <div className="row" key={k} style={{ flexWrap: "nowrap" }}>
                             <span style={{ width: 210 }} className="small">{dims(k)}</span>
-                            {isNum(v) ? <><ScoreBar value={v} /><b className="small" style={{ width: 44, textAlign: "right" }}>{v.toFixed(0)}</b></> : <NotEvaluated label={String(v)} />}
+                            <ScoreBar value={v} /><b className="small" style={{ width: 44, textAlign: "right" }}>{v.toFixed(0)}</b>
                           </div>
                         ))}
                       </div>
@@ -256,10 +325,11 @@ function JobPicker({ matches, value, onChange }: { matches: MatchResult[]; value
 
 function SkillGapsPage() {
   const [job, setJob] = useState<string>("");
+  const { shown } = useOverview();
   return (
     <WithOverview>
-      {(o) => {
-        const matches = matchesOf(o.run);
+      {() => {
+        const matches = shown;
         const sel = matches.find((m) => m.job_id === job) ?? matches[0];
         return (
           <>
@@ -288,8 +358,7 @@ function SkillGapsPage() {
 // ------------------------------------------------------------------------------------------------- Learning
 function LearningPage() {
   const [job, setJob] = useState<string>("");
-  const { overview } = useOverview();
-  const matches = matchesOf(overview.data?.run);
+  const { overview, shown: matches } = useOverview();
   const sel = matches.find((m) => m.job_id === job) ?? matches[0];
   const fromOverview = sel && sel === matches[0] ? data<LearningOutput>(overview.data?.run, "learning_agent") : null;
   const other = useApi<{ run: Run }>(sel && !fromOverview ? `/student/learning/${sel.job_id}` : null);
@@ -313,37 +382,6 @@ function LearningPage() {
           </Card>
         </>
       )}
-    </WithOverview>
-  );
-}
-
-// ------------------------------------------------------------------------------------------------- Career
-function CareerPage() {
-  return (
-    <WithOverview>
-      {(o) => {
-        return (
-          <>
-            <PageHead title="Career" sub="Career directions your ranked matches point to." />
-            {o.career_paths.length ? (
-              <div className="grid split-main">
-                <ChartCard title="Fit by role" sub="Average match across your recommended jobs in each role" height={Math.max(220, o.career_paths.length * 34)}>
-                  <HBars unit="%" digits={1} points={o.career_paths.map((c) => ({ label: c.role, value: c.mean_suitability * 100, hint: `${c.jobs} job(s), best rank #${c.best_rank}` }))} />
-                </ChartCard>
-                <Card title="Directions">
-                  <div className="list">
-                    {o.career_paths.map((c) => (
-                      <ListRow key={c.role} thumb={`#${c.best_rank}`} thumbColor="" title={c.role} meta={<><span>{c.jobs} matching job{c.jobs > 1 ? "s" : ""}</span><span>e.g. {c.example_titles.join(", ")}</span></>} score={pct(c.mean_suitability, 0)} />
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            ) : (
-              <EmptyState title="No career directions yet">No recommended job has a stated role.</EmptyState>
-            )}
-          </>
-        );
-      }}
     </WithOverview>
   );
 }
@@ -401,8 +439,7 @@ function BenchmarkView({ b }: { b: CohortBenchmark }) {
 
 function BenchmarkPage() {
   const [job, setJob] = useState("");
-  const { overview } = useOverview();
-  const matches = matchesOf(overview.data?.run);
+  const { overview, shown: matches } = useOverview();
   const fromOverview = data<MatchingOutput>(overview.data?.run, "matching_agent")?.cohort_benchmark;
   const pick = job && job !== matches[0]?.job_id ? job : null;
   const other = useApi<{ run: Run }>(pick ? `/student/benchmark?job_id=${pick}` : null);
@@ -429,11 +466,10 @@ function Entry({ text, split }: { text: string; split: boolean }) {
   return <div className="entry">{text}</div>;
 }
 
-function ProfilePage() {
+function ProfileTab({ onUpload }: { onUpload: () => void }) {
   const prof = useApi<{ profile: StudentProfileData; stated_at_signup: Record<string, unknown>; confirmed_at: string | null; needs_reupload: boolean }>("/student/profile");
   const [editing, setEditing] = useState(false);
   const { refresh } = useOverview();
-  const navigate = useNavigate();
   if (prof.loading) return <Loading />;
   if (prof.error || !prof.data) return <ErrorBox error={prof.error ?? "No profile"} />;
   const p = prof.data.profile;
@@ -449,12 +485,15 @@ function ProfilePage() {
   ];
   return (
     <>
-      <PageHead title="Profile" sub={prof.data.confirmed_at ? `Last confirmed ${new Date(prof.data.confirmed_at).toLocaleDateString()}` : "Not confirmed yet"}
-        actions={<button className="btn btn-primary" onClick={() => setEditing(!editing)}>{editing ? "Cancel" : "Edit profile"}</button>} />
+      <div className="row" style={{ marginBottom: 14 }}>
+        <span className="small muted">{prof.data.confirmed_at ? `Last confirmed ${new Date(prof.data.confirmed_at).toLocaleDateString()}` : "Not confirmed yet"}</span>
+        <span className="spacer" />
+        <button className={`btn ${editing ? "" : "btn-primary"}`} onClick={() => setEditing(!editing)}>{editing ? "Cancel" : "Edit details"}</button>
+      </div>
       {prof.data.needs_reupload && !editing && (
         <div className="alert alert-warn" style={{ alignItems: "center" }}>
           <span style={{ flex: 1 }}>Your resume was read with an older version of the reader, so some text may run together. Upload it again to fix this.</span>
-          <button className="btn btn-sm" onClick={() => navigate("/student/resume")}>Upload resume</button>
+          <button className="btn btn-sm" onClick={onUpload}>Upload resume</button>
         </div>
       )}
       {editing ? (
@@ -484,13 +523,13 @@ function ProfilePage() {
   );
 }
 
-function ResumePage() {
+function ResumeTab() {
   const [profile, setProfile] = useState<StudentProfileData | null>(null);
   const { refresh } = useOverview();
   const navigate = useNavigate();
   return (
     <>
-      <PageHead title="Resume" sub="Upload a new resume. You will review the parsed profile before it replaces your results." />
+      <p className="small muted" style={{ margin: "0 0 14px" }}>Upload a new resume. You will review the parsed profile before it replaces your results.</p>
       {profile ? (
         <ConfirmProfile profile={profile} onConfirmed={() => (refresh(), navigate("/student"))} confirmLabel="Confirm new profile" />
       ) : (
@@ -500,15 +539,57 @@ function ResumePage() {
   );
 }
 
+/** Edit profile: reached from the avatar in the top right. Profile details and resume upload, one page. */
+function EditProfilePage() {
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") === "resume" ? "resume" : "profile";
+  const go = (t: "profile" | "resume") => setParams(t === "resume" ? { tab: t } : {}, { replace: true });
+  return (
+    <>
+      <PageHead title="Edit profile" sub="What your recommendations are based on."
+        actions={
+          <div className="seg" role="tablist" aria-label="Section">
+            <button type="button" role="tab" aria-selected={tab === "profile"} className={tab === "profile" ? "on" : ""} onClick={() => go("profile")}><User size={14} /> Profile</button>
+            <button type="button" role="tab" aria-selected={tab === "resume"} className={tab === "resume" ? "on" : ""} onClick={() => go("resume")}><FileText size={14} /> Resume</button>
+          </div>
+        } />
+      <div className="page" key={tab}>{tab === "profile" ? <ProfileTab onUpload={() => go("resume")} /> : <ResumeTab />}</div>
+    </>
+  );
+}
+
 // ------------------------------------------------------------------------------------------------- app
 export default function StudentApp() {
   const { me } = useAuth();
+  const sid = me?.student_id;
   const [refreshing, setRefreshing] = useState(false);
   const overview = useApi<Overview>("/student/overview");
+  const [rotation, setRotation] = useState<Rotation>(() => loadRotation(sid));
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
+  const pool = useMemo(() => matchesOf(overview.data?.run), [overview.data]);
+  const shown = useMemo(() => {
+    const byId = new Map(pool.map((m) => [m.job_id, m]));
+    return onScreen(rotation, pool).map((id) => byId.get(id)!).sort((a, b) => a.rank - b.rank);
+  }, [pool, rotation]);
+
+  /** Swap 1-2 jobs in; false when the pool has nothing left to show. */
+  const rotateIn = useCallback((from: MatchResult[], r: Rotation) => {
+    const out = rotate(r, from);
+    if (!out) return null;
+    setRotation(out.next);
+    saveRotation(sid, out.next);
+    setFresh(new Set(out.incoming));
+    return out.next;
+  }, [sid]);
+
   const refresh = async () => {
+    // new jobs appear straight away; the recalculation with the latest profile follows in the background
+    const rotated = rotateIn(pool, rotation);
     setRefreshing(true);
     try {
-      overview.setData(await api<Overview>("/student/overview?refresh=true"));
+      const next = await api<Overview>("/student/overview?refresh=true");
+      overview.setData(next);
+      if (!rotated) rotateIn(matchesOf(next.run), rotation);
     } catch (e) {
       alert((e as Error).message);
     } finally {
@@ -520,17 +601,17 @@ export default function StudentApp() {
     return null;
   }
   return (
-    <Ctx.Provider value={{ overview, refresh, refreshing }}>
-      <Shell nav={NAV} searchPlaceholder="Search jobs on the Jobs page…">
+    <Ctx.Provider value={{ overview, refresh, refreshing, shown, fresh }}>
+      <Shell nav={NAV} searchPlaceholder="Search jobs on the Jobs page…" profileTo="/student/profile">
         <Routes>
           <Route index element={<OverviewPage />} />
-          <Route path="profile" element={<ProfilePage />} />
-          <Route path="resume" element={<ResumePage />} />
+          <Route path="profile" element={<EditProfilePage />} />
+          <Route path="resume" element={<Navigate to="/student/profile?tab=resume" replace />} />
           <Route path="jobs" element={<JobsPage />} />
           <Route path="jobs/:jobId" element={<MatchPage />} />
           <Route path="skill-gaps" element={<SkillGapsPage />} />
           <Route path="learning" element={<LearningPage />} />
-          <Route path="career" element={<CareerPage />} />
+          <Route path="career" element={<Navigate to="/student" replace />} />
           <Route path="benchmark" element={<BenchmarkPage />} />
         </Routes>
       </Shell>

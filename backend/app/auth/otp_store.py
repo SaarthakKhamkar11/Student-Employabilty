@@ -6,6 +6,9 @@ Keys (all expire on their own):
   auth:otp_sends:{email}      counter                             TTL = 1 hour
   auth:signup_jti:{jti}       email                               TTL = SIGNUP_TOKEN_EXPIRE_MINUTES
   auth:login_fail:{email}     counter                             TTL = LOGIN_FAILURE_WINDOW_SECONDS
+
+A password-reset code uses the same three OTP keys under the scope "reset_otp" (auth:reset_otp:{email}, ...), so a
+reset and a signup never overwrite each other's code or share a resend limit.
 """
 from enum import Enum
 from functools import lru_cache
@@ -35,35 +38,39 @@ def _incr_with_window(key: str, window_seconds: int) -> int:
 
 
 # ---------------------------------------------------------------- sending limits
-def resend_wait_seconds(email: str) -> int:
+SIGNUP = "otp"
+RESET = "reset_otp"
+
+
+def resend_wait_seconds(email: str, scope: str = SIGNUP) -> int:
     """>0 means the user must wait this many seconds before another OTP."""
-    ttl = get_redis().ttl(_k("otp_cooldown", email))
+    ttl = get_redis().ttl(_k(f"{scope}_cooldown", email))
     return max(ttl, 0)
 
 
-def sends_this_hour(email: str) -> int:
-    v = get_redis().get(_k("otp_sends", email))
+def sends_this_hour(email: str, scope: str = SIGNUP) -> int:
+    v = get_redis().get(_k(f"{scope}_sends", email))
     return int(v) if v else 0
 
 
-def save_otp(email: str, code_hash: str, role: str) -> None:
+def save_otp(email: str, code_hash: str, role: str, scope: str = SIGNUP) -> None:
     s = get_settings()
     r = get_redis()
     pipe = r.pipeline()
-    pipe.delete(_k("otp", email))                       # a new OTP replaces any older one
-    pipe.hset(_k("otp", email), mapping={"code_hash": code_hash, "role": role, "attempts": 0})
-    pipe.expire(_k("otp", email), s.otp_expiry_seconds)
-    pipe.set(_k("otp_cooldown", email), "1", ex=s.otp_resend_cooldown_seconds)
+    pipe.delete(_k(scope, email))                       # a new OTP replaces any older one
+    pipe.hset(_k(scope, email), mapping={"code_hash": code_hash, "role": role, "attempts": 0})
+    pipe.expire(_k(scope, email), s.otp_expiry_seconds)
+    pipe.set(_k(f"{scope}_cooldown", email), "1", ex=s.otp_resend_cooldown_seconds)
     pipe.execute()
-    _incr_with_window(_k("otp_sends", email), 3600)  # hourly window starts at first send
+    _incr_with_window(_k(f"{scope}_sends", email), 3600)  # hourly window starts at first send
 
 
-def discard_otp(email: str) -> None:
+def discard_otp(email: str, scope: str = SIGNUP) -> None:
     """Used when the email failed to send, so the user can retry immediately."""
     r = get_redis()
-    r.delete(_k("otp", email), _k("otp_cooldown", email))
-    if sends_this_hour(email) > 0:
-        r.decr(_k("otp_sends", email))
+    r.delete(_k(scope, email), _k(f"{scope}_cooldown", email))
+    if sends_this_hour(email, scope) > 0:
+        r.decr(_k(f"{scope}_sends", email))
 
 
 # ---------------------------------------------------------------- verification
@@ -74,11 +81,11 @@ class OtpResult(str, Enum):
     TOO_MANY_ATTEMPTS = "too_many"
 
 
-def check_otp(email: str, otp: str) -> tuple[OtpResult, str | None, int]:
+def check_otp(email: str, otp: str, scope: str = SIGNUP) -> tuple[OtpResult, str | None, int]:
     """Returns (result, role, attempts_left). The OTP is deleted on success or when attempts run out."""
     s = get_settings()
     r = get_redis()
-    key = _k("otp", email)
+    key = _k(scope, email)
     data = r.hgetall(key)
     if not data:
         return OtpResult.EXPIRED, None, 0
